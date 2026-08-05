@@ -17,7 +17,7 @@ const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
 
 export default function UpcomingEvents() {
   return (
-    <section className="pb-24 pt-0 px-6" id="upcoming">
+    <section className="pb-0 pt-0 px-6" id="upcoming">
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-10">
           <div>
