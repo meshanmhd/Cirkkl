@@ -1,0 +1,1595 @@
+bun install v1.3.14 (0d9b296a)
+   - "@tailwindcss/postcss": "^4" - @tailwindcss/postcss@4.3.3
+   - "@types/node": "^20" - @types/node@20.19.43
+   - "@types/react": "^19" - @types/react@19.2.18
+   - "@types/react-dom": "^19" - @types/react-dom@19.2.4
+   - "eslint": "^9" - eslint@9.39.5
+   - "eslint-config-next": "16.3.0" - eslint-config-next@16.3.0
+   - "tailwindcss": "^4" - tailwindcss@4.3.3
+   - "typescript": "^5" - typescript@5.9.3
+   - "next": "16.3.0" - next@16.3.0
+   - "react": "19.2.8" - react@19.2.8
+   - "react-dom": "19.2.8" - react-dom@19.2.8
+   - "postcss": "^8.5.16" - postcss@8.5.25
+   - "@alloc/quick-lru": "^5.2.0" - @alloc/quick-lru@5.2.0
+   - "@tailwindcss/node": "4.3.3" - @tailwindcss/node@4.3.3
+   - "@tailwindcss/oxide": "4.3.3" - @tailwindcss/oxide@4.3.3
+   - "undici-types": "~6.21.0" - undici-types@6.21.0
+   - "csstype": "^3.2.2" - csstype@3.2.3
+   - "ajv": "^6.14.0" - ajv@6.15.0
+   - "chalk": "^4.0.0" - chalk@4.1.2
+   - "debug": "^4.3.2" - debug@4.4.3
+   - "espree": "^10.4.0" - espree@10.4.0
+   - "ignore": "^5.2.0" - ignore@5.3.2
+   - "esquery": "^1.5.0" - esquery@1.7.0
+   - "esutils": "^2.0.2" - esutils@2.0.3
+   - "find-up": "^5.0.0" - find-up@5.0.0
+   - "is-glob": "^4.0.0" - is-glob@4.0.3
+   - "minimatch": "^3.1.5" - minimatch@3.1.5
+   - "@eslint/js": "9.39.5" - @eslint/js@9.39.5
+   - "optionator": "^0.9.3" - optionator@0.9.4
+   - "cross-spawn": "^7.0.6" - cross-spawn@7.0.6
+   - "glob-parent": "^6.0.2" - glob-parent@6.0.2
+   - "imurmurhash": "^0.1.4" - imurmurhash@0.1.4
+   - "@eslint/core": "^0.17.0" - @eslint/core@0.17.0
+   - "eslint-scope": "^8.4.0" - eslint-scope@8.4.0
+   - "lodash.merge": "^4.6.2" - lodash.merge@4.6.2
+   - "@humanfs/node": "^0.16.6" - @humanfs/node@0.16.8
+   - "@types/estree": "^1.0.6" - @types/estree@1.0.9
+   - "fast-deep-equal": "^3.1.3" - fast-deep-equal@3.1.3
+   - "natural-compare": "^1.4.0" - natural-compare@1.4.0
+   - "@eslint/eslintrc": "^3.3.6" - @eslint/eslintrc@3.3.6
+   - "file-entry-cache": "^8.0.0" - file-entry-cache@8.0.0
+   - "@eslint/plugin-kit": "^0.4.1" - @eslint/plugin-kit@0.4.1
+   - "eslint-visitor-keys": "^4.2.1" - eslint-visitor-keys@4.2.1
+   - "@eslint/config-array": "^0.21.2" - @eslint/config-array@0.21.2
+   - "@humanwhocodes/retry": "^0.4.2" - @humanwhocodes/retry@0.4.3
+   - "escape-string-regexp": "^4.0.0" - escape-string-regexp@4.0.0
+   - "@eslint/config-helpers": "^0.4.2" - @eslint/config-helpers@0.4.2
+   - "@eslint-community/regexpp": "^4.12.1" - @eslint-community/regexpp@4.12.2
+   - "@eslint-community/eslint-utils": "^4.8.0" - @eslint-community/eslint-utils@4.10.1
+   - "@humanwhocodes/module-importer": "^1.0.1" - @humanwhocodes/module-importer@1.0.1
+   - "json-stable-stringify-without-jsonify": "^1.0.1" - json-stable-stringify-without-jsonify@1.0.1
+   - "globals": "16.4.0" - globals@16.4.0
+   - "typescript-eslint": "^8.46.0" - typescript-eslint@8.66.0
+   - "eslint-plugin-react": "^7.37.0" - eslint-plugin-react@7.37.5
+   - "eslint-plugin-import": "^2.32.0" - eslint-plugin-import@2.32.0
+   - "eslint-plugin-jsx-a11y": "^6.10.0" - eslint-plugin-jsx-a11y@6.10.2
+   - "@next/eslint-plugin-next": "16.3.0" - @next/eslint-plugin-next@16.3.0
+   - "eslint-plugin-react-hooks": "^7.0.0" - eslint-plugin-react-hooks@7.1.1
+   - "eslint-import-resolver-node": "^0.3.6" - eslint-import-resolver-node@0.3.10
+   - "eslint-import-resolver-typescript": "^3.5.2" - eslint-import-resolver-typescript@3.10.1
+   - "postcss": "8.5.23" - postcss@8.5.23
+   - "@next/env": "16.3.0" - @next/env@16.3.0
+   - "styled-jsx": "5.1.6" - styled-jsx@5.1.6
+   - "@swc/helpers": "0.5.15" - @swc/helpers@0.5.15
+   - "caniuse-lite": "^1.0.30001579" - caniuse-lite@1.0.30001806
+   - "baseline-browser-mapping": "^2.9.19" - baseline-browser-mapping@2.11.12
+   - "sharp": "^0.35.3" - sharp@0.35.3
+   - "@next/swc-darwin-x64": "16.3.0" - @next/swc-darwin-x64@16.3.0
+   - "@next/swc-darwin-arm64": "16.3.0" - @next/swc-darwin-arm64@16.3.0
+   - "@next/swc-linux-x64-gnu": "16.3.0" - @next/swc-linux-x64-gnu@16.3.0
+   - "@next/swc-linux-x64-musl": "16.3.0" - @next/swc-linux-x64-musl@16.3.0
+   - "@next/swc-win32-x64-msvc": "16.3.0" - @next/swc-win32-x64-msvc@16.3.0
+   - "@next/swc-linux-arm64-gnu": "16.3.0" - @next/swc-linux-arm64-gnu@16.3.0
+   - "@next/swc-linux-arm64-musl": "16.3.0" - @next/swc-linux-arm64-musl@16.3.0
+   - "@next/swc-win32-arm64-msvc": "16.3.0" - @next/swc-win32-arm64-msvc@16.3.0
+   - "scheduler": "^0.27.0" - scheduler@0.27.0
+   - "nanoid": "^3.3.16" - nanoid@3.3.17
+   - "picocolors": "^1.1.1" - picocolors@1.1.1
+   - "source-map-js": "^1.2.1" - source-map-js@1.2.1
+   - "jiti": "^2.7.0" - jiti@2.7.0
+   - "lightningcss": "1.32.0" - lightningcss@1.32.0
+   - "magic-string": "^0.30.21" - magic-string@0.30.21
+   - "enhanced-resolve": "^5.24.1" - enhanced-resolve@5.24.5
+   - "@jridgewell/remapping": "^2.3.5" - @jridgewell/remapping@2.3.5
+   - "@tailwindcss/oxide-darwin-x64": "4.3.3" - @tailwindcss/oxide-darwin-x64@4.3.3
+   - "@tailwindcss/oxide-freebsd-x64": "4.3.3" - @tailwindcss/oxide-freebsd-x64@4.3.3
+   - "@tailwindcss/oxide-wasm32-wasi": "4.3.3" - @tailwindcss/oxide-wasm32-wasi@4.3.3
+   - "@tailwindcss/oxide-darwin-arm64": "4.3.3" - @tailwindcss/oxide-darwin-arm64@4.3.3
+   - "@tailwindcss/oxide-android-arm64": "4.3.3" - @tailwindcss/oxide-android-arm64@4.3.3
+   - "@tailwindcss/oxide-linux-x64-gnu": "4.3.3" - @tailwindcss/oxide-linux-x64-gnu@4.3.3
+   - "@tailwindcss/oxide-linux-x64-musl": "4.3.3" - @tailwindcss/oxide-linux-x64-musl@4.3.3
+   - "@tailwindcss/oxide-win32-x64-msvc": "4.3.3" - @tailwindcss/oxide-win32-x64-msvc@4.3.3
+   - "@tailwindcss/oxide-linux-arm64-gnu": "4.3.3" - @tailwindcss/oxide-linux-arm64-gnu@4.3.3
+   - "@tailwindcss/oxide-linux-arm64-musl": "4.3.3" - @tailwindcss/oxide-linux-arm64-musl@4.3.3
+   - "@tailwindcss/oxide-win32-arm64-msvc": "4.3.3" - @tailwindcss/oxide-win32-arm64-msvc@4.3.3
+   - "@tailwindcss/oxide-linux-arm-gnueabihf": "4.3.3" - @tailwindcss/oxide-linux-arm-gnueabihf@4.3.3
+   - "uri-js": "^4.2.2" - uri-js@4.4.1
+   - "json-schema-traverse": "^0.4.1" - json-schema-traverse@0.4.1
+   - "fast-json-stable-stringify": "^2.0.0" - fast-json-stable-stringify@2.1.0
+   - "ansi-styles": "^4.1.0" - ansi-styles@4.3.0
+   - "supports-color": "^7.1.0" - supports-color@7.2.0
+   - "ms": "^2.1.3" - ms@2.1.3
+   - "acorn": "^8.15.0" - acorn@8.18.0
+   - "acorn-jsx": "^5.3.2" - acorn-jsx@5.3.2
+   - "estraverse": "^5.1.0" - estraverse@5.3.0
+   - "locate-path": "^6.0.0" - locate-path@6.0.0
+   - "path-exists": "^4.0.0" - path-exists@4.0.0
+   - "is-extglob": "^2.1.1" - is-extglob@2.1.1
+   - "brace-expansion": "^1.1.7" - brace-expansion@1.1.18
+   - "prelude-ls": "^1.2.1" - prelude-ls@1.2.1
+   - "deep-is": "^0.1.3" - deep-is@0.1.4
+   - "word-wrap": "^1.2.5" - word-wrap@1.2.5
+   - "type-check": "^0.4.0" - type-check@0.4.0
+   - "levn": "^0.4.1" - levn@0.4.1
+   - "fast-levenshtein": "^2.0.6" - fast-levenshtein@2.0.6
+   - "which": "^2.0.1" - which@2.0.2
+   - "path-key": "^3.1.0" - path-key@3.1.1
+   - "shebang-command": "^2.0.0" - shebang-command@2.0.0
+   - "@types/json-schema": "^7.0.15" - @types/json-schema@7.0.15
+   - "esrecurse": "^4.3.0" - esrecurse@4.3.0
+   - "@humanfs/core": "^0.19.2" - @humanfs/core@0.19.2
+   - "@humanfs/types": "^0.15.0" - @humanfs/types@0.15.0
+   - "globals": "^14.0.0" - globals@14.0.0
+   - "import-fresh": "^3.2.1" - import-fresh@3.3.1
+   - "js-yaml": "^4.3.0" - js-yaml@4.3.1
+   - "strip-json-comments": "^3.1.1" - strip-json-comments@3.1.1
+   - "flat-cache": "^4.0.0" - flat-cache@4.0.1
+   - "@eslint/object-schema": "^2.1.7" - @eslint/object-schema@2.1.7
+   - "eslint-visitor-keys": "^3.4.3" - eslint-visitor-keys@3.4.3
+   - "@typescript-eslint/utils": "8.66.0" - @typescript-eslint/utils@8.66.0
+   - "@typescript-eslint/parser": "8.66.0" - @typescript-eslint/parser@8.66.0
+   - "@typescript-eslint/eslint-plugin": "8.66.0" - @typescript-eslint/eslint-plugin@8.66.0
+   - "@typescript-eslint/typescript-estree": "8.66.0" - @typescript-eslint/typescript-estree@8.66.0
+   - "array-includes": "^3.1.8" - array-includes@3.1.9
+   - "array.prototype.findlast": "^1.2.5" - array.prototype.findlast@1.2.5
+   - "array.prototype.flatmap": "^1.3.3" - array.prototype.flatmap@1.3.3
+   - "array.prototype.tosorted": "^1.1.4" - array.prototype.tosorted@1.1.4
+   - "doctrine": "^2.1.0" - doctrine@2.1.0
+   - "es-iterator-helpers": "^1.2.1" - es-iterator-helpers@1.4.0
+   - "hasown": "^2.0.2" - hasown@2.0.4
+   - "jsx-ast-utils": "^2.4.1 || ^3.0.0" - jsx-ast-utils@3.3.5
+   - "object.entries": "^1.1.9" - object.entries@1.1.9
+   - "object.fromentries": "^2.0.8" - object.fromentries@2.0.8
+   - "object.values": "^1.2.1" - object.values@1.2.1
+   - "prop-types": "^15.8.1" - prop-types@15.8.1
+   - "resolve": "^2.0.0-next.5" - resolve@2.0.0-next.7
+   - "semver": "^6.3.1" - semver@6.3.1
+   - "string.prototype.matchall": "^4.0.12" - string.prototype.matchall@4.0.12
+   - "string.prototype.repeat": "^1.0.0" - string.prototype.repeat@1.0.0
+   - "@rtsao/scc": "^1.1.0" - @rtsao/scc@1.1.0
+   - "array.prototype.findlastindex": "^1.2.6" - array.prototype.findlastindex@1.2.6
+   - "array.prototype.flat": "^1.3.3" - array.prototype.flat@1.3.3
+   - "debug": "^3.2.7" - debug@3.2.7
+   - "eslint-module-utils": "^2.12.1" - eslint-module-utils@2.14.0
+   - "is-core-module": "^2.16.1" - is-core-module@2.16.2
+   - "object.groupby": "^1.0.3" - object.groupby@1.0.3
+   - "string.prototype.trimend": "^1.0.9" - string.prototype.trimend@1.0.10
+   - "tsconfig-paths": "^3.15.0" - tsconfig-paths@3.15.0
+   - "aria-query": "^5.3.2" - aria-query@5.3.2
+   - "ast-types-flow": "^0.0.8" - ast-types-flow@0.0.8
+   - "axe-core": "^4.10.0" - axe-core@4.12.1
+   - "axobject-query": "^4.1.0" - axobject-query@4.1.0
+   - "damerau-levenshtein": "^1.0.8" - damerau-levenshtein@1.0.8
+   - "emoji-regex": "^9.2.2" - emoji-regex@9.2.2
+   - "language-tags": "^1.0.9" - language-tags@1.0.9
+   - "safe-regex-test": "^1.0.3" - safe-regex-test@1.1.0
+   - "string.prototype.includes": "^2.0.1" - string.prototype.includes@2.0.1
+   - "fast-glob": "3.3.1" - fast-glob@3.3.1
+   - "@eslint-community/eslint-utils": "4.9.1" - @eslint-community/eslint-utils@4.9.1
+   - "zod": "^3.25.0 || ^4.0.0" - zod@4.4.3
+   - "@babel/core": "^7.24.4" - @babel/core@7.29.7
+   - "@babel/parser": "^7.24.4" - @babel/parser@7.29.8
+   - "hermes-parser": "^0.25.1" - hermes-parser@0.25.1
+   - "zod-validation-error": "^3.5.0 || ^4.0.0" - zod-validation-error@4.0.2
+   - "tinyglobby": "^0.2.13" - tinyglobby@0.2.17
+   - "stable-hash": "^0.0.5" - stable-hash@0.0.5
+   - "get-tsconfig": "^4.10.0" - get-tsconfig@4.14.1
+   - "is-bun-module": "^2.0.0" - is-bun-module@2.0.0
+   - "unrs-resolver": "^1.6.2" - unrs-resolver@1.12.2
+   - "@nolyfill/is-core-module": "1.0.39" - @nolyfill/is-core-module@1.0.39
+   - "client-only": "0.0.1" - client-only@0.0.1
+   - "tslib": "^2.8.0" - tslib@2.8.1
+   - "@img/colour": "^1.1.0" - @img/colour@1.1.0
+   - "detect-libc": "^2.1.2" - detect-libc@2.1.2
+   - "semver": "^7.8.5" - semver@7.8.5
+   - "@img/sharp-darwin-arm64": "0.35.3" - @img/sharp-darwin-arm64@0.35.3
+   - "@img/sharp-darwin-x64": "0.35.3" - @img/sharp-darwin-x64@0.35.3
+   - "@img/sharp-freebsd-wasm32": "0.35.3" - @img/sharp-freebsd-wasm32@0.35.3
+   - "@img/sharp-libvips-darwin-arm64": "1.3.2" - @img/sharp-libvips-darwin-arm64@1.3.2
+   - "@img/sharp-libvips-darwin-x64": "1.3.2" - @img/sharp-libvips-darwin-x64@1.3.2
+   - "@img/sharp-libvips-linux-arm": "1.3.2" - @img/sharp-libvips-linux-arm@1.3.2
+   - "@img/sharp-libvips-linux-arm64": "1.3.2" - @img/sharp-libvips-linux-arm64@1.3.2
+   - "@img/sharp-libvips-linux-ppc64": "1.3.2" - @img/sharp-libvips-linux-ppc64@1.3.2
+   - "@img/sharp-libvips-linux-riscv64": "1.3.2" - @img/sharp-libvips-linux-riscv64@1.3.2
+   - "@img/sharp-libvips-linux-s390x": "1.3.2" - @img/sharp-libvips-linux-s390x@1.3.2
+   - "@img/sharp-libvips-linux-x64": "1.3.2" - @img/sharp-libvips-linux-x64@1.3.2
+   - "@img/sharp-libvips-linuxmusl-arm64": "1.3.2" - @img/sharp-libvips-linuxmusl-arm64@1.3.2
+   - "@img/sharp-libvips-linuxmusl-x64": "1.3.2" - @img/sharp-libvips-linuxmusl-x64@1.3.2
+   - "@img/sharp-linux-arm": "0.35.3" - @img/sharp-linux-arm@0.35.3
+   - "@img/sharp-linux-arm64": "0.35.3" - @img/sharp-linux-arm64@0.35.3
+   - "@img/sharp-linux-ppc64": "0.35.3" - @img/sharp-linux-ppc64@0.35.3
+   - "@img/sharp-linux-riscv64": "0.35.3" - @img/sharp-linux-riscv64@0.35.3
+   - "@img/sharp-linux-s390x": "0.35.3" - @img/sharp-linux-s390x@0.35.3
+   - "@img/sharp-linux-x64": "0.35.3" - @img/sharp-linux-x64@0.35.3
+   - "@img/sharp-linuxmusl-arm64": "0.35.3" - @img/sharp-linuxmusl-arm64@0.35.3
+   - "@img/sharp-linuxmusl-x64": "0.35.3" - @img/sharp-linuxmusl-x64@0.35.3
+   - "@img/sharp-webcontainers-wasm32": "0.35.3" - @img/sharp-webcontainers-wasm32@0.35.3
+   - "@img/sharp-win32-arm64": "0.35.3" - @img/sharp-win32-arm64@0.35.3
+   - "@img/sharp-win32-ia32": "0.35.3" - @img/sharp-win32-ia32@0.35.3
+   - "@img/sharp-win32-x64": "0.35.3" - @img/sharp-win32-x64@0.35.3
+   - "lightningcss-darwin-x64": "1.32.0" - lightningcss-darwin-x64@1.32.0
+   - "lightningcss-freebsd-x64": "1.32.0" - lightningcss-freebsd-x64@1.32.0
+   - "lightningcss-darwin-arm64": "1.32.0" - lightningcss-darwin-arm64@1.32.0
+   - "lightningcss-android-arm64": "1.32.0" - lightningcss-android-arm64@1.32.0
+   - "lightningcss-linux-x64-gnu": "1.32.0" - lightningcss-linux-x64-gnu@1.32.0
+   - "lightningcss-linux-x64-musl": "1.32.0" - lightningcss-linux-x64-musl@1.32.0
+   - "lightningcss-win32-x64-msvc": "1.32.0" - lightningcss-win32-x64-msvc@1.32.0
+   - "lightningcss-linux-arm64-gnu": "1.32.0" - lightningcss-linux-arm64-gnu@1.32.0
+   - "lightningcss-linux-arm64-musl": "1.32.0" - lightningcss-linux-arm64-musl@1.32.0
+   - "lightningcss-win32-arm64-msvc": "1.32.0" - lightningcss-win32-arm64-msvc@1.32.0
+   - "lightningcss-linux-arm-gnueabihf": "1.32.0" - lightningcss-linux-arm-gnueabihf@1.32.0
+   - "@jridgewell/sourcemap-codec": "^1.5.5" - @jridgewell/sourcemap-codec@1.5.5
+   - "tapable": "^2.3.3" - tapable@2.3.3
+   - "graceful-fs": "^4.2.4" - graceful-fs@4.2.11
+   - "@jridgewell/gen-mapping": "^0.3.5" - @jridgewell/gen-mapping@0.3.13
+   - "@jridgewell/trace-mapping": "^0.3.24" - @jridgewell/trace-mapping@0.3.31
+   - "@emnapi/core": "^1.11.1" - @emnapi/core@1.11.3
+   - "@emnapi/runtime": "^1.11.1" - @emnapi/runtime@1.11.3
+   - "@tybys/wasm-util": "^0.10.2" - @tybys/wasm-util@0.10.3
+   - "@emnapi/wasi-threads": "^1.2.2" - @emnapi/wasi-threads@1.2.3
+   - "@napi-rs/wasm-runtime": "^1.1.4" - @napi-rs/wasm-runtime@1.2.2
+   - "punycode": "^2.1.0" - punycode@2.3.1
+   - "color-convert": "^2.0.1" - color-convert@2.0.1
+   - "has-flag": "^4.0.0" - has-flag@4.0.0
+Enqueue package manifest for download: p-locate
+   - "concat-map": "0.0.1" - concat-map@0.0.1
+Enqueue package manifest for download: balanced-match
+Enqueue package manifest for download: isexe
+Enqueue package manifest for download: shebang-regex
+Enqueue package manifest for download: resolve-from
+Enqueue package manifest for download: parent-module
+Enqueue package manifest for download: argparse
+   - "keyv": "^4.5.4" - keyv@4.5.4
+   - "flatted": "^3.2.9" - flatted@3.4.4
+   - "@typescript-eslint/types": "8.66.0" - @typescript-eslint/types@8.66.0
+   - "@typescript-eslint/scope-manager": "8.66.0" - @typescript-eslint/scope-manager@8.66.0
+   - "@typescript-eslint/visitor-keys": "8.66.0" - @typescript-eslint/visitor-keys@8.66.0
+   - "ignore": "^7.0.5" - ignore@7.0.6
+   - "ts-api-utils": "^2.5.0" - ts-api-utils@2.5.0
+   - "@typescript-eslint/type-utils": "8.66.0" - @typescript-eslint/type-utils@8.66.0
+   - "minimatch": "^10.2.2" - minimatch@10.2.6
+   - "@typescript-eslint/tsconfig-utils": "8.66.0" - @typescript-eslint/tsconfig-utils@8.66.0
+   - "@typescript-eslint/project-service": "8.66.0" - @typescript-eslint/project-service@8.66.0
+   - "call-bind": "^1.0.8" - call-bind@1.0.9
+   - "call-bound": "^1.0.4" - call-bound@1.0.4
+   - "define-properties": "^1.2.1" - define-properties@1.2.1
+   - "es-abstract": "^1.24.0" - es-abstract@1.24.2
+   - "es-object-atoms": "^1.1.1" - es-object-atoms@1.1.2
+   - "get-intrinsic": "^1.3.0" - get-intrinsic@1.3.0
+   - "is-string": "^1.1.1" - is-string@1.1.1
+   - "math-intrinsics": "^1.1.0" - math-intrinsics@1.1.0
+   - "es-errors": "^1.3.0" - es-errors@1.3.0
+   - "es-shim-unscopables": "^1.0.2" - es-shim-unscopables@1.1.0
+   - "gopd": "^1.2.0" - gopd@1.2.0
+   - "has-proto": "^1.2.0" - has-proto@1.2.0
+   - "globalthis": "^1.0.4" - globalthis@1.0.4
+   - "has-symbols": "^1.1.0" - has-symbols@1.1.0
+   - "function-bind": "^1.1.2" - function-bind@1.1.2
+   - "internal-slot": "^1.1.0" - internal-slot@1.1.0
+   - "es-set-tostringtag": "^2.1.0" - es-set-tostringtag@2.1.0
+   - "iterator.prototype": "^1.1.5" - iterator.prototype@1.1.5
+   - "has-property-descriptors": "^1.0.2" - has-property-descriptors@1.0.2
+   - "object.assign": "^4.1.4" - object.assign@4.1.7
+   - "loose-envify": "^1.4.0" - loose-envify@1.4.0
+   - "object-assign": "^4.1.1" - object-assign@4.1.1
+   - "react-is": "^16.13.1" - react-is@16.13.1
+   - "node-exports-info": "^1.6.0" - node-exports-info@1.6.2
+   - "object-keys": "^1.1.1" - object-keys@1.1.1
+   - "path-parse": "^1.0.7" - path-parse@1.0.7
+   - "supports-preserve-symlinks-flag": "^1.0.0" - supports-preserve-symlinks-flag@1.0.0
+   - "regexp.prototype.flags": "^1.5.3" - regexp.prototype.flags@1.5.4
+   - "set-function-name": "^2.0.2" - set-function-name@2.0.2
+   - "side-channel": "^1.1.0" - side-channel@1.1.1
+   - "json5": "^1.0.2" - json5@1.0.2
+   - "minimist": "^1.2.6" - minimist@1.2.8
+   - "strip-bom": "^3.0.0" - strip-bom@3.0.0
+   - "@types/json5": "^0.0.29" - @types/json5@0.0.29
+   - "language-subtag-registry": "^0.3.20" - language-subtag-registry@0.3.23
+   - "is-regex": "^1.2.1" - is-regex@1.2.1
+   - "merge2": "^1.3.0" - merge2@1.4.1
+   - "micromatch": "^4.0.4" - micromatch@4.0.8
+   - "glob-parent": "^5.1.2" - glob-parent@5.1.2
+   - "@nodelib/fs.stat": "^2.0.2" - @nodelib/fs.stat@2.0.5
+   - "@nodelib/fs.walk": "^1.2.3" - @nodelib/fs.walk@1.2.8
+   - "json5": "^2.2.3" - json5@2.2.3
+   - "gensync": "^1.0.0-beta.2" - gensync@1.0.0-beta.2
+   - "@babel/types": "^7.29.7" - @babel/types@7.29.8
+   - "@babel/helpers": "^7.29.7" - @babel/helpers@7.29.7
+   - "@babel/template": "^7.29.7" - @babel/template@7.29.7
+   - "@babel/traverse": "^7.29.7" - @babel/traverse@7.29.8
+   - "@babel/generator": "^7.29.7" - @babel/generator@7.29.8
+   - "@babel/code-frame": "^7.29.7" - @babel/code-frame@7.29.7
+   - "convert-source-map": "^2.0.0" - convert-source-map@2.0.0
+   - "@babel/helper-module-transforms": "^7.29.7" - @babel/helper-module-transforms@7.29.7
+   - "@babel/helper-compilation-targets": "^7.29.7" - @babel/helper-compilation-targets@7.29.7
+   - "hermes-estree": "0.25.1" - hermes-estree@0.25.1
+   - "fdir": "^6.5.0" - fdir@6.5.0
+   - "picomatch": "^4.0.4" - picomatch@4.0.5
+   - "resolve-pkg-maps": "^1.0.0" - resolve-pkg-maps@1.0.0
+   - "napi-postinstall": "^0.3.4" - napi-postinstall@0.3.4
+   - "@unrs/resolver-binding-darwin-arm64": "1.12.2" - @unrs/resolver-binding-darwin-arm64@1.12.2
+   - "@unrs/resolver-binding-android-arm64": "1.12.2" - @unrs/resolver-binding-android-arm64@1.12.2
+   - "@unrs/resolver-binding-win32-arm64-msvc": "1.12.2" - @unrs/resolver-binding-win32-arm64-msvc@1.12.2
+   - "@unrs/resolver-binding-linux-arm64-gnu": "1.12.2" - @unrs/resolver-binding-linux-arm64-gnu@1.12.2
+   - "@unrs/resolver-binding-linux-arm64-musl": "1.12.2" - @unrs/resolver-binding-linux-arm64-musl@1.12.2
+   - "@unrs/resolver-binding-openharmony-arm64": "1.12.2" - @unrs/resolver-binding-openharmony-arm64@1.12.2
+   - "@unrs/resolver-binding-android-arm-eabi": "1.12.2" - @unrs/resolver-binding-android-arm-eabi@1.12.2
+   - "@unrs/resolver-binding-linux-arm-gnueabihf": "1.12.2" - @unrs/resolver-binding-linux-arm-gnueabihf@1.12.2
+   - "@unrs/resolver-binding-linux-arm-musleabihf": "1.12.2" - @unrs/resolver-binding-linux-arm-musleabihf@1.12.2
+   - "@unrs/resolver-binding-win32-ia32-msvc": "1.12.2" - @unrs/resolver-binding-win32-ia32-msvc@1.12.2
+   - "@unrs/resolver-binding-linux-loong64-gnu": "1.12.2" - @unrs/resolver-binding-linux-loong64-gnu@1.12.2
+   - "@unrs/resolver-binding-linux-loong64-musl": "1.12.2" - @unrs/resolver-binding-linux-loong64-musl@1.12.2
+   - "@unrs/resolver-binding-linux-ppc64-gnu": "1.12.2" - @unrs/resolver-binding-linux-ppc64-gnu@1.12.2
+   - "@unrs/resolver-binding-linux-riscv64-gnu": "1.12.2" - @unrs/resolver-binding-linux-riscv64-gnu@1.12.2
+   - "@unrs/resolver-binding-linux-riscv64-musl": "1.12.2" - @unrs/resolver-binding-linux-riscv64-musl@1.12.2
+   - "@unrs/resolver-binding-linux-s390x-gnu": "1.12.2" - @unrs/resolver-binding-linux-s390x-gnu@1.12.2
+   - "@unrs/resolver-binding-wasm32-wasi": "1.12.2" - @unrs/resolver-binding-wasm32-wasi@1.12.2
+   - "@unrs/resolver-binding-darwin-x64": "1.12.2" - @unrs/resolver-binding-darwin-x64@1.12.2
+   - "@unrs/resolver-binding-win32-x64-msvc": "1.12.2" - @unrs/resolver-binding-win32-x64-msvc@1.12.2
+   - "@unrs/resolver-binding-freebsd-x64": "1.12.2" - @unrs/resolver-binding-freebsd-x64@1.12.2
+   - "@unrs/resolver-binding-linux-x64-gnu": "1.12.2" - @unrs/resolver-binding-linux-x64-gnu@1.12.2
+   - "@unrs/resolver-binding-linux-x64-musl": "1.12.2" - @unrs/resolver-binding-linux-x64-musl@1.12.2
+   - "@img/sharp-wasm32": "0.35.3" - @img/sharp-wasm32@0.35.3
+   - "@jridgewell/resolve-uri": "^3.1.0" - @jridgewell/resolve-uri@3.1.2
+   - "color-name": "~1.1.4" - color-name@1.1.4
+   - "json-buffer": "3.0.1" - json-buffer@3.0.1
+   - "eslint-visitor-keys": "^5.0.0" - eslint-visitor-keys@5.0.1
+   - "brace-expansion": "^5.0.8" - brace-expansion@5.0.9
+   - "call-bind-apply-helpers": "^1.0.2" - call-bind-apply-helpers@1.0.2
+   - "es-define-property": "^1.0.1" - es-define-property@1.0.1
+   - "set-function-length": "^1.2.2" - set-function-length@1.2.2
+   - "define-data-property": "^1.0.1" - define-data-property@1.1.4
+   - "array-buffer-byte-length": "^1.0.2" - array-buffer-byte-length@1.0.2
+   - "arraybuffer.prototype.slice": "^1.0.4" - arraybuffer.prototype.slice@1.0.4
+   - "available-typed-arrays": "^1.0.7" - available-typed-arrays@1.0.7
+   - "data-view-buffer": "^1.0.2" - data-view-buffer@1.0.2
+   - "data-view-byte-length": "^1.0.2" - data-view-byte-length@1.0.2
+   - "data-view-byte-offset": "^1.0.1" - data-view-byte-offset@1.0.1
+   - "es-to-primitive": "^1.3.0" - es-to-primitive@1.3.4
+   - "function.prototype.name": "^1.1.8" - function.prototype.name@1.2.0
+   - "get-proto": "^1.0.1" - get-proto@1.0.1
+   - "get-symbol-description": "^1.1.0" - get-symbol-description@1.1.0
+   - "is-array-buffer": "^3.0.5" - is-array-buffer@3.0.5
+   - "is-callable": "^1.2.7" - is-callable@1.2.7
+   - "is-data-view": "^1.0.2" - is-data-view@1.0.2
+   - "is-negative-zero": "^2.0.3" - is-negative-zero@2.0.3
+   - "is-set": "^2.0.3" - is-set@2.0.3
+   - "is-shared-array-buffer": "^1.0.4" - is-shared-array-buffer@1.0.4
+   - "is-typed-array": "^1.1.15" - is-typed-array@1.1.15
+   - "is-weakref": "^1.1.1" - is-weakref@1.1.1
+   - "object-inspect": "^1.13.4" - object-inspect@1.13.4
+   - "own-keys": "^1.0.1" - own-keys@1.0.2
+   - "safe-array-concat": "^1.1.3" - safe-array-concat@1.1.4
+   - "safe-push-apply": "^1.0.0" - safe-push-apply@1.0.0
+Enqueue package manifest for download: set-proto
+   - "stop-iteration-iterator": "^1.1.0" - stop-iteration-iterator@1.1.0
+   - "string.prototype.trim": "^1.2.10" - string.prototype.trim@1.2.11
+   - "string.prototype.trimstart": "^1.0.8" - string.prototype.trimstart@1.0.8
+   - "typed-array-buffer": "^1.0.3" - typed-array-buffer@1.0.3
+   - "typed-array-byte-length": "^1.0.3" - typed-array-byte-length@1.0.3
+   - "typed-array-byte-offset": "^1.0.4" - typed-array-byte-offset@1.0.4
+Enqueue package manifest for download: typed-array-length
+   - "unbox-primitive": "^1.1.0" - unbox-primitive@1.1.0
+   - "which-typed-array": "^1.1.19" - which-typed-array@1.1.22
+   - "has-tostringtag": "^1.0.2" - has-tostringtag@1.0.2
+   - "dunder-proto": "^1.0.0" - dunder-proto@1.0.1
+   - "js-tokens": "^3.0.0 || ^4.0.0" - js-tokens@4.0.0
+   - "functions-have-names": "^1.2.3" - functions-have-names@1.2.3
+   - "side-channel-list": "^1.0.1" - side-channel-list@1.0.1
+   - "side-channel-map": "^1.0.1" - side-channel-map@1.0.1
+   - "side-channel-weakmap": "^1.0.2" - side-channel-weakmap@1.0.2
+   - "braces": "^3.0.3" - braces@3.0.3
+   - "picomatch": "^2.3.1" - picomatch@2.3.2
+   - "fastq": "^1.6.0" - fastq@1.20.1
+   - "@nodelib/fs.scandir": "2.1.5" - @nodelib/fs.scandir@2.1.5
+   - "@babel/helper-string-parser": "^7.29.7" - @babel/helper-string-parser@7.29.7
+   - "@babel/helper-validator-identifier": "^7.29.7" - @babel/helper-validator-identifier@7.29.7
+   - "@babel/helper-globals": "^7.29.7" - @babel/helper-globals@7.29.7
+   - "jsesc": "^3.0.2" - jsesc@3.1.0
+   - "@babel/helper-module-imports": "^7.29.7" - @babel/helper-module-imports@7.29.7
+   - "lru-cache": "^5.1.1" - lru-cache@5.1.1
+   - "browserslist": "^4.24.0" - browserslist@4.28.7
+   - "@babel/compat-data": "^7.29.7" - @babel/compat-data@7.29.7
+   - "@babel/helper-validator-option": "^7.29.7" - @babel/helper-validator-option@7.29.7
+   - "@emnapi/core": "1.10.0" - @emnapi/core@1.10.0
+   - "@emnapi/runtime": "1.10.0" - @emnapi/runtime@1.10.0
+Enqueue package manifest for download: possible-typed-array-names
+Enqueue package manifest for download: is-symbol
+Enqueue package manifest for download: is-date-object
+Enqueue package manifest for download: es-abstract-get
+Enqueue package manifest for download: is-document.all
+Enqueue package manifest for download: isarray
+Enqueue package manifest for download: for-each
+Enqueue package manifest for download: reflect.getprototypeof
+Enqueue package manifest for download: has-bigints
+Enqueue package manifest for download: which-boxed-primitive
+Enqueue package manifest for download: fill-range
+   - "reusify": "^1.0.4" - reusify@1.1.0
+   - "run-parallel": "^1.1.9" - run-parallel@1.2.0
+   - "yallist": "^3.0.2" - yallist@3.1.1
+   - "node-releases": "^2.0.51" - node-releases@2.0.52
+Enqueue package manifest for download: electron-to-chromium
+Enqueue package manifest for download: update-browserslist-db
+   - "@emnapi/wasi-threads": "1.2.1" - @emnapi/wasi-threads@1.2.1
+   - "queue-microtask": "^1.2.2" - queue-microtask@1.2.3
+Resolving dependencies
+> HTTP/1.1 GET https://registry.npmjs.org/next/-/next-16.3.0.tgz
+> Connection: keep-alive
+> User-Agent: Bun/1.3.14
+> Accept: */*
+> Host: registry.npmjs.org
+> Accept-Encoding: gzip, deflate, br, zstd
+> HTTP/1.1 GET https://registry.npmjs.org/update-browserslist-db
+> If-None-Match: W/"c612a5b8f8d055ee0b9d10cd3fc681fc"
+> Accept: application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*
+> Connection: keep-alive
+> User-Agent: Bun/1.3.14
+> Host: registry.npmjs.org
+> Accept-Encoding: gzip, deflate, br, zstd
+> HTTP/1.1 GET https://registry.npmjs.org/possible-typed-array-names
+> If-None-Match: W/"e9f8b0be5ad101767290db4349b9beac"
+> Accept: application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*
+> Connection: keep-alive
+> User-Agent: Bun/1.3.14
+> Host: registry.npmjs.org
+> Accept-Encoding: gzip, deflate, br, zstd
+> HTTP/1.1 GET https://registry.npmjs.org/is-symbol
+> If-None-Match: W/"923c14c2c8b84c4ee36f18206b3cd2b7"
+> Accept: application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*
+> Connection: keep-alive
+> User-Agent: Bun/1.3.14
+> Host: registry.npmjs.org
+> Accept-Encoding: gzip, deflate, br, zstd
+> HTTP/1.1 GET https://registry.npmjs.org/is-date-object
+> If-None-Match: W/"707eaaf4bf47286ca443cc36cc7525b4"
+> Accept: application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*
+> Connection: keep-alive
+> User-Agent: Bun/1.3.14
+> Host: registry.npmjs.org
+> Accept-Encoding: gzip, deflate, br, zstd
+> HTTP/1.1 GET https://registry.npmjs.org/parent-module
+> If-None-Match: W/"cb496d24c515ac3b652a57edef624e17"
+> Accept: application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*
+> Connection: keep-alive
+> User-Agent: Bun/1.3.14
+> Host: registry.npmjs.org
+> Accept-Encoding: gzip, deflate, br, zstd
+> HTTP/1.1 GET https://registry.npmjs.org/argparse
+> If-None-Match: W/"0c1fe975ac650cbd4b8c11233c2dccbf"
+> Accept: application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*
+> Connection: keep-alive
+> User-Agent: Bun/1.3.14
+> Host: registry.npmjs.org
+> Accept-Encoding: gzip, deflate, br, zstd
+> HTTP/1.1 GET https://registry.npmjs.org/balanced-match
+> If-None-Match: W/"1ca94649c10a862602d1b8c752a536de"
+> Accept: application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*
+> Connection: keep-alive
+> User-Agent: Bun/1.3.14
+> Host: registry.npmjs.org
+> Accept-Encoding: gzip, deflate, br, zstd
+> HTTP/1.1 GET https://registry.npmjs.org/p-locate
+> If-None-Match: W/"4cc757f54a505390a1501b9d765f2db5"
+> Accept: application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*
+> Connection: keep-alive
+> User-Agent: Bun/1.3.14
+> Host: registry.npmjs.org
+> Accept-Encoding: gzip, deflate, br, zstd
+> HTTP/1.1 GET https://registry.npmjs.org/resolve-from
+> If-None-Match: W/"c2bc8ab205e703ee00434431c5ade60d"
+> Accept: application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*
+> Connection: keep-alive
+> User-Agent: Bun/1.3.14
+> Host: registry.npmjs.org
+> Accept-Encoding: gzip, deflate, br, zstd
+> HTTP/1.1 GET https://registry.npmjs.org/isexe
+> If-None-Match: W/"7943cdaef3da2051f4d5f7d17132befe"
+> Accept: application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*
+> Connection: keep-alive
+> User-Agent: Bun/1.3.14
+> Host: registry.npmjs.org
+> Accept-Encoding: gzip, deflate, br, zstd
+> HTTP/1.1 GET https://registry.npmjs.org/shebang-regex
+> If-None-Match: W/"b6b7c38e6be2aa65dfb2551709c45a5f"
+> Accept: application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*
+> Connection: keep-alive
+> User-Agent: Bun/1.3.14
+> Host: registry.npmjs.org
+> Accept-Encoding: gzip, deflate, br, zstd
+< 304 Not Modified
+< Date: Wed, 05 Aug 2026 16:26:43 GMT
+< Connection: keep-alive
+< set-cookie: __cf_bm=u.mP4QIsPFcTU4l9ObOlF7o4DaK_EjFZfFEPHS_EUHM-1785947203.9772604-1.0.1.1-3xoTxJaD_OF.O3TjgGn1N9WX11Lu_c0zdRelyMsXGL1tusTMa03j5ZfmfW8jEHKH38E156dE20Kd4mg.7ZQwPvtjnGNGA118CMOw2q13dMoOf6m.iunkGY41t06s16Q7; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org; Expires=Wed, 05 Aug 2026 16:56:43 GMT
+< set-cookie: _cfuvid=9W.Qc0IjeccGnRCO6_Cguz2DNuByrNp5hWunKJsUCTo-1785947203.9772604-1.0.1.1-UadS_tkJOHc5h7TZ8tVy6DjeXk85mCPTaa2TTc7mAWw; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org
+< CF-Ray: a2672a48db205909-CJB
+< CF-Cache-Status: HIT
+< Access-Control-Allow-Origin: *
+< Age: 29
+< Cache-Control: public, max-age=300
+< ETag: "cb496d24c515ac3b652a57edef624e17"
+< Last-Modified: Mon, 15 Sep 2025 07:20:46 GMT
+< Server: cloudflare
+
+> HTTP/1.1 GET https://registry.npmjs.org/which-boxed-primitive
+> If-None-Match: W/"283644c330a5d4cc6eb1b4beabe802dc"
+> Accept: application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*
+> Connection: keep-alive
+> User-Agent: Bun/1.3.14
+> Host: registry.npmjs.org
+> Accept-Encoding: gzip, deflate, br, zstd
+< 304 Not Modified
+< Date: Wed, 05 Aug 2026 16:26:43 GMT
+< Connection: keep-alive
+< set-cookie: __cf_bm=rpYN_lOutu3AQLjLhU1orCQT63KoeYBvMMH5LfK0LUs-1785947203.9791958-1.0.1.1-fMECc2Pe1OF1UYBSSQkgkIbAL98cvxdcyYXVRMbIQ5XVb5YnDktldppmNEUoGhqsiL1PthObI4nDsqHPGqM8bWFFvi0Bfl8SGnGh6fPXG.3SwWpOFuXXVhnaVj..Rp35; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org; Expires=Wed, 05 Aug 2026 16:56:43 GMT
+< set-cookie: _cfuvid=JgfXvultDJKTn207sb9FBGx1Z3cQiK0q2JVnvMozpWY-1785947203.9791958-1.0.1.1-p3p1zBZIydIuzismqrC07yIlgB1oQqDPAj2h6Xw13KE; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org
+< CF-Ray: a2672a48d8cc322e-CJB
+< CF-Cache-Status: HIT
+< Access-Control-Allow-Origin: *
+< Age: 177
+< Cache-Control: public, max-age=300
+< ETag: "0c1fe975ac650cbd4b8c11233c2dccbf"
+< Last-Modified: Tue, 14 Jul 2026 05:48:03 GMT
+< Server: cloudflare
+
+    [1336.25ms]
+Downloaded parent-module versions
+   - "parent-module": "^1.0.0" - parent-module@1.0.1
+Enqueue package manifest for download: callsites
+> HTTP/1.1 GET https://registry.npmjs.org/callsites
+> If-None-Match: W/"ecfa842134f0ddd5d50cfd6f5565beb4"
+> Accept: application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*
+> Connection: keep-alive
+> User-Agent: Bun/1.3.14
+> Host: registry.npmjs.org
+[PackageManager] waiting for 24 tasks
+    [1336.64ms]
+Downloaded argparse versions
+> Accept-Encoding: gzip, deflate, br, zstd
+   - "argparse": "^2.0.1" - argparse@2.0.1
+< 200 OK
+< Date: Wed, 05 Aug 2026 16:26:43 GMT
+< Content-Type: application/octet-stream
+< Content-Length: 41543045
+< Connection: keep-alive
+< set-cookie: __cf_bm=werbZGr9zQtCJ_9a2UQArwyeR2_Gb6lvOZxAL6_5II4-1785947203.9367826-1.0.1.1-TWuKNq6p5R8ajvbghP03U0Pldt8EvYEuEZhtjMkebTpMI7A3VI3V1x92LuQ_o4iugmeHb6vrhMqPlQiVQ3w2GrX.dv_aX8sdClqPTUE.eLg7I778VVQxAVX_RwazJqBz; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org; Expires=Wed, 05 Aug 2026 16:56:43 GMT
+< set-cookie: _cfuvid=R_ukMbAgUqmZk0.nU7MU4z5MHWTW2Ad4qPaW8CW3zCo-1785947203.9367826-1.0.1.1-M9hak5SZSe0haNmjQsEK.5KBGfT2wXsKEIeC7IKfoxQ; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org
+< CF-Ray: a2672a489db7fbfd-CJB
+< CF-Cache-Status: HIT
+< Accept-Ranges: bytes
+< Access-Control-Allow-Origin: *
+< Age: 157931
+< Cache-Control: public, immutable, max-age=31557600
+< ETag: "1d4a172e5a4d0705dc24335af78492e9"
+< Last-Modified: Mon, 03 Aug 2026 20:34:32 GMT
+< Server: cloudflare
+
+< 304 Not Modified
+< Date: Wed, 05 Aug 2026 16:26:44 GMT
+< Connection: keep-alive
+< set-cookie: __cf_bm=Dxpi1jcvP6quI5gzl18Ty15aTUuONDhTa7I6QLbFRLs-1785947203.943669-1.0.1.1-Ikgb64xhWi7oCs5rEYjUbWGntww8_zgCYS8phAW4XDUtN9kIaxKSdrFhdlHJVZnZWVydd8sErCikib2h5N6QJgT5KzxT49G0Et5FJAMdBcbEs__O7V_xROL82oXMF7WP; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org; Expires=Wed, 05 Aug 2026 16:56:44 GMT
+< set-cookie: _cfuvid=QSPyuIgr.m9Gv_CpU14WVF_Gvf0L_DbWFmM8hWvS42w-1785947203.943669-1.0.1.1-RmNGn3rfsyUbkWLzpqEqPMhV6G4cAsziTlzHvh9UrRI; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org
+< CF-Ray: a2672a48aa5e5f2a-CJB
+< CF-Cache-Status: HIT
+< Access-Control-Allow-Origin: *
+< Cache-Control: public, max-age=300
+< ETag: "c612a5b8f8d055ee0b9d10cd3fc681fc"
+< Last-Modified: Tue, 16 Dec 2025 15:17:59 GMT
+< Server: cloudflare
+
+[PackageManager] waiting for 23 tasks
+    [1.53s]
+Downloaded update-browserslist-db versions
+   - "update-browserslist-db": "^1.2.3" - update-browserslist-db@1.2.3
+Enqueue package manifest for download: escalade
+> HTTP/1.1 GET https://registry.npmjs.org/escalade
+> If-None-Match: W/"d824ed468921f5f20426a9d46b2928ec"
+> Accept: application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*
+> Connection: keep-alive
+> User-Agent: Bun/1.3.14
+> Host: registry.npmjs.org
+> Accept-Encoding: gzip, deflate, br, zstd
+< 304 Not Modified
+< Date: Wed, 05 Aug 2026 16:26:43 GMT
+< Connection: keep-alive
+< set-cookie: __cf_bm=aDachGCU2jaLUmO0HD_BOgbxbDYX36n0nvJ3K1nchrI-1785947203.9439986-1.0.1.1-bJeu8M.MZUSxDvyHP7fhYZbd7jyjSrTxReJcRd8CHFXl1MZlO9RJSHk.pgP1OhfCpuxkwLgBXmRo5a._zhMOpi9dmcbqgrr6IMCJ4bCVk_0.i2r0oD9mFsGo2EKWiEB6; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org; Expires=Wed, 05 Aug 2026 16:56:43 GMT
+< set-cookie: _cfuvid=qDcAB5MHvKlEXEurofX6otqkF8a7s8damovSVy9AjDY-1785947203.9439986-1.0.1.1-8p30ter2QgjlFd192L8FxxnMW0koAuS5mBUfB4YljKQ; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org
+< CF-Ray: a2672a48afb7936c-CJB
+< CF-Cache-Status: HIT
+< Access-Control-Allow-Origin: *
+< Age: 297
+< Cache-Control: public, max-age=300
+< ETag: "923c14c2c8b84c4ee36f18206b3cd2b7"
+< Last-Modified: Fri, 13 Dec 2024 07:37:43 GMT
+< Server: cloudflare
+
+[PackageManager] waiting for 23 tasks
+    [1.54s]
+Downloaded is-symbol versions
+< 304 Not Modified
+< Date: Wed, 05 Aug 2026 16:26:43 GMT
+< Connection: keep-alive
+< set-cookie: __cf_bm=RvxqVdJtjn3fb13G.foUjfC3edjWZZ1dyO408BQxjuA-1785947203.9441173-1.0.1.1-LgGTrvIiPxd2XxY.QV3Z.UHUV7lz49A8F9DvPR_jHMlVtDjq6nU970sj6TmXSFIPi0K1hfaNhDeq0Xir0YGio7IU1vZQ5pJX1Njn6tS5.5Y19fuT81w6BxlufvUDUu0P; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org; Expires=Wed, 05 Aug 2026 16:56:43 GMT
+< set-cookie: _cfuvid=Y5Jw7_EjQK1UI353pbieGEtYcbmdJn2eP99XXyGIpOM-1785947203.9441173-1.0.1.1-Yqf0b1nLZCxrJq_3biCkbfVFGVE9E40l5OBbAA5UOa4; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org
+< CF-Ray: a2672a48abf59215-CJB
+< CF-Cache-Status: HIT
+< Access-Control-Allow-Origin: *
+< Age: 236
+< Cache-Control: public, max-age=300
+< ETag: "e9f8b0be5ad101767290db4349b9beac"
+< Last-Modified: Fri, 07 Feb 2025 05:04:16 GMT
+< Server: cloudflare
+
+< 304 Not Modified
+< Date: Wed, 05 Aug 2026 16:26:43 GMT
+< Connection: keep-alive
+< set-cookie: __cf_bm=NZr8mX0j3iVfVke4oOWJRCdbq6dDAyz0tIqYdo_jqjc-1785947203.948952-1.0.1.1-N1XVA_cjscRI4FLQNMZhQQEUwnJ_9QlpV9aUicE2cNCA50vGXmeei7Eqbak5q761CLgXNZ6sN6JC76VxWqJ6gRb5rcF21fQLN3OrsJOMffSCadgX4Rfhbsb0uuJfBfY5; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org; Expires=Wed, 05 Aug 2026 16:56:43 GMT
+< set-cookie: _cfuvid=aQeQQUomSbx.H3a8cI4hfh6rFZJ2jI0OoZRIl9kgwFg-1785947203.948952-1.0.1.1-LvEqAS2guK0MkZeqwqB1mr5TfCAn32s2XTDFqmy_OBg; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org
+< CF-Ray: a2672a48afdd936c-CJB
+< CF-Cache-Status: HIT
+< Access-Control-Allow-Origin: *
+< Age: 63
+< Cache-Control: public, max-age=300
+< ETag: "707eaaf4bf47286ca443cc36cc7525b4"
+< Last-Modified: Fri, 13 Dec 2024 00:04:09 GMT
+< Server: cloudflare
+
+   - "is-symbol": "^1.1.1" - is-symbol@1.1.1
+[PackageManager] waiting for 22 tasks
+    [1.54s]
+Downloaded possible-typed-array-names versions
+   - "possible-typed-array-names": "^1.0.0" - possible-typed-array-names@1.1.0
+    [1.54s]
+Downloaded is-date-object versions
+   - "is-date-object": "^1.1.0" - is-date-object@1.1.0
+< 304 Not Modified
+< Date: Wed, 05 Aug 2026 16:26:43 GMT
+< Connection: keep-alive
+< set-cookie: __cf_bm=NaISsFaKOac0QZq0gnYNeuBN02DD_8L.pLJvf0db3pA-1785947203.9864202-1.0.1.1-Bt_Rc3aME8affh9YWi8WOaJaHTdqrurp_O0xzh1V4ZK1jFZSW3dBSR17JaGFLGNgHun13z1joNj09O81m6y9Q7s742dMo3JXtsrXVebT.yAouph14dWdfvyIs.gk5.P8; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org; Expires=Wed, 05 Aug 2026 16:56:43 GMT
+< set-cookie: _cfuvid=zZeiVBGp87s6MSEdhmuN2rJbsTcaECg6e087w_78NN4-1785947203.9864202-1.0.1.1-PT55RZDAQn8LfLxG3sTjYYwuftMua550Sf.uNyqCH9g; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org
+< CF-Ray: a2672a48eaef8c9a-CJB
+< CF-Cache-Status: HIT
+< Access-Control-Allow-Origin: *
+< Age: 61
+< Cache-Control: public, max-age=300
+< ETag: "1ca94649c10a862602d1b8c752a536de"
+< Last-Modified: Sun, 22 Feb 2026 11:38:27 GMT
+< Server: cloudflare
+
+[PackageManager] waiting for 20 tasks
+    [1.61s]
+Downloaded balanced-match versions
+< 304 Not Modified
+< Date: Wed, 05 Aug 2026 16:26:44 GMT
+< Connection: keep-alive
+< set-cookie: __cf_bm=YaUKWoqadrC_kzen_gs35XA_adZ.NNw0.V3eMOjTsA0-1785947203.996304-1.0.1.1-o_eUMOQ6FHuloqBpgA65PNYqrC1oekVnJFkMYsaH_p22oNMzwFGlpoHFxO3X50pBvfX9KwbpwyZYLSc8DzloEQXmZ9yK_0dB0J4FCIp_YdlqsAnhgPu4y0OJQiyk7oBc; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org; Expires=Wed, 05 Aug 2026 16:56:44 GMT
+< set-cookie: _cfuvid=FoXtYkoU5AdM_Pf90IpNGlJkxVBkrB0AJ8LGJN46pms-1785947203.996304-1.0.1.1-Zh00M7wm4Yzqilbyu4VyEtZlFKHE72zPcxqLgXZAxo8; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org
+< CF-Ray: a2672a48fe6a384f-CJB
+< CF-Cache-Status: HIT
+< Access-Control-Allow-Origin: *
+< Age: 107
+< Cache-Control: public, max-age=300
+< ETag: "b6b7c38e6be2aa65dfb2551709c45a5f"
+< Last-Modified: Fri, 16 Jun 2023 22:41:01 GMT
+< Server: cloudflare
+
+   - "balanced-match": "^1.0.0" - balanced-match@1.0.2
+   - "balanced-match": "^4.0.2" - balanced-match@4.0.4
+[PackageManager] waiting for 19 tasks
+    [1.61s]
+Downloaded shebang-regex versions
+   - "shebang-regex": "^3.0.0" - shebang-regex@3.0.0
+< 304 Not Modified
+< Date: Wed, 05 Aug 2026 16:26:43 GMT
+< Connection: keep-alive
+< set-cookie: __cf_bm=EwMJAaVDKVzyGRZSdC8GCLxjdoM07ZjQ0U_3tA1ZKH0-1785947203.9894223-1.0.1.1-Zyx0VwWkYtBN3WEE2JLWU.ZU8iBbIJKO4qPnldW0_F2j3XTrLgZc9SMn_rg0l3KMgTdDfC8oVKWYKzVa7ZNmdR9KwMYZ8BxJJHnSfadlHKhK4Mm81uUlOJnazhFapqdX; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org; Expires=Wed, 05 Aug 2026 16:56:43 GMT
+< set-cookie: _cfuvid=1j7lPki_BtsTFkigY5Sv3GTFUW4ggkcdV0_HnOyWcj8-1785947203.9894223-1.0.1.1-EoAdNoK9TUk9GpF2ORjykPGjo8B7bS_eQc1yVg2Se8w; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org
+< CF-Ray: a2672a48eb078c9a-CJB
+< CF-Cache-Status: HIT
+< Access-Control-Allow-Origin: *
+< Age: 64
+< Cache-Control: public, max-age=300
+< ETag: "c2bc8ab205e703ee00434431c5ade60d"
+< Last-Modified: Thu, 22 Jun 2023 16:33:47 GMT
+< Server: cloudflare
+
+[PackageManager] waiting for 18 tasks
+    [1.61s]
+Downloaded resolve-from versions
+   - "resolve-from": "^4.0.0" - resolve-from@4.0.0
+< 304 Not Modified
+< Date: Wed, 05 Aug 2026 16:26:43 GMT
+< Connection: keep-alive
+< set-cookie: __cf_bm=n5FOkbPGdvny8aeqQ9ylhHPb3eUdOXTPKt_Y1XVur6o-1785947203.9868577-1.0.1.1-pFod81lO2GC9bXn_4P0pbZ.v0cQZ2oqT8RjG4Vg9ESmMEdhih5CBpAJiB5zu..aR9REgwqAxmS7fD2Y5Eh.dSsOqtkekwRN4f6q0zqI3kQlf026VPbx5PoT9vWefkq1J; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org; Expires=Wed, 05 Aug 2026 16:56:43 GMT
+< set-cookie: _cfuvid=YaakRcnhGlC12azXmtVemiKA4VPfPbOEl7Xj_.JC3DI-1785947203.9868577-1.0.1.1-R0j67.QgzV3EwB4G9e18P9q9pkdGL7YNNRULhoZE2ag; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org
+< CF-Ray: a2672a48ed84498d-CJB
+< CF-Cache-Status: HIT
+< Access-Control-Allow-Origin: *
+< Age: 42
+< Cache-Control: public, max-age=300
+< ETag: "4cc757f54a505390a1501b9d765f2db5"
+< Last-Modified: Tue, 03 Feb 2026 07:57:51 GMT
+< Server: cloudflare
+
+[PackageManager] waiting for 17 tasks
+    [1.61s]
+Downloaded p-locate versions
+   - "p-locate": "^5.0.0" - p-locate@5.0.0
+Enqueue package manifest for download: p-limit
+> HTTP/1.1 GET https://registry.npmjs.org/p-limit
+> If-None-Match: W/"d79a628d98e31979ebb8e2e6ac551a49"
+> Accept: application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*
+> Connection: keep-alive
+> User-Agent: Bun/1.3.14
+> Host: registry.npmjs.org
+> Accept-Encoding: gzip, deflate, br, zstd
+< 304 Not Modified
+< Date: Wed, 05 Aug 2026 16:26:44 GMT
+< Connection: keep-alive
+< set-cookie: __cf_bm=OeaWa61j3DOuOlYr7ocK8xfpUN1UEI6DFB26spfCXN8-1785947203.9964566-1.0.1.1-VUAJ3YBxfQbJ67aFfEN.sgioGV2VwvXPFjGi2s2Z3le1VejFduhnIFiB4qdjV7SigHZj10kViip9Pe.tjedX3xW.eFJrQ6.gWi_ujTKR19ZwjEZpMR2XlmrRInUxtFU3; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org; Expires=Wed, 05 Aug 2026 16:56:44 GMT
+< set-cookie: _cfuvid=w61oY2okoV82iAkWioEPYEi_OFY6KcIEN8Qir.k_h9s-1785947203.9964566-1.0.1.1-576SdInbK8mC1Fo4UV_I7Bmzrnjh7JRqj24FcRIeBmk; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org
+< CF-Ray: a2672a48fde649be-CJB
+< CF-Cache-Status: HIT
+< Access-Control-Allow-Origin: *
+< Age: 121
+< Cache-Control: public, max-age=300
+< ETag: "7943cdaef3da2051f4d5f7d17132befe"
+< Last-Modified: Mon, 09 Feb 2026 16:28:04 GMT
+< Server: cloudflare
+
+[PackageManager] waiting for 17 tasks
+    [1.61s]
+Downloaded isexe versions
+   - "isexe": "^2.0.0" - isexe@2.0.0
+< 304 Not Modified
+< Date: Wed, 05 Aug 2026 16:26:47 GMT
+< Connection: keep-alive
+< set-cookie: __cf_bm=Bu16EhE6f9lL8yoJB4mhFE2lsw7rurKvAbMJdAmNjD4-1785947207.5964673-1.0.1.1-PNGdIPHJdHaJ.TOvXoMAFE2FFAksbJmso_VDnB3MWqwqnv.Z8Wj_PMX.ebx29v0YP_jhwswNBCscItliFsL6h3zjWOT.TLwi9Y6g7MPK5sbw1QbhVlk.mfX52MTgAgZx; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org; Expires=Wed, 05 Aug 2026 16:56:47 GMT
+< set-cookie: _cfuvid=34bFXg040HO9VyuYdJl8d9h1sn1CPh4FwAQmF1.eOu8-1785947207.5964673-1.0.1.1-CRPRg7QODO4aYTfC2G8T9kcAW2CLNEyl7P4JU.VQdWU; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org
+< CF-Ray: a2672a5f7a8a5909-CJB
+< CF-Cache-Status: HIT
+< Access-Control-Allow-Origin: *
+< Age: 161
+< Cache-Control: public, max-age=300
+< ETag: "ecfa842134f0ddd5d50cfd6f5565beb4"
+< Last-Modified: Sat, 29 Jun 2024 13:46:26 GMT
+< Server: cloudflare
+
+[PackageManager] waiting for 16 tasks
+    [3.62s]
+Downloaded callsites versions
+   - "callsites": "^3.0.0" - callsites@3.1.0
+< 304 Not Modified
+< Date: Wed, 05 Aug 2026 16:26:47 GMT
+< Connection: keep-alive
+< set-cookie: __cf_bm=cqzCGV0_j_Z_JWmzVHOk9jIe3Nj5xQUJSxJHDUCDJ64-1785947207.603939-1.0.1.1-Eg0n3_ZrIN1xo1kDQa6AksBYZyxoZaeVLB5t3.wkb6HrB036Bz7C52Zt4ckaXQWtUdZUgMbd8AUBFZn7B3NvdkP8nRKMqxaHypbCvckD12RzdfSi_ADppQx_OYJgP8qU; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org; Expires=Wed, 05 Aug 2026 16:56:47 GMT
+< set-cookie: _cfuvid=acgpAFMFO.szds_CzSPxqEOXUHsN6mkh98KfDS5jGBQ-1785947207.603939-1.0.1.1-X1yQzL2APHl2zwU9TstTNg6lN0IJE27X2fsg1fEg6A0; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org
+< CF-Ray: a2672a5f88a45f2a-CJB
+< CF-Cache-Status: HIT
+< Access-Control-Allow-Origin: *
+< Age: 109
+< Cache-Control: public, max-age=300
+< ETag: "d824ed468921f5f20426a9d46b2928ec"
+< Last-Modified: Thu, 29 Aug 2024 22:59:38 GMT
+< Server: cloudflare
+
+[PackageManager] waiting for 15 tasks
+    [3.45s]
+Downloaded escalade versions
+   - "escalade": "^3.2.0" - escalade@3.2.0
+> HTTP/1.1 GET https://registry.npmjs.org/typed-array-length
+> If-None-Match: W/"56d9ebdcee80e8a6742bfddc794ac7a6"
+> Accept: application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*
+> Connection: keep-alive
+> User-Agent: Bun/1.3.14
+> Host: registry.npmjs.org
+> Accept-Encoding: gzip, deflate, br, zstd
+< 304 Not Modified
+< Date: Wed, 05 Aug 2026 16:26:47 GMT
+< Connection: keep-alive
+< set-cookie: __cf_bm=MOEbV4ml1Q8bxNFnqYVsVMOZdNb3ZwFaRZYM246RLIU-1785947207.7122452-1.0.1.1-0vp2JJXQW9X5lqneDCObM0L2mCYeniW_CQ4fppelQwjKdU_mUF6YqAWAzevgv0wQXIzwKY8XoTejqd6Xm5kDDqvLuALFeyjCLHMZJlja3UFrc94KbGjiwu_87pvBFuCD; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org; Expires=Wed, 05 Aug 2026 16:56:47 GMT
+< set-cookie: _cfuvid=N5Qkh11qJTfeTETM3c.f_2_ZKK70L7dSeJEOhjIkriY-1785947207.7122452-1.0.1.1-cbTtgjcMjGd9.hQLQmuQNaDIsFuhMKJTGG5FzvtP1C8; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org
+< CF-Ray: a2672a6039cad5da-CJB
+< CF-Cache-Status: HIT
+< Access-Control-Allow-Origin: *
+< Age: 180
+< Cache-Control: public, max-age=300
+< ETag: "56d9ebdcee80e8a6742bfddc794ac7a6"
+< Last-Modified: Thu, 28 May 2026 16:10:45 GMT
+< Server: cloudflare
+
+[PackageManager] waiting for 14 tasks
+    [5.08s]
+Downloaded typed-array-length versions
+   - "typed-array-length": "^1.0.7" - typed-array-length@1.0.8
+< 304 Not Modified
+< Date: Wed, 05 Aug 2026 16:26:47 GMT
+< Connection: keep-alive
+< set-cookie: __cf_bm=RSHVL5pLnKDsCSqlExS1npw4_GqpVmOJpmN9Ff_qw0Y-1785947207.6044917-1.0.1.1-5jqGydtq0SeMNl06Vt9RnDRymxZgjKa9T5.jODsPCv1YG9QXKRceLvlo31MoLsMeLyCZAXL33DLiEqTNAuqxcFhVNIQJl1OnyeQQKQKY5_vqBNMTM5goxPTYvDqfYVTu; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org; Expires=Wed, 05 Aug 2026 16:56:47 GMT
+< set-cookie: _cfuvid=AnqV9mvirPHdhPptyzdsKUfxI2xwiQlrxSEWJ6.qmPE-1785947207.6044917-1.0.1.1-4dVtLub3UXDYkkTIEId_lVGtSCtHggp9j3O7t.7Wae8; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org
+< CF-Ray: a2672a5f8bc0936c-CJB
+< CF-Cache-Status: HIT
+< Access-Control-Allow-Origin: *
+< Age: 42
+< Cache-Control: public, max-age=300
+< ETag: "d79a628d98e31979ebb8e2e6ac551a49"
+< Last-Modified: Mon, 20 Jul 2026 20:18:52 GMT
+< Server: cloudflare
+
+[PackageManager] waiting for 13 tasks
+    [3.61s]
+Downloaded p-limit versions
+   - "p-limit": "^3.0.2" - p-limit@3.1.0
+Enqueue package manifest for download: yocto-queue
+> HTTP/1.1 GET https://registry.npmjs.org/yocto-queue
+> If-None-Match: W/"cefaa9ea34bd00f2f311635e221bd753"
+> Accept: application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*
+> Connection: keep-alive
+> User-Agent: Bun/1.3.14
+> Host: registry.npmjs.org
+> Accept-Encoding: gzip, deflate, br, zstd
+< 304 Not Modified
+< Date: Wed, 05 Aug 2026 16:26:47 GMT
+< Connection: keep-alive
+< set-cookie: __cf_bm=tOXtxwI9NN.orAdyW4M7B.8zdCUnk3HCJQr1aME_9Go-1785947207.598854-1.0.1.1-YseGpHRTEzaBYsl4OiPdkw8RO3odX8SGeD7obhdq9_wgk78l7dekwEu.H57nNcsVCzgbIGn004rPcJjvxgcjjU9uYH8570KYAdt4t5XfGFqkb4HCQxTtlf3ieVaCOQ1g; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org; Expires=Wed, 05 Aug 2026 16:56:47 GMT
+< set-cookie: _cfuvid=F6Hp.UW40Yclp71lzu3Tc_ZcvTYdVOWf1TnZoii5ViU-1785947207.598854-1.0.1.1-N3Httwx0YeaF.Rdrk86gfnpFpV6U5VStgkcou7TAhGI; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org
+< CF-Ray: a2672a5f795ead27-CJB
+< CF-Cache-Status: HIT
+< Access-Control-Allow-Origin: *
+< Age: 244
+< Cache-Control: public, max-age=300
+< ETag: "283644c330a5d4cc6eb1b4beabe802dc"
+< Last-Modified: Mon, 16 Dec 2024 05:48:45 GMT
+< Server: cloudflare
+
+[PackageManager] waiting for 13 tasks
+    [5.29s]
+Downloaded which-boxed-primitive versions
+   - "which-boxed-primitive": "^1.1.1" - which-boxed-primitive@1.1.1
+Enqueue package manifest for download: is-bigint
+Enqueue package manifest for download: is-boolean-object
+Enqueue package manifest for download: is-number-object
+> HTTP/1.1 GET https://registry.npmjs.org/is-bigint
+> If-None-Match: W/"c7e8dcd8f4218514e7da507985d55b45"
+> Accept: application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*
+> Connection: keep-alive
+> User-Agent: Bun/1.3.14
+> Host: registry.npmjs.org
+> Accept-Encoding: gzip, deflate, br, zstd
+> HTTP/1.1 GET https://registry.npmjs.org/is-boolean-object
+> If-None-Match: W/"7c280f5dcab51eb4cb21d6d6324edff6"
+> Accept: application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*
+> Connection: keep-alive
+> User-Agent: Bun/1.3.14
+> Host: registry.npmjs.org
+> Accept-Encoding: gzip, deflate, br, zstd
+> HTTP/1.1 GET https://registry.npmjs.org/is-number-object
+> If-None-Match: W/"13d2d9babcef76993026ef3f7476d5b5"
+> Accept: application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*
+> Connection: keep-alive
+> User-Agent: Bun/1.3.14
+> Host: registry.npmjs.org
+> Accept-Encoding: gzip, deflate, br, zstd
+< 304 Not Modified
+< Date: Wed, 05 Aug 2026 16:26:47 GMT
+< Connection: keep-alive
+< set-cookie: __cf_bm=sWGBbJxtWevqK.lU1Q2Bv0bwiIGR72XPkLNZ6H6.Fy4-1785947207.9365618-1.0.1.1-w9Xv7DbUhGt3IQ4lEsSqdluzkkblUcc1FYT1ZHd6fNBqhGNOmj9GbYXBI3s0N7k5IoENYhmLauaLMEZcmfXiuOtZ8uAbnOYb9yGBPMKCfbcMrGepOhsTrmADLDAL4v24; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org; Expires=Wed, 05 Aug 2026 16:56:47 GMT
+< set-cookie: _cfuvid=IqLOSAk0ULrUuGFNcDMEOlkeGZnZLrG3K5PPLn8evtw-1785947207.9365618-1.0.1.1-O2ylP5A58WIJxMCbvtAwTcXwUPqKRSEpZavOthKoL34; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org
+< CF-Ray: a2672a619aa149be-CJB
+< CF-Cache-Status: HIT
+< Access-Control-Allow-Origin: *
+< Age: 47
+< Cache-Control: public, max-age=300
+< ETag: "cefaa9ea34bd00f2f311635e221bd753"
+< Last-Modified: Tue, 11 Nov 2025 06:32:10 GMT
+< Server: cloudflare
+
+[PackageManager] waiting for 15 tasks
+    [75.50ms]
+Downloaded yocto-queue versions
+   - "yocto-queue": "^0.1.0" - yocto-queue@0.1.0
+< 304 Not Modified
+< Date: Wed, 05 Aug 2026 16:26:48 GMT
+< Connection: keep-alive
+< set-cookie: __cf_bm=a5TdPF9XEEf2jDc3wjcx2pPzE2PyXKL0YQ3S_sxaTHA-1785947208.003883-1.0.1.1-hy6.6ZhcLgXojFER7yZgQTzFXbIMKPGFxPR4QNzUTCaGXKfBQA_uYkTxnM6t_wb5hPhgzb0E3Vnmvl9HRnHIlaesHnaiOiSkyga7nvDOtRxjzjj2xa_SeZ8jDRKkw9Uk; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org; Expires=Wed, 05 Aug 2026 16:56:48 GMT
+< set-cookie: _cfuvid=ZQvP5xzx6rNYwmYgLQniYfXlljn5BsKDURHjcv6HJkE-1785947208.003883-1.0.1.1-t18k7tqTSc.BBv02kJJzRn7koqB5dwyyxwAsSeb9IlI; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org
+< CF-Ray: a2672a620964322e-CJB
+< CF-Cache-Status: HIT
+< Access-Control-Allow-Origin: *
+< Age: 166
+< Cache-Control: public, max-age=300
+< ETag: "7c280f5dcab51eb4cb21d6d6324edff6"
+< Last-Modified: Wed, 05 Feb 2025 02:48:13 GMT
+< Server: cloudflare
+
+[PackageManager] waiting for 14 tasks
+    [79.35ms]
+Downloaded is-boolean-object versions
+< 304 Not Modified
+< Date: Wed, 05 Aug 2026 16:26:48 GMT
+< Connection: keep-alive
+< set-cookie: __cf_bm=odgpAWkZ4MB3W96mQBsEqpcTTJZIKi30cWRzW6zacRQ-1785947208.0040874-1.0.1.1-H23BMutAGs7Z8jdOw7iIN.WxEpZ0zqzJWeSD4whvuBrIScJEpVOhtzg_bIuqlxjZdTbgesbDZAY3ygvo_gfi2kC4N0tiNLMCqJfmPlh7tNFb7y_ddx1qADwgjC8KIsIN; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org; Expires=Wed, 05 Aug 2026 16:56:48 GMT
+< set-cookie: _cfuvid=3DebKwV4Raaq4QEP3xMYKpFlFCjszYQKrCxRsImRbKg-1785947208.0040874-1.0.1.1-ZltzJt3i5IB2lZe8EL10.6QNhws65sN9IOD039oufxo; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org
+< CF-Ray: a2672a620c2dad27-CJB
+< CF-Cache-Status: HIT
+< Access-Control-Allow-Origin: *
+< Age: 168
+< Cache-Control: public, max-age=300
+< ETag: "c7e8dcd8f4218514e7da507985d55b45"
+< Last-Modified: Mon, 02 Dec 2024 18:42:59 GMT
+< Server: cloudflare
+
+   - "is-boolean-object": "^1.2.1" - is-boolean-object@1.2.2
+[PackageManager] waiting for 13 tasks
+    [79.82ms]
+Downloaded is-bigint versions
+   - "is-bigint": "^1.1.0" - is-bigint@1.1.0
+< 304 Not Modified
+< Date: Wed, 05 Aug 2026 16:26:48 GMT
+< Connection: keep-alive
+< set-cookie: __cf_bm=az21FrOfFKubjSq76tITBoZeo7aQiKEtqebao9LIedI-1785947208.0092602-1.0.1.1-HgcxVaYncoH2C9VuHLvqGDH76MKb4AppNS8DUzKxZX5HHF2lB2qoh8J2Pj.3oYgHNFB_0imfki40ze9En.AN1E9N0_qEICpVzASL3l5.s_3v9GWVwkI0P_pctlqzJp3g; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org; Expires=Wed, 05 Aug 2026 16:56:48 GMT
+< set-cookie: _cfuvid=LQocucoZcoPyYvLrf5AGBiuEOqzN1l2FEsVL02cR4FE-1785947208.0092602-1.0.1.1-wRhWxlKAINj7peauruF6WHbKDXaLgWSdwHUfFu63uLo; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org
+< CF-Ray: a2672a620c729215-CJB
+< CF-Cache-Status: HIT
+< Access-Control-Allow-Origin: *
+< Age: 23
+< Cache-Control: public, max-age=300
+< ETag: "13d2d9babcef76993026ef3f7476d5b5"
+< Last-Modified: Mon, 16 Dec 2024 02:59:17 GMT
+< Server: cloudflare
+
+[PackageManager] waiting for 12 tasks
+    [83.18ms]
+Downloaded is-number-object versions
+   - "is-number-object": "^1.1.1" - is-number-object@1.1.1
+> HTTP/1.1 GET https://registry.npmjs.org/has-bigints
+> If-None-Match: W/"8e0684b9ab43ee091a7f0b500fb31f22"
+> Accept: application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*
+> Connection: keep-alive
+> User-Agent: Bun/1.3.14
+> Host: registry.npmjs.org
+> Accept-Encoding: gzip, deflate, br, zstd
+> HTTP/1.1 GET https://registry.npmjs.org/isarray
+> If-None-Match: W/"23a71ebfa667dc5ff8088f619fa1d1b0"
+> Accept: application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*
+> Connection: keep-alive
+> User-Agent: Bun/1.3.14
+> Host: registry.npmjs.org
+> Accept-Encoding: gzip, deflate, br, zstd
+> HTTP/1.1 GET https://registry.npmjs.org/reflect.getprototypeof
+> If-None-Match: W/"f81807656b1c774c5b450fb50c92c586"
+> Accept: application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*
+> Connection: keep-alive
+> User-Agent: Bun/1.3.14
+> Host: registry.npmjs.org
+> Accept-Encoding: gzip, deflate, br, zstd
+< 304 Not Modified
+< Date: Wed, 05 Aug 2026 16:26:48 GMT
+< Connection: keep-alive
+< set-cookie: __cf_bm=K2w8UUEqyhZlGImcS5Ou2IZfmscWrtw6lHvi8nIekxY-1785947208.0922797-1.0.1.1-QJ2q.kxKBHw8Dfez0U8NFdrKdcfG9n1o9mk0gUKlfvFPEkkvuz_2GJ9LY0_7eIp0opOZ3K1CFBIqftXJLTu9TtsL9TNczV4zHLk2KDrjxO35ScGylVLOTG1wU1OxYEvb; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org; Expires=Wed, 05 Aug 2026 16:56:48 GMT
+< set-cookie: _cfuvid=BIEQ7OjdZ7X2BR7cwf5RaUBh148qr.lbdEZ4TGRrjHQ-1785947208.0922797-1.0.1.1-ZN11.nlZVWDNCToPnofqXCm1HTu6FOFJRLCQPv44LdE; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org
+< CF-Ray: a2672a629e997d39-CJB
+< CF-Cache-Status: HIT
+< Access-Control-Allow-Origin: *
+< Age: 54
+< Cache-Control: public, max-age=300
+< ETag: "8e0684b9ab43ee091a7f0b500fb31f22"
+< Last-Modified: Wed, 18 Dec 2024 17:37:35 GMT
+< Server: cloudflare
+
+[PackageManager] waiting for 11 tasks
+    [5.45s]
+Downloaded has-bigints versions
+< 304 Not Modified
+< Date: Wed, 05 Aug 2026 16:26:48 GMT
+< Connection: keep-alive
+< set-cookie: __cf_bm=1zr5_9zZOT4Tk0iDu_vfAXarhhNfUaZ512U9n9X5MUA-1785947208.0947044-1.0.1.1-MY1GqKNJx1yP7yfX7gQQ.g5..5FobefzMEiV__JdesTvdXeK423GnC3KRZm8G9el3kV2h937WRC3yzW0s2VHnsSXiTHxgCPxc60BrUfobcYX6C7OjpcvzxOXfoyV06HC; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org; Expires=Wed, 05 Aug 2026 16:56:48 GMT
+< set-cookie: _cfuvid=7A7YrPaDOEB8rdHXPa7kIk3t7ngRxpu1RzOEc3QZYQQ-1785947208.0947044-1.0.1.1-ACnQfwZY4FShXKyvfOq1DuQTCxTxwMI2KKJ94GWjxF8; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org
+< CF-Ray: a2672a629c0458b2-CJB
+< CF-Cache-Status: HIT
+< Access-Control-Allow-Origin: *
+< Age: 190
+< Cache-Control: public, max-age=300
+< ETag: "23a71ebfa667dc5ff8088f619fa1d1b0"
+< Last-Modified: Wed, 12 Jul 2023 19:07:22 GMT
+< Server: cloudflare
+
+   - "has-bigints": "^1.0.2" - has-bigints@1.1.0
+[PackageManager] waiting for 10 tasks
+    [5.45s]
+Downloaded isarray versions
+   - "isarray": "^2.0.5" - isarray@2.0.5
+< 304 Not Modified
+< Date: Wed, 05 Aug 2026 16:26:48 GMT
+< Connection: keep-alive
+< set-cookie: __cf_bm=aNDM9R3dnPcGeE7SxDzMH7fib0eElA.gFrx5nNluKI4-1785947208.0989914-1.0.1.1-9XnbOWzfWWdU0WxYCLP2JQ5XLsxodJ5llM8CNHM1DBr2YvZQor8n.ha8_kA64xIwhhjSXal4k.JG39rO8hAbhz2cD4Esq.494gZFjndV3yGjqqXXWLr26TNecjLa0jj2; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org; Expires=Wed, 05 Aug 2026 16:56:48 GMT
+< set-cookie: _cfuvid=PKRDWGw4W9t.xqoHdQgiC1kXKhttiQQcbcDW3nV_yuU-1785947208.0989914-1.0.1.1-x4zyq9Qsf.JOAilqqaVkTdSiWBo7.ZYjgnuP4vxk0D0; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org
+< CF-Ray: a2672a629ed9fbfd-CJB
+< CF-Cache-Status: HIT
+< Access-Control-Allow-Origin: *
+< Age: 50
+< Cache-Control: public, max-age=300
+< ETag: "f81807656b1c774c5b450fb50c92c586"
+< Last-Modified: Thu, 02 Jan 2025 21:23:16 GMT
+< Server: cloudflare
+
+[PackageManager] waiting for 9 tasks
+    [5.46s]
+Downloaded reflect.getprototypeof versions
+   - "reflect.getprototypeof": "^1.0.9" - reflect.getprototypeof@1.0.10
+Enqueue package manifest for download: which-builtin-type
+> HTTP/1.1 GET https://registry.npmjs.org/which-builtin-type
+> If-None-Match: W/"8b3c1d27bf2d18d80fe05b23d868e768"
+> Accept: application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*
+> Connection: keep-alive
+> User-Agent: Bun/1.3.14
+> Host: registry.npmjs.org
+> Accept-Encoding: gzip, deflate, br, zstd
+< 304 Not Modified
+< Date: Wed, 05 Aug 2026 16:26:48 GMT
+< Connection: keep-alive
+< set-cookie: __cf_bm=TQw6mib3zn7pHnw5LLU9PeZREgLhGYevd0kjXikhscQ-1785947208.1715457-1.0.1.1-mtnxCFVxTikGea_mBDHKLe0vghNLBOP9cRN7odBdbywmZ2hxYxVvfMH6tjhBc6zZYdZvDNZ_3JyJHilYseALOt8Ma33oY.nYyjh1rKs8_7CSi.EEvSOTPlasWNynvOE2; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org; Expires=Wed, 05 Aug 2026 16:56:48 GMT
+< set-cookie: _cfuvid=YB55OPBMVFJ7PsiFu5HbvZwUkUN8uAJYEYjOrpS66Y0-1785947208.1715457-1.0.1.1-fmO5S5NuQYlRe9Jls9gPjlXDYc8ivB5_uuZdpVPfZBk; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org
+< CF-Ray: a2672a6318a849be-CJB
+< CF-Cache-Status: HIT
+< Access-Control-Allow-Origin: *
+< Age: 125
+< Cache-Control: public, max-age=300
+< ETag: "8b3c1d27bf2d18d80fe05b23d868e768"
+< Last-Modified: Fri, 13 Dec 2024 07:41:13 GMT
+< Server: cloudflare
+
+[PackageManager] waiting for 9 tasks
+    [65.50ms]
+Downloaded which-builtin-type versions
+   - "which-builtin-type": "^1.2.1" - which-builtin-type@1.2.1
+Enqueue package manifest for download: is-async-function
+Enqueue package manifest for download: is-finalizationregistry
+Enqueue package manifest for download: is-generator-function
+Enqueue package manifest for download: which-collection
+> HTTP/1.1 GET https://registry.npmjs.org/is-async-function
+> If-None-Match: W/"f4258a8aca5a8e3dbbecb53890d1f62e"
+> Accept: application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*
+> Connection: keep-alive
+> User-Agent: Bun/1.3.14
+> Host: registry.npmjs.org
+> Accept-Encoding: gzip, deflate, br, zstd
+> HTTP/1.1 GET https://registry.npmjs.org/is-finalizationregistry
+> If-None-Match: W/"1e4497922fee4a1d856a0272d49b0af9"
+> Accept: application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*
+> Connection: keep-alive
+> User-Agent: Bun/1.3.14
+> Host: registry.npmjs.org
+> Accept-Encoding: gzip, deflate, br, zstd
+> HTTP/1.1 GET https://registry.npmjs.org/is-generator-function
+> If-None-Match: W/"e9b3586eb5415132cf660a26ccdc6990"
+> Accept: application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*
+> Connection: keep-alive
+> User-Agent: Bun/1.3.14
+> Host: registry.npmjs.org
+> Accept-Encoding: gzip, deflate, br, zstd
+> HTTP/1.1 GET https://registry.npmjs.org/which-collection
+> If-None-Match: W/"cc2508cab36992c6ac99a96845d19d38"
+> Accept: application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*
+> Connection: keep-alive
+> User-Agent: Bun/1.3.14
+> Host: registry.npmjs.org
+> Accept-Encoding: gzip, deflate, br, zstd
+< 304 Not Modified
+< Date: Wed, 05 Aug 2026 16:26:48 GMT
+< Connection: keep-alive
+< set-cookie: __cf_bm=QuPkxxTXUOFj8UJprF.fwtyoVLgeNtdFpAE7xSsh_44-1785947208.2567792-1.0.1.1-1.09r5ez837IcuQjIF.mOyf54K3Sp..7PB76oQ.hSyKdbgwSGpsCvYlnfcSN6ucFTMM_YILNG353Qx3d58yk0Qbfjw.OoGVbSGw1jmjP0RxtcEwq2F_4OYTB8.xRUFeU; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org; Expires=Wed, 05 Aug 2026 16:56:48 GMT
+< set-cookie: _cfuvid=nKTvORAr8MlTYmQjnCE76GUBVF87vNiBWkKS0VnVIgQ-1785947208.2567792-1.0.1.1-qurCL.wtNDJ1E1bto.dCqj0W6lF.WPvewhPC3x361fg; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org
+< CF-Ray: a2672a639b0249be-CJB
+< CF-Cache-Status: HIT
+< Access-Control-Allow-Origin: *
+< Age: 233
+< Cache-Control: public, max-age=300
+< ETag: "f4258a8aca5a8e3dbbecb53890d1f62e"
+< Last-Modified: Thu, 23 Jan 2025 06:28:35 GMT
+< Server: cloudflare
+
+[PackageManager] waiting for 12 tasks
+    [74.63ms]
+Downloaded is-async-function versions
+   - "is-async-function": "^2.0.0" - is-async-function@2.1.1
+Enqueue package manifest for download: async-function
+> HTTP/1.1 GET https://registry.npmjs.org/async-function
+> If-None-Match: W/"c1510ae43f040300f6889cc2d415a7eb"
+> Accept: application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*
+> Connection: keep-alive
+> User-Agent: Bun/1.3.14
+> Host: registry.npmjs.org
+> Accept-Encoding: gzip, deflate, br, zstd
+< 304 Not Modified
+< Date: Wed, 05 Aug 2026 16:26:48 GMT
+< Connection: keep-alive
+< set-cookie: __cf_bm=gqsEyNNv.OliJVvUeLTFPWmlcgWXJMBUx27CNJ7r2Fg-1785947208.2641623-1.0.1.1-1oINiRvOAQ33XEkkyF3N6S2TPIEHQBHEKcBTUSI5hnShpWyNjNeS1oNn5oz5mwtN_GG6BvxeeTqzlzkNXgToNzlRZrGN6Cf77A7FFKfbPDhPKqjEUUWZmCD3Dpt58xgI; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org; Expires=Wed, 05 Aug 2026 16:56:48 GMT
+< set-cookie: _cfuvid=UC2TS2PvTbmSxSFHmCO4jayqyqcdJU_EroR.PnMxUls-1785947208.2641623-1.0.1.1-x6hDBgk_Jk3zonq0snVrSyy.LCkhBoFGawdrt87Gi0Q; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org
+< CF-Ray: a2672a63aabfad27-CJB
+< CF-Cache-Status: HIT
+< Access-Control-Allow-Origin: *
+< Age: 105
+< Cache-Control: public, max-age=300
+< ETag: "e9b3586eb5415132cf660a26ccdc6990"
+< Last-Modified: Tue, 30 Sep 2025 18:41:16 GMT
+< Server: cloudflare
+
+< 304 Not Modified
+< Date: Wed, 05 Aug 2026 16:26:48 GMT
+< Connection: keep-alive
+< set-cookie: __cf_bm=eEUsq.wZOIe2BAbG7NXUwsJKnvHPYwc0GOJwWEgYcpE-1785947208.2638607-1.0.1.1-Y32BQpTzrOIWZgvXu3YcLS.4DxvQadE8mC.ovQa9l6qrUY4ClN5_5aQOR1DXFyNfhJTxstFVL7I75sriWQnaYjYW2nOA7ig0s7CJMHWmZNJCj5Y1SqHdSCtDOjJBva26; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org; Expires=Wed, 05 Aug 2026 16:56:48 GMT
+< set-cookie: _cfuvid=EFwPDWmnc_EQM9Fd77ckaAGRa9J5ZMCImyLn7CFD5TU-1785947208.2638607-1.0.1.1-jmWKgNhyHS7Hp8v0gCcZ5pLmEW0ariOVgfIycna5Sso; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org
+< CF-Ray: a2672a63aef3322e-CJB
+< CF-Cache-Status: HIT
+< Access-Control-Allow-Origin: *
+< Age: 299
+< Cache-Control: public, max-age=300
+< ETag: "1e4497922fee4a1d856a0272d49b0af9"
+< Last-Modified: Tue, 17 Dec 2024 05:37:20 GMT
+< Server: cloudflare
+
+[PackageManager] waiting for 12 tasks
+    [84.90ms]
+Downloaded is-generator-function versions
+   - "is-generator-function": "^1.0.10" - is-generator-function@1.1.2
+    [85.21ms]
+Downloaded is-finalizationregistry versions
+   - "is-finalizationregistry": "^1.1.0" - is-finalizationregistry@1.1.1
+Enqueue package manifest for download: generator-function
+> HTTP/1.1 GET https://registry.npmjs.org/generator-function
+> If-None-Match: W/"f5d2d02070e2a4ba21597cc603dffade"
+> Accept: application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*
+> Connection: keep-alive
+> User-Agent: Bun/1.3.14
+> Host: registry.npmjs.org
+> Accept-Encoding: gzip, deflate, br, zstd
+< 304 Not Modified
+< Date: Wed, 05 Aug 2026 16:26:48 GMT
+< Connection: keep-alive
+< set-cookie: __cf_bm=ZXQLRD0k1WwibL2L_M.DK.lLhCb8Zl4_FWy5ugzdLS8-1785947208.2692251-1.0.1.1-HVrYI7SBMUF9tHHrov_D8MUc4rKwRIUKxFeUMoeXFkA9spLJ7adCsq3.h3fDsLZwDXqB4K6KZ521uCjlDMdZS0dVrL26V6ctXL0Aq30gNcj_9UKCjsbr5qm9EOmsXi7K; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org; Expires=Wed, 05 Aug 2026 16:56:48 GMT
+< set-cookie: _cfuvid=Nf_0Y5wYcFyW9dzeaSqB8Ho3pkWXgRQ.rN5CFZXerSk-1785947208.2692251-1.0.1.1-svWUp6HiMScPP2zMUbeQdZ5PLlrrPg_Ps4lcZnWtBIM; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org
+< CF-Ray: a2672a63ac77936c-CJB
+< CF-Cache-Status: HIT
+< Access-Control-Allow-Origin: *
+< Age: 25
+< Cache-Control: public, max-age=300
+< ETag: "cc2508cab36992c6ac99a96845d19d38"
+< Last-Modified: Fri, 08 Mar 2024 22:53:06 GMT
+< Server: cloudflare
+
+[PackageManager] waiting for 11 tasks
+    [89.77ms]
+Downloaded which-collection versions
+   - "which-collection": "^1.0.2" - which-collection@1.0.2
+Enqueue package manifest for download: is-map
+Enqueue package manifest for download: is-weakmap
+Enqueue package manifest for download: is-weakset
+> HTTP/1.1 GET https://registry.npmjs.org/is-map
+> If-None-Match: W/"6c07829b76eda8244ed92ed79c23808a"
+> Accept: application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*
+> Connection: keep-alive
+> User-Agent: Bun/1.3.14
+> Host: registry.npmjs.org
+> Accept-Encoding: gzip, deflate, br, zstd
+> HTTP/1.1 GET https://registry.npmjs.org/is-weakmap
+> If-None-Match: W/"42b198bd222197966e0e61a162f4bce9"
+> Accept: application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*
+> Connection: keep-alive
+> User-Agent: Bun/1.3.14
+> Host: registry.npmjs.org
+> Accept-Encoding: gzip, deflate, br, zstd
+> HTTP/1.1 GET https://registry.npmjs.org/is-weakset
+> If-None-Match: W/"18554e05ceedfcebcf84e1f1a1808ddf"
+> Accept: application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*
+> Connection: keep-alive
+> User-Agent: Bun/1.3.14
+> Host: registry.npmjs.org
+> Accept-Encoding: gzip, deflate, br, zstd
+< 304 Not Modified
+< Date: Wed, 05 Aug 2026 16:26:48 GMT
+< Connection: keep-alive
+< set-cookie: __cf_bm=P2ZeOLcz.TI10ki97Af_eg2jqo_JVJ90d3ERH5Ox7pw-1785947208.351888-1.0.1.1-IA0JY5rKYqFRQQ500dESNht7bqJuHzBD21kuXYOCjPKj8uEA1SfQXIIXcr.ft1usb2PVTLHMpfpG_QPw.1fAjYgWNr4d4HKot2VEHmw3VthJS4mtuZ1gXJqlU947mtZU; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org; Expires=Wed, 05 Aug 2026 16:56:48 GMT
+< set-cookie: _cfuvid=3iKN3weTroCgVIhUYAlkUI7qhqm_eva2.qp2pqaEHts-1785947208.351888-1.0.1.1-q_kplRdaKBR4Hnm3b8eR52bhOOSVoOSzBE5pXIIG.Nk; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org
+< CF-Ray: a2672a643ef28c9a-CJB
+< CF-Cache-Status: HIT
+< Access-Control-Allow-Origin: *
+< Age: 36
+< Cache-Control: public, max-age=300
+< ETag: "18554e05ceedfcebcf84e1f1a1808ddf"
+< Last-Modified: Tue, 17 Dec 2024 05:37:45 GMT
+< Server: cloudflare
+
+[PackageManager] waiting for 13 tasks
+    [84.37ms]
+Downloaded is-weakset versions
+   - "is-weakset": "^2.0.3" - is-weakset@2.0.4
+< 304 Not Modified
+< Date: Wed, 05 Aug 2026 16:26:48 GMT
+< Connection: keep-alive
+< set-cookie: __cf_bm=gj5Zc_Upa4Wp7X3gbszO6X9Qd9qF4gqByHsxIqxQGZI-1785947208.353542-1.0.1.1-4MuUBhrt5gbcd8cjSE5a4R_LbpiAfTjCpIk0b66.L7yWJHSFhidmaXFDzVpwa0WsTL.gv5rh0eGaJGlBkHfyGfG9Jv.OE8meyxtVXEXFNgWtYGBToOUGvbIQRdA9iSbh; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org; Expires=Wed, 05 Aug 2026 16:56:48 GMT
+< set-cookie: _cfuvid=1bMVaKZhlAGnOKGU3o6QpJXgQ_rcajFKdYPlwxAKDIg-1785947208.353542-1.0.1.1-b44NDHfxZR11tLR.vVPxLUmdK2ux6wpfnTOYotDUk4k; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org
+< CF-Ray: a2672a643e9d936c-CJB
+< CF-Cache-Status: HIT
+< Access-Control-Allow-Origin: *
+< Age: 103
+< Cache-Control: public, max-age=300
+< ETag: "6c07829b76eda8244ed92ed79c23808a"
+< Last-Modified: Fri, 08 Mar 2024 16:49:09 GMT
+< Server: cloudflare
+
+[PackageManager] waiting for 12 tasks
+    [94.27ms]
+Downloaded is-map versions
+< 304 Not Modified
+< Date: Wed, 05 Aug 2026 16:26:48 GMT
+< Connection: keep-alive
+< set-cookie: __cf_bm=QuzX8oDHbc8HInJ2du2DKkguaJ_ChlkJPN8JkjbEVHE-1785947208.3534102-1.0.1.1-VwPtMtDjZyTdYSE9s9tBfhKgHuPGI3UEiFu5umpl4oAAJcjOpLhMPwN5FndYQd.62DAn05pqAVJckWsiJxvJzt5_altmU65yUyfOMMK154n_SQ5pPhVLORtO_zEIEuSH; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org; Expires=Wed, 05 Aug 2026 16:56:48 GMT
+< set-cookie: _cfuvid=kX.rEGE9sOtYbsTQo_iWUqxkv0mAsg.x7tfNlQv2vJs-1785947208.3534102-1.0.1.1-PpUAh3AmSndxsINTJAp9vrA3pfCjoEe8ZJD6LMalQxE; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org
+< CF-Ray: a2672a643916322e-CJB
+< CF-Cache-Status: HIT
+< Access-Control-Allow-Origin: *
+< Age: 248
+< Cache-Control: public, max-age=300
+< ETag: "42b198bd222197966e0e61a162f4bce9"
+< Last-Modified: Fri, 08 Mar 2024 20:18:33 GMT
+< Server: cloudflare
+
+   - "is-map": "^2.0.3" - is-map@2.0.3
+[PackageManager] waiting for 11 tasks
+    [94.07ms]
+Downloaded is-weakmap versions
+   - "is-weakmap": "^2.0.2" - is-weakmap@2.0.2
+< 304 Not Modified
+< Date: Wed, 05 Aug 2026 16:26:48 GMT
+< Connection: keep-alive
+< set-cookie: __cf_bm=mW0Cl7S.C04Mihtqorkubff4e3lAjaCRtws5z6E7Yy4-1785947208.333804-1.0.1.1-_dWpAozshilyvLkEiLCtrlA12xhj6o2AP8.owa_zG3rW_cnv_JkMnOQ_aYHvFGOnVaVsdLbEYboGhuQJhmrBQUiRwGPu7sALYclczDRIqWabYJncmwXIATpJa5nfQhJG; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org; Expires=Wed, 05 Aug 2026 16:56:48 GMT
+< set-cookie: _cfuvid=siMhI1OH4GupLRpA_u1Lx1R4d6_9FhTY7sQPSRWzqQM-1785947208.333804-1.0.1.1-lxgHJjP7Le3Wt.QMBvaW3Xey.WQhPTZdfpiOsxIOHdE; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org
+< CF-Ray: a2672a641c77ad27-CJB
+< CF-Cache-Status: HIT
+< Access-Control-Allow-Origin: *
+< Cache-Control: public, max-age=300
+< ETag: "f5d2d02070e2a4ba21597cc603dffade"
+< Last-Modified: Tue, 30 Sep 2025 18:23:35 GMT
+< Server: cloudflare
+
+[PackageManager] waiting for 10 tasks
+    [300.21ms]
+Downloaded generator-function versions
+   - "generator-function": "^2.0.0" - generator-function@2.0.1
+< 304 Not Modified
+< Date: Wed, 05 Aug 2026 16:26:48 GMT
+< Connection: keep-alive
+< set-cookie: __cf_bm=VjVjQEihrtZIV5AXD_JuazEDj0ORXd3E0m1F.mgMPT0-1785947208.3117816-1.0.1.1-HNOkshOXllrwhkiWydvxnR_r0Q7B3LFkzX2ym8XALtv7sbE10hMBnHKM_1DjvFG8dnMqnaueuuOikuNUGAV0CdoZxT3KPDhTjc6acwMd6T3cmWGAPfL0_dz.yj0gJIZ5; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org; Expires=Wed, 05 Aug 2026 16:56:48 GMT
+< set-cookie: _cfuvid=KdHMWroMnCc5hiwscDPshLTeJ1KjfS2zmqq7R8kdXXE-1785947208.3117816-1.0.1.1-T16wPqHF7khbvakgk4SecQcCSyD64b9XD7p_C8r6Ksg; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org
+< CF-Ray: a2672a63fc2449be-CJB
+< CF-Cache-Status: HIT
+< Access-Control-Allow-Origin: *
+< Age: 127
+< Cache-Control: public, max-age=300
+< ETag: "c1510ae43f040300f6889cc2d415a7eb"
+< Last-Modified: Thu, 23 Jan 2025 03:15:55 GMT
+< Server: cloudflare
+
+[PackageManager] waiting for 9 tasks
+    [315.89ms]
+Downloaded async-function versions
+   - "async-function": "^1.0.0" - async-function@1.0.0
+> HTTP/1.1 GET https://registry.npmjs.org/for-each
+> If-None-Match: W/"3c25fe98824597be8e320811312bb58f"
+> Accept: application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*
+> Connection: keep-alive
+> User-Agent: Bun/1.3.14
+> Host: registry.npmjs.org
+> Accept-Encoding: gzip, deflate, br, zstd
+< 304 Not Modified
+< Date: Wed, 05 Aug 2026 16:26:49 GMT
+< Connection: keep-alive
+< set-cookie: __cf_bm=LkPX0aVSSf4ZC_VJb99N7.v9j8vkC_n4XOvlkEp0EKc-1785947209.05525-1.0.1.1-n5NuEh_sprGcsDPtRPExKRz8AnulnpNvEiC7t3EjgLSFLnxukw1xq6b_w7nMAHEVFcWXJVLPioEqr6iOZIU5J6OCfsbr.QxubxfPJqvhaiQjuLRsySpSfHtGNKM2pXTd; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org; Expires=Wed, 05 Aug 2026 16:56:49 GMT
+< set-cookie: _cfuvid=bdzGNaZsGYn2drx0bsKcNkx36otVQjPgQl3YDFBMGEg-1785947209.05525-1.0.1.1-mxnLxhMYZ7exMZyQn1OcaCt7qpPKcWmEEPzku.Puql8; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org
+< CF-Ray: a2672a689801a91a-MAA
+< CF-Cache-Status: HIT
+< Access-Control-Allow-Origin: *
+< Age: 191
+< Cache-Control: public, max-age=300
+< ETag: "3c25fe98824597be8e320811312bb58f"
+< Last-Modified: Tue, 11 Feb 2025 06:56:05 GMT
+< Server: cloudflare
+
+[PackageManager] waiting for 8 tasks
+    [6.47s]
+Downloaded for-each versions
+   - "for-each": "^0.3.3" - for-each@0.3.5
+> HTTP/1.1 GET https://registry.npmjs.org/electron-to-chromium
+> If-None-Match: W/"9259df3226d405940262d9495aef19cc"
+> Accept: application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*
+> Connection: keep-alive
+> User-Agent: Bun/1.3.14
+> Host: registry.npmjs.org
+> Accept-Encoding: gzip, deflate, br, zstd
+> HTTP/1.1 GET https://registry.npmjs.org/fill-range
+> If-None-Match: W/"2fccbe11278ecf8d0d2966b07d3143f4"
+> Accept: application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*
+> Connection: keep-alive
+> User-Agent: Bun/1.3.14
+> Host: registry.npmjs.org
+> Accept-Encoding: gzip, deflate, br, zstd
+< 304 Not Modified
+< Date: Wed, 05 Aug 2026 16:26:54 GMT
+< Connection: keep-alive
+< set-cookie: __cf_bm=kcs51p6cJH7C2XeOIT4pJc3xJ7KGgDztKP.URVyFYS8-1785947214.401685-1.0.1.1-32rQmeMnFB7ttWQbyWk59tXlYzhOacZ4XT0kI6JKTd0Sk9ESCPxsVc69qSSpWf5qccRjMRNZac.XsuD23bsnSDEE90xcpScN4HggVG..AhFZw.ERgNl.kE3rNgI1w8zv; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org; Expires=Wed, 05 Aug 2026 16:56:54 GMT
+< set-cookie: _cfuvid=AT_zjfGRz1JvUtfOg.Xb3ieEOwWPMzV4xfXJD4CoB0A-1785947214.401685-1.0.1.1-jguV6IIDBtAkxLzfYwXMDtTAqFIS2m9.r0yu2SwAYzw; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org
+< CF-Ray: a2672a8a09660b22-CJB
+< CF-Cache-Status: HIT
+< Access-Control-Allow-Origin: *
+< Age: 78
+< Cache-Control: public, max-age=300
+< ETag: "9259df3226d405940262d9495aef19cc"
+< Last-Modified: Tue, 04 Aug 2026 22:05:02 GMT
+< Server: cloudflare
+
+[PackageManager] waiting for 7 tasks
+    [11.74s]
+Downloaded electron-to-chromium versions
+   - "electron-to-chromium": "^1.5.393" - electron-to-chromium@1.5.401
+< 304 Not Modified
+< Date: Wed, 05 Aug 2026 16:26:54 GMT
+< Connection: keep-alive
+< set-cookie: __cf_bm=.M2.PD7aTe.iL4h1gpZGNi2wTX5JaVSAeLTbIVrPh4Q-1785947214.4091964-1.0.1.1-0ZqBeFURV.KrxeEuedfZuJ.gFzvJiqLIncN3Wm0V4A4m2GVJoD0I5ifYyiugyAfJIfxSBWB6GiDc5i9kCpDo1UcaKuALwPGLMHYDXHse4Qy2L2FgZPkH2o5MEfdM_m2Q; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org; Expires=Wed, 05 Aug 2026 16:56:54 GMT
+< set-cookie: _cfuvid=1nWSdfUnX6D4bFWQKWAUpZU1iFjM3E3q4xwGCUsuVsc-1785947214.4091964-1.0.1.1-kmSbtHuSngcvqrPd1RNWRVxB_4QneiBLtG01M8sdFTw; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org
+< CF-Ray: a2672a8a0cdf9a55-CJB
+< CF-Cache-Status: HIT
+< Access-Control-Allow-Origin: *
+< Age: 40
+< Cache-Control: public, max-age=300
+< ETag: "2fccbe11278ecf8d0d2966b07d3143f4"
+< Last-Modified: Wed, 27 May 2026 19:50:32 GMT
+< Server: cloudflare
+
+[PackageManager] waiting for 6 tasks
+    [11.77s]
+Downloaded fill-range versions
+   - "fill-range": "^7.1.1" - fill-range@7.1.1
+Enqueue package manifest for download: to-regex-range
+> HTTP/1.1 GET https://registry.npmjs.org/to-regex-range
+> If-None-Match: W/"7495ca796ee086bd2df5ac03ac79bce7"
+> Accept: application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*
+> Connection: keep-alive
+> User-Agent: Bun/1.3.14
+> Host: registry.npmjs.org
+> Accept-Encoding: gzip, deflate, br, zstd
+> HTTP/1.1 GET https://registry.npmjs.org/set-proto
+> If-None-Match: W/"c384219ae0aaa4c87a50ad7b40527f9b"
+> Accept: application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*
+> Connection: keep-alive
+> User-Agent: Bun/1.3.14
+> Host: registry.npmjs.org
+> Accept-Encoding: gzip, deflate, br, zstd
+< 304 Not Modified
+< Date: Wed, 05 Aug 2026 16:26:54 GMT
+< Connection: keep-alive
+< set-cookie: __cf_bm=aMAWh3SCbVL6G2kAKao.9CtD1T3EcMY6xTfSIa9wfok-1785947214.511659-1.0.1.1-4rfhf4xndUaeEtnKqXJhPA8SmzYfWFyL93QzhS.AmeksrH3bhVXBzpu_4DbssQficXySW45ufPIFODKP44TFMl6geSl..tNYdFx2re2UeOJXCWDPqEKvUTkbxyaDM3eW; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org; Expires=Wed, 05 Aug 2026 16:56:54 GMT
+< set-cookie: _cfuvid=.vvDFo1HZRph.jyOweGyNh2s2LwUhCDGgYI337bZlNs-1785947214.511659-1.0.1.1-O1SpGDz4fQFpzGwNdvbOZqQx7oHI_EQpN3Z8jGvTGnA; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org
+< CF-Ray: a2672a8ab9d18c9a-CJB
+< CF-Cache-Status: HIT
+< Access-Control-Allow-Origin: *
+< Age: 144
+< Cache-Control: public, max-age=300
+< ETag: "7495ca796ee086bd2df5ac03ac79bce7"
+< Last-Modified: Mon, 27 Jun 2022 07:24:38 GMT
+< Server: cloudflare
+
+[PackageManager] waiting for 6 tasks
+    [79.82ms]
+Downloaded to-regex-range versions
+< 304 Not Modified
+< Date: Wed, 05 Aug 2026 16:26:54 GMT
+< Connection: keep-alive
+< set-cookie: __cf_bm=EUGq5xH8mrpoFEnpvohlsgVdyyiWRQPDb0EMP7VJ4aI-1785947214.516026-1.0.1.1-Jfi85I.tKMJ_H72Yaet3gRwzu2pnULY8ZErqPTTWENVCCmtg1QuLPQFlYDHK.nQkocyAbIvo0Kwn59Xhuk2_NZw3WvfQ0xPbTWvM2vjdiNVCIZX.u44Ooi2nfPKELaoy; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org; Expires=Wed, 05 Aug 2026 16:56:54 GMT
+< set-cookie: _cfuvid=Cx98dtNEmMOEYm46W9gZXzvIJrSHYihoE4fAInAifu8-1785947214.516026-1.0.1.1-.zmgUBX8saMJRAmvbm.GKQBBpEosAJommGNpxsxOVwM; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org
+< CF-Ray: a2672a8abc5fad27-CJB
+< CF-Cache-Status: HIT
+< Access-Control-Allow-Origin: *
+< Age: 196
+< Cache-Control: public, max-age=300
+< ETag: "c384219ae0aaa4c87a50ad7b40527f9b"
+< Last-Modified: Mon, 30 Dec 2024 23:30:09 GMT
+< Server: cloudflare
+
+   - "to-regex-range": "^5.0.1" - to-regex-range@5.0.1
+Enqueue package manifest for download: is-number
+[PackageManager] waiting for 6 tasks
+    [11.86s]
+Downloaded set-proto versions
+> HTTP/1.1 GET https://registry.npmjs.org/is-number
+> If-None-Match: W/"47deffbfb71a701056c86b6f4e7acfd8"
+> Accept: application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*
+> Connection: keep-alive
+   - "set-proto": "^1.0.0" - set-proto@1.0.0
+> User-Agent: Bun/1.3.14
+> Host: registry.npmjs.org
+> Accept-Encoding: gzip, deflate, br, zstd
+< 304 Not Modified
+< Date: Wed, 05 Aug 2026 16:26:54 GMT
+< Connection: keep-alive
+< set-cookie: __cf_bm=IKXyGr3AIuglo7C8_NIfv6YsSsUG5dRIBRsoa96j15M-1785947214.572266-1.0.1.1-p4XytqJBUEYxsIVW2Xnww8txWL.bRjO.Xv9UkKts_mXazZC7yYYciknEHuRlD7ITNbFK_nyxpKUQzypLm2Ar_Sgy5cqwjH8Z2gBNtP1jJVKVAmYyc.z6e.5V9gcWrc.x; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org; Expires=Wed, 05 Aug 2026 16:56:54 GMT
+< set-cookie: _cfuvid=98kYY0uz_VGWn0Pc3ItIlEVAbV9f.CEv69l5iiZ4lBI-1785947214.572266-1.0.1.1-lt_YZqBjp1C.69EaerhIVP61ahOBy8D_bIYg9bsGFqQ; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org
+< CF-Ray: a2672a8b1b358c9a-CJB
+< CF-Cache-Status: HIT
+< Access-Control-Allow-Origin: *
+< Age: 200
+< Cache-Control: public, max-age=300
+< ETag: "47deffbfb71a701056c86b6f4e7acfd8"
+< Last-Modified: Fri, 26 May 2023 16:12:34 GMT
+< Server: cloudflare
+
+[PackageManager] waiting for 5 tasks
+    [63.23ms]
+Downloaded is-number versions
+   - "is-number": "^7.0.0" - is-number@7.0.0
+[PackageManager] waiting for 4 tasks
+> HTTP/1.1 GET https://registry.npmjs.org/is-document.all
+> If-None-Match: W/"75e09f6787ea4aa072e74b799a9a9e78"
+> Accept: application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*
+> Connection: keep-alive
+> User-Agent: Bun/1.3.14
+> Host: registry.npmjs.org
+> Accept-Encoding: gzip, deflate, br, zstd
+< 304 Not Modified
+< Date: Wed, 05 Aug 2026 16:27:06 GMT
+< Connection: keep-alive
+< set-cookie: __cf_bm=b4SguhlOI91bktQuo9uuszrdsxV2VfUTV7cEIwyLCDM-1785947226.3321671-1.0.1.1-m5ddsNQgsiw4j8m6rR6aWGN2F30EGoznKdOMUbniL8Qk6ePkWvo84Y71aJ0USbN3scTGptY8mQjI5OcZRGY7RHLs0zZhaCNMgj1GA6rDL8tylVCNutmnzwdT2CkY2CMs; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org; Expires=Wed, 05 Aug 2026 16:57:06 GMT
+< set-cookie: _cfuvid=Gt9deEMZyCQiJaPMFJld6021t6yMZSdxKvzt4k8IfCg-1785947226.3321671-1.0.1.1-8g1QAEhlsiSS2Cg3Wbz1.BP4IdAgfbqsuPHX1cKhlUo; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org
+< CF-Ray: a2672ad498758c9a-CJB
+< CF-Cache-Status: HIT
+< Access-Control-Allow-Origin: *
+< Age: 155
+< Cache-Control: public, max-age=300
+< ETag: "75e09f6787ea4aa072e74b799a9a9e78"
+< Last-Modified: Thu, 11 Jun 2026 21:30:10 GMT
+< Server: cloudflare
+
+[PackageManager] waiting for 4 tasks
+    [61.80ms]
+Downloaded is-document.all versions
+   - "is-document.all": "^1.0.0" - is-document.all@1.0.0
+[PackageManager] waiting for 3 tasks
+[PackageManager] waiting for 3 tasks
+> HTTP/1.1 GET https://registry.npmjs.org/es-abstract-get
+> If-None-Match: W/"8e5110823ad5289692db3b299a0cf43e"
+> Accept: application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*
+> Connection: keep-alive
+> User-Agent: Bun/1.3.14
+> Host: registry.npmjs.org
+> Accept-Encoding: gzip, deflate, br, zstd
+> HTTP/1.1 GET https://registry.npmjs.org/@next/swc-win32-x64-msvc/-/swc-win32-x64-msvc-16.3.0.tgz
+> Connection: keep-alive
+> User-Agent: Bun/1.3.14
+> Accept: */*
+> Host: registry.npmjs.org
+> Accept-Encoding: gzip, deflate, br, zstd
+< 304 Not Modified
+< Date: Wed, 05 Aug 2026 16:31:45 GMT
+< Connection: keep-alive
+< set-cookie: __cf_bm=RaSHboj8UsUdlzvaJsxpyUooewl4WUvv93izToQpq2E-1785947505.944175-1.0.1.1-8sOjXT4sFJNM2cRC2tlqBrfMVpPQknQb1Cba2BeeWrEFltYe6jDWYo.5PgHGQLjStcdKph2NloMpPLIbN71QOl2YrZ4FkjHrJiyv.dZbrKZkRxBxbRSlV5et0uZeoQIl; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org; Expires=Wed, 05 Aug 2026 17:01:45 GMT
+< set-cookie: _cfuvid=jRDdNBAQ5RIlVCfFxQvuhTC6SqUP1qPsyvR442nUC6o-1785947505.944175-1.0.1.1-9Ucf9F2Pv.PoTFj9T8YAXwNcaR434A.nsRIh3cMjOY4; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org
+< CF-Ray: a26731a82d1de14a-MAA
+< CF-Cache-Status: HIT
+< Access-Control-Allow-Origin: *
+< Age: 129
+< Cache-Control: public, max-age=300
+< ETag: "8e5110823ad5289692db3b299a0cf43e"
+< Last-Modified: Tue, 16 Jun 2026 00:51:40 GMT
+< Server: cloudflare
+
+[PackageManager] waiting for 3 tasks
+    [2.77s]
+Downloaded es-abstract-get versions
+   - "es-abstract-get": "^1.0.0" - es-abstract-get@1.0.0
+< 200 OK
+< Date: Wed, 05 Aug 2026 16:31:46 GMT
+< Content-Type: application/octet-stream
+< Content-Length: 34821454
+< Connection: keep-alive
+< set-cookie: __cf_bm=Yaj8YIk2FpWdRBDoyJrgAvmkqq5JynWlGbN5IkgJvaU-1785947506.0861108-1.0.1.1-7jxn5Uoh20egu88B92vWvCqnNtJcAUOotRFOvwT.KGruvgMumHbeBB.1L6j0fon0VNh2xXxZiOWdYyhW2Ogoe2omr.KyqWgVltQFmqVrq.t7BqtTb4ZLsv8uPGDsipUi; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org; Expires=Wed, 05 Aug 2026 17:01:46 GMT
+< set-cookie: _cfuvid=zX5Sk.6TldCtaqloawo6vaqZ6yRPS4258Zcqb0il41w-1785947506.0861108-1.0.1.1-0CTpiWuYCnctG19wITa.ncHvYPgquIlZ7Pu2.Hn3h58; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org
+< CF-Ray: a26731a90c77298c-CJB
+< CF-Cache-Status: HIT
+< Accept-Ranges: bytes
+< Access-Control-Allow-Origin: *
+< Age: 158428
+< Cache-Control: public, must-revalidate, max-age=31557600
+< ETag: "6703f6a2d442409e1c5606d3bc3c693c"
+< Last-Modified: Mon, 03 Aug 2026 20:31:16 GMT
+< Server: cloudflare
+
+[PackageManager] waiting for 2 tasks
+error: Fail extracting tarball for "@next/swc-win32-x64-msvc"
+[PackageManager] waiting for 1 tasks
+error: Fail extracting tarball for "next"
+Resolved, downloaded and extracted [46]
+warn: UNKNOWN_CERTIFICATE_VERIFICATION_ERROR downloading package manifest is-document.all. Retry 1/5...
+
+warn: Timeout downloading package manifest es-abstract-get. Retry 1/5...
+
+warn: warn: Timeout downloading tarball @next/swc-win32-x64-msvc@16.3.0. Retrying 1/5...
+
+error: Fail extracting tarball from @next/swc-win32-x64-msvc
+
+error: Fail extracting tarball from next
+Clean lockfile: 436 packages - 436 packages in 1.8ms
+Skip installing @next/swc-darwin-arm64 - cpu & os mismatch
+Skip installing @next/swc-darwin-x64 - os mismatch
+Skip installing @next/swc-linux-arm64-gnu - cpu & os mismatch
+Skip installing @next/swc-linux-arm64-musl - cpu & os mismatch
+Skip installing @next/swc-linux-x64-gnu - os mismatch
+Skip installing @next/swc-linux-x64-musl - os mismatch
+Skip installing @next/swc-win32-arm64-msvc - cpu mismatch
+Skip installing @tailwindcss/oxide-android-arm64 - cpu & os mismatch
+Skip installing @tailwindcss/oxide-darwin-arm64 - cpu & os mismatch
+Skip installing @tailwindcss/oxide-darwin-x64 - os mismatch
+Skip installing @tailwindcss/oxide-freebsd-x64 - os mismatch
+Skip installing @tailwindcss/oxide-linux-arm-gnueabihf - cpu & os mismatch
+Skip installing @tailwindcss/oxide-linux-arm64-gnu - cpu & os mismatch
+Skip installing @tailwindcss/oxide-linux-arm64-musl - cpu & os mismatch
+Skip installing @tailwindcss/oxide-linux-x64-gnu - os mismatch
+Skip installing @tailwindcss/oxide-linux-x64-musl - os mismatch
+Skip installing @tailwindcss/oxide-wasm32-wasi - cpu mismatch
+Skip installing @tailwindcss/oxide-win32-arm64-msvc - cpu mismatch
+Skip installing @img/sharp-darwin-arm64 - cpu & os mismatch
+Skip installing @img/sharp-darwin-x64 - os mismatch
+Skip installing @img/sharp-freebsd-wasm32 - os mismatch
+Skip installing @img/sharp-libvips-darwin-arm64 - cpu & os mismatch
+Skip installing @img/sharp-libvips-darwin-x64 - os mismatch
+Skip installing @img/sharp-libvips-linux-arm - cpu & os mismatch
+Skip installing @img/sharp-libvips-linux-arm64 - cpu & os mismatch
+Skip installing @img/sharp-libvips-linux-ppc64 - cpu & os mismatch
+Skip installing @img/sharp-libvips-linux-riscv64 - cpu & os mismatch
+Skip installing @img/sharp-libvips-linux-s390x - cpu & os mismatch
+Skip installing @img/sharp-libvips-linux-x64 - os mismatch
+Skip installing @img/sharp-libvips-linuxmusl-arm64 - cpu & os mismatch
+Skip installing @img/sharp-libvips-linuxmusl-x64 - os mismatch
+Skip installing @img/sharp-linux-arm - cpu & os mismatch
+Skip installing @img/sharp-linux-arm64 - cpu & os mismatch
+Skip installing @img/sharp-linux-ppc64 - cpu & os mismatch
+Skip installing @img/sharp-linux-riscv64 - cpu & os mismatch
+Skip installing @img/sharp-linux-s390x - cpu & os mismatch
+Skip installing @img/sharp-linux-x64 - os mismatch
+Skip installing @img/sharp-linuxmusl-arm64 - cpu & os mismatch
+Skip installing @img/sharp-linuxmusl-x64 - os mismatch
+Skip installing @img/sharp-webcontainers-wasm32 - cpu mismatch
+Skip installing @img/sharp-win32-arm64 - cpu mismatch
+Skip installing @img/sharp-win32-ia32 - cpu mismatch
+Skip installing lightningcss-android-arm64 - cpu & os mismatch
+Skip installing lightningcss-darwin-arm64 - cpu & os mismatch
+Skip installing lightningcss-darwin-x64 - os mismatch
+Skip installing lightningcss-freebsd-x64 - os mismatch
+Skip installing lightningcss-linux-arm-gnueabihf - cpu & os mismatch
+Skip installing lightningcss-linux-arm64-gnu - cpu & os mismatch
+Skip installing lightningcss-linux-arm64-musl - cpu & os mismatch
+Skip installing lightningcss-linux-x64-gnu - os mismatch
+Skip installing lightningcss-linux-x64-musl - os mismatch
+Skip installing lightningcss-win32-arm64-msvc - cpu mismatch
+Skip installing @unrs/resolver-binding-android-arm-eabi - cpu & os mismatch
+Skip installing @unrs/resolver-binding-android-arm64 - cpu & os mismatch
+Skip installing @unrs/resolver-binding-darwin-arm64 - cpu & os mismatch
+Skip installing @unrs/resolver-binding-darwin-x64 - os mismatch
+Skip installing @unrs/resolver-binding-freebsd-x64 - os mismatch
+Skip installing @unrs/resolver-binding-linux-arm-gnueabihf - cpu & os mismatch
+Skip installing @unrs/resolver-binding-linux-arm-musleabihf - cpu & os mismatch
+Skip installing @unrs/resolver-binding-linux-arm64-gnu - cpu & os mismatch
+Skip installing @unrs/resolver-binding-linux-arm64-musl - cpu & os mismatch
+Skip installing @unrs/resolver-binding-linux-loong64-gnu - cpu & os mismatch
+Skip installing @unrs/resolver-binding-linux-loong64-musl - cpu & os mismatch
+Skip installing @unrs/resolver-binding-linux-ppc64-gnu - cpu & os mismatch
+Skip installing @unrs/resolver-binding-linux-riscv64-gnu - cpu & os mismatch
+Skip installing @unrs/resolver-binding-linux-riscv64-musl - cpu & os mismatch
+Skip installing @unrs/resolver-binding-linux-s390x-gnu - cpu & os mismatch
+Skip installing @unrs/resolver-binding-linux-x64-gnu - os mismatch
+Skip installing @unrs/resolver-binding-linux-x64-musl - os mismatch
+Skip installing @unrs/resolver-binding-openharmony-arm64 - cpu & os mismatch
+Skip installing @unrs/resolver-binding-wasm32-wasi - cpu mismatch
+Skip installing @unrs/resolver-binding-win32-arm64-msvc - cpu mismatch
+Skip installing @unrs/resolver-binding-win32-ia32-msvc - cpu mismatch
+ENOENT: failed opening cache/package/version dir for package postcss
