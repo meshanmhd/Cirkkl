@@ -62,12 +62,11 @@ export default function HeroSection() {
               id="hero-explore-cta"
               className="inline-flex items-center gap-2 px-7 py-3.5 rounded-lg text-sm font-semibold text-[#111111] transition-all duration-200 hover:opacity-90 hover:scale-[1.02] active:scale-[0.98]"
               style={{
-                background: "linear-gradient(135deg, #cfe467, #b0c53e)",
+                background: "#cfe467",
                 boxShadow: "0 4px 20px rgba(207,228,103,0.35)",
               }}
             >
               Explore Events
-              <ArrowRight size={16} />
             </Link>
             <a
               href="#clubs"

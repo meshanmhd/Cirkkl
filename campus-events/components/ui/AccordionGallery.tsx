@@ -25,7 +25,7 @@ export function AccordionGallery({ items }: AccordionGalleryProps) {
 
     const interval = setInterval(() => {
       setActiveIndex((current) => (current + 1) % items.length);
-    }, 3000);
+    }, 2000);
 
     return () => clearInterval(interval);
   }, [items.length, isHovering, selectedItem]);
@@ -35,8 +35,6 @@ export function AccordionGallery({ items }: AccordionGalleryProps) {
       {/* Hide scrollbar for cleaner look, allow horizontal scrolling if many items */}
       <div
         className="flex w-full h-[450px] sm:h-[550px] gap-2 overflow-x-auto pb-4 custom-scrollbar"
-        onMouseEnter={() => setIsHovering(true)}
-        onMouseLeave={() => setIsHovering(false)}
       >
         {items.map((item, index) => {
           const isActive = index === activeIndex;
@@ -46,7 +44,11 @@ export function AccordionGallery({ items }: AccordionGalleryProps) {
               onClick={() => setSelectedItem(item)}
               className={`relative h-full transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] cursor-pointer rounded-2xl overflow-hidden flex-shrink-0 ${isActive ? 'w-[253px] sm:w-[309px]' : 'w-[60px] sm:w-[80px]'
                 }`}
-              onMouseEnter={() => setActiveIndex(index)}
+              onMouseEnter={() => {
+                setActiveIndex(index);
+                setIsHovering(true);
+              }}
+              onMouseLeave={() => setIsHovering(false)}
             >
               <img
                 src={item.image}

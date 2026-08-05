@@ -14,9 +14,9 @@ export default function HomePage() {
       <main>
         <HeroSection />
         <FeaturedEvents />
+        <UpcomingEvents />
         <CategoriesSection />
         <StatisticsSection />
-        <UpcomingEvents />
         <WhyCampusEvents />
       </main>
       <Footer />
