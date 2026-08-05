@@ -43,7 +43,7 @@ export default function CategoriesSection() {
   const bottomMarqueeItems = [...EXTRA_CATEGORIES, ...EXTRA_CATEGORIES];
 
   return (
-    <section className="pb-24 pt-12 px-6 bg-white overflow-hidden" id="categories">
+    <section className="pb-0 pt-28 px-6 bg-white overflow-hidden" id="categories">
       <div className="max-w-7xl mx-auto mb-12">
         {/* Header Section */}
         <div className="text-center mb-14">

@@ -3,9 +3,8 @@ import Footer from "@/components/layout/Footer";
 import HeroSection from "@/components/landing/HeroSection";
 import FeaturedEvents from "@/components/landing/FeaturedEvents";
 import CategoriesSection from "@/components/landing/CategoriesSection";
-import StatisticsSection from "@/components/landing/StatisticsSection";
+import PartnersSection from "@/components/landing/PartnersSection";
 import UpcomingEvents from "@/components/landing/UpcomingEvents";
-import WhyCampusEvents from "@/components/landing/WhyCampusEvents";
 
 export default function HomePage() {
   return (
@@ -16,8 +15,7 @@ export default function HomePage() {
         <FeaturedEvents />
         <UpcomingEvents />
         <CategoriesSection />
-        <StatisticsSection />
-        <WhyCampusEvents />
+        <PartnersSection />
       </main>
       <Footer />
     </>

@@ -8,7 +8,7 @@ const NAV_LINKS = [
   { label: "Home", href: "/" },
   { label: "Events", href: "/events" },
   { label: "Clubs", href: "#clubs" },
-  { label: "About", href: "#about" },
+  { label: "About", href: "/about" },
 ];
 
 export default function Navbar() {
@@ -18,6 +18,10 @@ export default function Navbar() {
   useEffect(() => {
     // Triggers when user scrolls a bit down (25% of viewport height)
     const onScroll = () => setIsCollapsed(window.scrollY > (window.innerHeight * 0.25));
+    
+    // Check initial scroll position
+    onScroll();
+    
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
