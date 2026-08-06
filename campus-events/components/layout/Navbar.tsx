@@ -28,7 +28,7 @@ export default function Navbar() {
 
   return (
     <header
-      className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 transition-all duration-500 ease-in-out rounded-2xl border border-[#E5E5EA] bg-white shadow-sm flex items-center px-4 md:px-6 ${
+      className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 transition-all duration-500 ease-in-out rounded-2xl border-[0.5px] border-[#E5E5EA] bg-white flex items-center px-4 md:px-6 ${
         isCollapsed ? 'w-[calc(100%-2rem)] md:max-w-[420px]' : 'w-[calc(100%-2rem)] max-w-7xl'
       }`}
       style={{ height: '64px' }}
@@ -92,7 +92,7 @@ export default function Navbar() {
 
       {mobileOpen && !isCollapsed && (
         <div
-          className="absolute top-20 left-0 right-0 px-6 py-4 flex flex-col gap-2 rounded-2xl bg-white border border-[#E5E5EA] shadow-xl md:hidden"
+          className="absolute top-20 left-0 right-0 px-6 py-4 flex flex-col gap-2 rounded-2xl bg-white border-[0.5px] border-[#E5E5EA] md:hidden"
         >
           {NAV_LINKS.map((link) => (
             <Link
