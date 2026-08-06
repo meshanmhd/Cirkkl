@@ -178,10 +178,25 @@ export function ProfileMenu({ initialUser = null, initialRole = "user", initialQ
     </DropdownMenu>
 
     <Dialog open={qrOpen} onOpenChange={setQrOpen}>
-      <DialogContent className="sm:max-w-sm rounded-[32px] p-0 bg-white border border-[#E5E5EA] overflow-hidden shadow-2xl [&>button]:right-6 [&>button]:top-6 [&>button]:text-[#6E6E73] hover:[&>button]:text-[#111111]">
-        <div className="relative flex flex-col items-center p-8 bg-gradient-to-b from-[#F5F5F7]/80 to-white min-h-[500px]">
+      <DialogContent 
+        className="sm:max-w-sm rounded-[32px] p-0 bg-white border border-[#E5E5EA] overflow-hidden [&>button]:right-6 [&>button]:top-6 [&>button]:text-[#6E6E73] hover:[&>button]:text-[#111111]"
+        style={{
+          maskImage: 'radial-gradient(circle at left calc(100% - 340px), transparent 16px, black 17px, black 100%), radial-gradient(circle at right calc(100% - 340px), transparent 16px, black 17px, black 100%)',
+          maskSize: '51% 100%',
+          maskPosition: 'left, right',
+          maskRepeat: 'no-repeat',
+          WebkitMaskImage: 'radial-gradient(circle at left calc(100% - 340px), transparent 16px, black 17px, black 100%), radial-gradient(circle at right calc(100% - 340px), transparent 16px, black 17px, black 100%)',
+          WebkitMaskSize: '51% 100%',
+          WebkitMaskPosition: 'left, right',
+          WebkitMaskRepeat: 'no-repeat',
+        }}
+      >
+        <div className="relative flex flex-col items-center p-8 bg-gradient-to-b from-[#F5F5F7]/80 to-white">
           {/* Decorative blur */}
           <div className="absolute top-[-10%] right-[-10%] w-64 h-64 bg-[#cfe467]/20 rounded-full blur-3xl pointer-events-none" />
+          
+          {/* Ticket cutout dashed line */}
+          <div className="absolute left-6 right-6 top-[calc(100%-340px)] border-t-[2px] border-dotted border-[#E5E5EA] z-0" />
           
           <DialogHeader className="w-full relative z-10 mb-8 mt-2">
             <DialogTitle className="text-center text-sm font-bold text-[#6E6E73] uppercase tracking-[0.2em]">Digital Pass</DialogTitle>
@@ -216,8 +231,7 @@ export function ProfileMenu({ initialUser = null, initialRole = "user", initialQ
               </div>
 
               {/* ID Number */}
-              <div className="mt-3 flex flex-col items-center">
-                <p className="text-[13px] font-semibold text-[#6E6E73] mb-2 tracking-wide">Cirkkl ID</p>
+              <div className="mt-5 flex flex-col items-center">
                 <div className="bg-[#F5F5F7] rounded-2xl px-6 py-2.5 border border-[#E5E5EA]/60">
                   <p className="text-xl font-mono font-bold text-[#111111] tracking-[0.15em]">{qrCode.toUpperCase()}</p>
                 </div>
