@@ -35,7 +35,24 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   // Here you can add route protection logic based on user existence or roles later.
-  // For now, we are just refreshing the session.
+  if (user) {
+    const role = user.user_metadata?.role;
+    const isOtpVerified = user.user_metadata?.is_otp_verified === true;
+    const path = request.nextUrl.pathname;
+    
+    // Organisation routing logic
+    if (role === 'org') {
+      if (!isOtpVerified && path !== '/verify-org' && path !== '/login' && path !== '/signup') {
+        // Not verified yet, lock them out of everything except verify page
+        return NextResponse.redirect(new URL('/verify-org', request.url));
+      }
+      
+      if (isOtpVerified && (path === '/' || path === '/verify-org')) {
+        // Verified orgs shouldn't be on the landing page or verify page, redirect to dashboard
+        return NextResponse.redirect(new URL('/dashboard', request.url));
+      }
+    }
+  }
 
   return supabaseResponse
 }

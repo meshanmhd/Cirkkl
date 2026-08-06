@@ -12,7 +12,7 @@ const NAV_LINKS = [
   { label: "About", href: "/about" },
 ];
 
-export default function Navbar() {
+export default function Navbar({ initialUser = null, initialRole = "user", initialQrCode = null }: { initialUser?: any, initialRole?: string, initialQrCode?: string | null }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -64,7 +64,7 @@ export default function Navbar() {
             isCollapsed ? 'max-w-0 opacity-0 pointer-events-none' : 'max-w-[200px] opacity-100'
           }`}
         >
-          <ProfileMenu />
+          <ProfileMenu initialUser={initialUser} initialRole={initialRole} initialQrCode={initialQrCode} />
         </div>
 
         {/* Mobile Menu Button */}
@@ -94,7 +94,7 @@ export default function Navbar() {
             </Link>
           ))}
           <div className="flex gap-3 mt-2 justify-center border-t border-[#E5E5EA] pt-4">
-            <ProfileMenu />
+            <ProfileMenu initialUser={initialUser} initialRole={initialRole} initialQrCode={initialQrCode} />
           </div>
         </div>
       )}
