@@ -32,7 +32,7 @@ export const EVENTS: Event[] = [
   {
     id: "1",
     title: "National Level Hackathon 2025",
-    description: "Build innovative solutions for real-world problems in 48 hours. Top prizes worth ₹5 Lakhs. Open to all students.",
+    description: "Build innovative solutions for real-world problems in 48 hours. Top prizes worth ₹5 Lakhs. Open to all students. \n\nJoin us for an electrifying weekend of coding, collaboration, and caffeine! This hackathon is designed to push your limits and help you discover new technologies. You will have the opportunity to work alongside some of the brightest minds in the country, mentored by industry experts from top tech companies. \n\nWhether you're a seasoned developer or just starting out, there's a place for you here. We've prepared multiple tracks including AI/ML, Web3, Healthcare, and Sustainable Tech. Form a team of up to 4 members or find teammates at our team-building mixer on day one.\n\nKey Highlights:\n- 48 hours of uninterrupted hacking\n- Free food, snacks, and unlimited Red Bull\n- Swag bags for all participants\n- Exclusive recruitment opportunities with our sponsors\n- Fun mini-events to keep the energy high\n\nDon't miss this chance to build something amazing, win incredible prizes, and make memories that will last a lifetime. Registration closes soon, so secure your spot today!",
     date: "Aug 15, 2025",
     time: "9:00 AM",
     venue: "Innovation Hub, Block A",

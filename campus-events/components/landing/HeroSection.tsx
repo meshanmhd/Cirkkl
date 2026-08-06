@@ -4,7 +4,7 @@ import { DotField } from "@/components/ui/DotField";
 
 export default function HeroSection() {
   return (
-    <section className="relative min-h-screen flex items-center overflow-hidden pt-16">
+    <section className="relative min-h-screen flex items-center overflow-hidden pt-16 px-6">
       <div
         className="absolute inset-0 -z-30"
         style={{
@@ -26,7 +26,7 @@ export default function HeroSection() {
         <DotField color="#cfe467" dotSize={4.5} dotSpacing={32} />
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-24 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center w-full">
+      <div className="relative z-20 max-w-7xl mx-auto py-24 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center w-full">
         <div className="animate-fade-up">
           <h1
             className="text-5xl sm:text-6xl lg:text-7xl font-extrabold leading-[1.06] tracking-tight"
@@ -83,25 +83,7 @@ export default function HeroSection() {
             </a>
           </div>
 
-          <div className="flex items-center gap-6 mt-12">
-            <div className="flex -space-x-2">
-              {["👩‍💻", "🧑‍🎨", "👨‍🔬", "👩‍🎓", "🧑‍💼"].map((emoji, i) => (
-                <div
-                  key={i}
-                  className="-full border-2 border-[#F7F7F8] flex items-center justify-center text-sm"
-                  style={{ background: `hsl(${i * 50 + 200}, 80%, 85%)` }}
-                >
-                  {emoji}
-                </div>
-              ))}
-            </div>
-            <p className="text-sm" style={{ color: "#6E6E73" }}>
-              <span className="font-semibold" style={{ color: "#111111" }}>
-                10,000+
-              </span>{" "}
-              students already registered
-            </p>
-          </div>
+
         </div>
 
 

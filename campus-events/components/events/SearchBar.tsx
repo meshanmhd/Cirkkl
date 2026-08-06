@@ -1,6 +1,8 @@
 "use client";
 
-import { Search } from "lucide-react";
+import { Search, X } from "lucide-react";
+
+import { Input } from "@/components/ui/input";
 
 interface SearchBarProps {
   value: string;
@@ -9,33 +11,28 @@ interface SearchBarProps {
 
 export default function SearchBar({ value, onChange }: SearchBarProps) {
   return (
-    <div className="relative max-w-2xl mx-auto">
+    <div className="relative w-full max-w-2xl mx-auto">
       <Search
-        size={20}
-        className="absolute left-5 top-1/2 -translate-y-1/2 pointer-events-none"
-        style={{ color: "#6E6E73" }}
+        size={18}
+        className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none text-[#6E6E73] z-10"
       />
-      <input
+      <Input
         id="events-search"
-        type="search"
-        placeholder="Search events, clubs, organizers…"
+        type="text"
+        placeholder="Search events, clubs…"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full pl-14 pr-5 py-4 rounded-2xl text-sm outline-none transition-all duration-200 bg-white"
-        style={{
-          border: "1.5px solid #E5E5EA",
-          color: "#111111",
-          boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
-        }}
-        onFocus={(e) => {
-          e.currentTarget.style.border = "1.5px solid #cfe467";
-          e.currentTarget.style.boxShadow = "0 0 0 4px rgba(0,122,255,0.08)";
-        }}
-        onBlur={(e) => {
-          e.currentTarget.style.border = "1.5px solid #E5E5EA";
-          e.currentTarget.style.boxShadow = "0 2px 12px rgba(0,0,0,0.06)";
-        }}
+        className="w-full pl-11 pr-10 h-12 rounded-xl text-sm border-[1.5px] border-[#E5E5EA] outline-none focus:outline-none focus:ring-0 focus:border-[#E5E5EA] focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-[#E5E5EA] bg-white text-[#111111]"
       />
+      {value && (
+        <button
+          type="button"
+          onClick={() => onChange("")}
+          className="absolute right-4 top-1/2 -translate-y-1/2 text-[#6E6E73] hover:text-[#111111] transition-colors"
+        >
+          <X size={16} />
+        </button>
+      )}
     </div>
   );
 }

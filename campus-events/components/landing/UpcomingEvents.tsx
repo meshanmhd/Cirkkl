@@ -41,17 +41,17 @@ export default function UpcomingEvents() {
             return (
               <Link key={event.id} href={`/events/${event.id}`} className="group flex-none w-[320px]">
                 <article
-                  className="relative rounded-[24px] bg-white overflow-hidden transition-colors duration-300 border border-[#F0F0F0] hover:border-[#D1D1D6]"
+                  className="relative rounded-xl bg-white overflow-hidden transition-colors duration-300 border border-[#F0F0F0] hover:border-[#D1D1D6]"
                 >
                   {/* Image & Overlays */}
-                  <div className="relative aspect-[4/3] overflow-hidden">
+                  <div className="relative aspect-[16/9] overflow-hidden">
                     <img
                       src={event.image}
                       alt={event.title}
                       className="w-full h-full object-cover transition-transform duration-700"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-black/20 opacity-80 group-hover:opacity-100 transition-opacity duration-300" />
-                    
+
                     {/* Free/Paid Badge */}
                     <div className={`absolute top-4 right-4 px-3.5 py-1.5 rounded-[6px] shadow-sm flex items-center justify-center ${event.price === "paid" ? "bg-[#7B61FF]" : "bg-[#cfe467]"}`}>
                       <span className={`text-[12px] font-bold leading-none pt-[1px] ${event.price === "paid" ? "text-white" : "text-[#111111]"}`}>
@@ -63,13 +63,18 @@ export default function UpcomingEvents() {
                   {/* Details */}
                   <div className="p-5 flex flex-col gap-6">
                     {/* Title with left accent border */}
-                    <div className="relative pl-4 h-[48px] flex flex-col justify-center">
+                    <div className="relative pl-4 flex flex-col justify-center min-h-[48px]">
                       <div className="absolute left-0 top-1 bottom-1 w-1 bg-[#cfe467] rounded-full" />
-                      <h3 className="font-bold text-[17px] leading-snug text-[#111111] line-clamp-2">
+                      {event.organizer && (
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#6E6E73] mb-0.5">
+                          {event.organizer}
+                        </span>
+                      )}
+                      <h3 className="font-bold text-[17px] leading-snug text-[#111111] truncate">
                         {event.title}
                       </h3>
                     </div>
-                    
+
                     <div className="flex flex-col gap-4">
                       {/* Time */}
                       <div className="flex items-start gap-3">
@@ -99,7 +104,7 @@ export default function UpcomingEvents() {
                           <MapPin size={16} className="text-[#111111]" strokeWidth={1.5} />
                         </div>
                         <div className="flex flex-col justify-center min-h-[40px]">
-                          <span className="text-[12px] font-medium text-[#6E6E73] mb-0.5">Location</span>
+                          <span className="text-[12px] font-medium text-[#6E6E73] mb-0.5">Vanue</span>
                           <span className="text-[13px] font-medium text-[#111111] line-clamp-1">{event.location}</span>
                         </div>
                       </div>
