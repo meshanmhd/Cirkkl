@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { EVENTS } from "@/data/events";
+import { createClient } from "@/utils/supabase/server";
 import Link from "next/link";
 import { ArrowLeft, Calendar, Clock, MapPin, Ticket, User } from "lucide-react";
 import { Metadata } from "next";
@@ -7,14 +7,17 @@ import { SlideButton } from "@/components/ui/SlideButton";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
-  const event = EVENTS.find((e) => e.id === id);
+  const supabase = await createClient();
+  const { data: event } = await supabase.from('events').select('title').eq('id', id).single();
+  
   if (!event) return { title: "Event Not Found" };
   return { title: `${event.title} | Campus Events` };
 }
 
 export default async function EventPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const event = EVENTS.find((e) => e.id === id);
+  const supabase = await createClient();
+  const { data: event } = await supabase.from('events').select('*').eq('id', id).single();
 
   if (!event) {
     notFound();
@@ -129,7 +132,9 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                         </div>
                         <div className="flex flex-col justify-center">
                           <span className="text-[13px] font-medium text-[#6E6E73] mb-0.5">Registration Fee</span>
-                          <span className="text-[15px] font-semibold text-[#111111]">{event.price === 'paid' ? 'Paid' : 'Free'}</span>
+                          <span className="text-[15px] font-semibold text-[#111111]">
+                            {event.price === 'paid' ? (event.priceAmount ? `₹${event.priceAmount}` : 'Paid') : 'Free'}
+                          </span>
                         </div>
                       </div>
 

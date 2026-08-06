@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import SearchBar from "@/components/events/SearchBar";
@@ -10,8 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import EventGrid from "@/components/events/EventGrid";
 import Pagination from "@/components/events/Pagination";
 import EmptyState from "@/components/events/EmptyState";
-import { EVENTS } from "@/data/events";
-
+import { LoadingAnimation } from "@/components/ui/LoadingAnimation";
+import { createClient } from "@/utils/supabase/client";
+import { Event } from "@/data/events";
 const EVENTS_PER_PAGE = 12;
 
 const CATEGORY_FILTERS = [
@@ -30,9 +31,29 @@ export default function EventsPage() {
   const [timeFilter, setTimeFilter] = useState("Upcoming");
   const [categoryFilter, setCategoryFilter] = useState("All");
   const [page, setPage] = useState(1);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchEvents() {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from('events')
+        .select('*');
+      
+      if (error) {
+        console.error("Error fetching events:", error);
+      } else if (data) {
+        setEvents(data as Event[]);
+      }
+      setLoading(false);
+    }
+    
+    fetchEvents();
+  }, []);
 
   const filtered = useMemo(() => {
-    let result = [...EVENTS];
+    let result = [...events];
 
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -57,7 +78,7 @@ export default function EventsPage() {
     }
 
     return result;
-  }, [search, timeFilter, categoryFilter]);
+  }, [search, timeFilter, categoryFilter, events]);
 
   const totalPages = Math.ceil(filtered.length / EVENTS_PER_PAGE);
   const paginated = filtered.slice((page - 1) * EVENTS_PER_PAGE, page * EVENTS_PER_PAGE);
@@ -148,7 +169,11 @@ export default function EventsPage() {
             </div>
           </div>
 
-          {paginated.length === 0 ? (
+          {loading ? (
+            <div className="flex justify-center items-center py-20">
+              <LoadingAnimation width={300} height={300} />
+            </div>
+          ) : paginated.length === 0 ? (
             <EmptyState query={search} />
           ) : (
             <>
