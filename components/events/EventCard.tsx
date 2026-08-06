@@ -90,7 +90,7 @@ export default function EventCard({ event }: EventCardProps) {
                 <MapPin size={16} className="text-[#111111]" strokeWidth={1.5} />
               </div>
               <div className="flex flex-col justify-center min-h-[40px]">
-                <span className="text-[12px] font-medium text-[#6E6E73] mb-0.5">Vanue</span>
+                <span className="text-[12px] font-medium text-[#6E6E73] mb-0.5">Venue</span>
                 <span className="text-[13px] font-medium text-[#111111] line-clamp-1">{event.location || event.venue}</span>
               </div>
             </div>

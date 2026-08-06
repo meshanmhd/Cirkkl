@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
+import { ProfileMenu } from "@/components/layout/ProfileMenu";
 
 const NAV_LINKS = [
   { label: "Home", href: "/" },
@@ -63,19 +64,7 @@ export default function Navbar() {
             isCollapsed ? 'max-w-0 opacity-0 pointer-events-none' : 'max-w-[200px] opacity-100'
           }`}
         >
-          <Link
-            href="/login"
-            className="px-4 py-2 rounded-lg text-sm font-medium text-[#111111] hover:bg-[#E5E5EA]/60 transition-all duration-200 shrink-0"
-          >
-            Log in
-          </Link>
-          <Link
-            href="/signup"
-            className="px-4 py-2 rounded-lg text-sm font-semibold text-[#111111] transition-all duration-200 hover:opacity-90 hover:scale-[1.02] active:scale-[0.98] shrink-0"
-            style={{ background: "#cfe467" }}
-          >
-            Sign Up
-          </Link>
+          <ProfileMenu />
         </div>
 
         {/* Mobile Menu Button */}
@@ -104,20 +93,8 @@ export default function Navbar() {
               {link.label}
             </Link>
           ))}
-          <div className="flex gap-3 mt-2">
-            <Link
-              href="/login"
-              className="flex-1 py-2 text-center rounded-xl text-sm font-medium border border-[#E5E5EA] text-[#111111]"
-            >
-              Log in
-            </Link>
-            <Link
-              href="/signup"
-              className="flex-1 py-2 text-center rounded-xl text-sm font-semibold text-[#111111]"
-              style={{ background: "#cfe467" }}
-            >
-              Sign Up
-            </Link>
+          <div className="flex gap-3 mt-2 justify-center border-t border-[#E5E5EA] pt-4">
+            <ProfileMenu />
           </div>
         </div>
       )}

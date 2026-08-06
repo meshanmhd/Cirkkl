@@ -1,9 +1,8 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { EVENTS } from "@/data/events";
+import { createClient } from "@/utils/supabase/server";
 import { AccordionGallery } from "@/components/ui/AccordionGallery";
 
-const featured = EVENTS.filter((e) => e.featured).slice(0, 3);
 
 const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
   Hackathons: { bg: "#F3F0FF", text: "#7B61FF" },
@@ -16,7 +15,10 @@ const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
   Music: { bg: "#FFF0F3", text: "#FF2D55" },
 };
 
-export default function FeaturedEvents() {
+export default async function FeaturedEvents() {
+  const supabase = await createClient();
+  const { data: featured } = await supabase.from('events').select('*').eq('featured', true).limit(3);
+  
   return (
     <section className="pb-24 px-6 pt-0 mt-0" id="featured">
       <div className="max-w-7xl mx-auto">
@@ -29,7 +31,7 @@ export default function FeaturedEvents() {
           </p>
         </div>
 
-        <AccordionGallery items={featured} />
+        <AccordionGallery items={featured || []} />
       </div>
     </section>
   );

@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { Calendar, Clock, MapPin, ArrowRight, IndianRupee, Sparkles } from "lucide-react";
-import { EVENTS } from "@/data/events";
+import { createClient } from "@/utils/supabase/server";
 
-const upcoming = EVENTS.slice(3, 9);
 
 const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
   Hackathons: { bg: "#F3F0FF", text: "#7B61FF" },
@@ -15,7 +14,10 @@ const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
   Music: { bg: "#FFF0F3", text: "#FF2D55" },
 };
 
-export default function UpcomingEvents() {
+export default async function UpcomingEvents() {
+  const supabase = await createClient();
+  const { data: upcoming } = await supabase.from('events').select('*').limit(6);
+
   return (
     <section className="pb-0 pt-0 px-6" id="upcoming">
       <div className="max-w-7xl mx-auto">
@@ -37,7 +39,7 @@ export default function UpcomingEvents() {
         </div>
 
         <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide -mx-2 px-2">
-          {upcoming.map((event: any) => {
+          {(upcoming || []).map((event: any) => {
             return (
               <Link key={event.id} href={`/events/${event.id}`} className="group flex-none w-[320px]">
                 <article
@@ -104,7 +106,7 @@ export default function UpcomingEvents() {
                           <MapPin size={16} className="text-[#111111]" strokeWidth={1.5} />
                         </div>
                         <div className="flex flex-col justify-center min-h-[40px]">
-                          <span className="text-[12px] font-medium text-[#6E6E73] mb-0.5">Vanue</span>
+                          <span className="text-[12px] font-medium text-[#6E6E73] mb-0.5">Venue</span>
                           <span className="text-[13px] font-medium text-[#111111] line-clamp-1">{event.location}</span>
                         </div>
                       </div>

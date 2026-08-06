@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import Link from "next/link";
 import {
   Wrench, Terminal, Palette, Dribbble, Cpu, Mic, Medal, Music,
@@ -38,9 +39,27 @@ const IconMap: Record<string, any> = {
 };
 
 export default function CategoriesSection() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  
   // Duplicate categories to create seamless infinite loops
   const topMarqueeItems = [...CATEGORIES, ...CATEGORIES];
   const bottomMarqueeItems = [...EXTRA_CATEGORIES, ...EXTRA_CATEGORIES];
+
+  const handleMouseEnter = () => {
+    if (!containerRef.current) return;
+    const anims = containerRef.current.getAnimations({ subtree: true });
+    anims.forEach(anim => {
+      anim.playbackRate = 0.15; // Slow down to 15% speed
+    });
+  };
+
+  const handleMouseLeave = () => {
+    if (!containerRef.current) return;
+    const anims = containerRef.current.getAnimations({ subtree: true });
+    anims.forEach(anim => {
+      anim.playbackRate = 1; // Return to normal speed
+    });
+  };
 
   return (
     <section className="pb-0 pt-28 px-6 bg-white overflow-hidden" id="categories">
@@ -60,7 +79,12 @@ export default function CategoriesSection() {
       </div>
 
       {/* Infinite Marquees Container */}
-      <div className="relative w-full marquee-container group py-2 flex flex-col gap-6">
+      <div 
+        ref={containerRef}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        className="relative w-full marquee-container group py-2 flex flex-col gap-6"
+      >
 
         {/* Top Marquee (Left to Right) */}
         <div className="flex w-max animate-marquee gap-6 px-3">
@@ -128,10 +152,6 @@ export default function CategoriesSection() {
         }
         .animate-marquee-reverse {
           animation: marquee-reverse 45s linear infinite; /* Slower speed for stagger effect */
-        }
-        .marquee-container:hover .animate-marquee,
-        .marquee-container:hover .animate-marquee-reverse {
-          animation-play-state: paused;
         }
       `}} />
     </section>
