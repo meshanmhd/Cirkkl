@@ -23,6 +23,15 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
     notFound();
   }
 
+  // Fetch registration count to determine if full
+  const { count } = await supabase
+    .from('registrations')
+    .select('*', { count: 'exact', head: true })
+    .eq('event_id', id);
+
+  const isFull = event.seats !== null && count !== null ? count >= event.seats : false;
+
+
   return (
     <div className="min-h-screen bg-white pb-20 font-sans">
 
@@ -142,7 +151,12 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                   </div>
 
                   <div className="pt-2">
-                    <SlideButton />
+                    <SlideButton
+                      eventId={event.id}
+                      customFields={event.custom_fields ?? []}
+                      isFull={isFull}
+                      approvalRequired={event.approval_required}
+                    />
                   </div>
                 </div>
               </div>

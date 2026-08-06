@@ -1,4 +1,4 @@
-import Navbar from "@/components/layout/Navbar";
+import ServerNavbar from "@/components/layout/ServerNavbar";
 import Footer from "@/components/layout/Footer";
 import HeroSection from "@/components/landing/HeroSection";
 import FeaturedEvents from "@/components/landing/FeaturedEvents";
@@ -9,7 +9,7 @@ import UpcomingEvents from "@/components/landing/UpcomingEvents";
 export default function HomePage() {
   return (
     <>
-      <Navbar />
+      <ServerNavbar />
       <main>
         <HeroSection />
         <FeaturedEvents />

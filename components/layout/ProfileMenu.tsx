@@ -11,15 +11,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import QRCode from "react-qr-code";
 import { createClient } from "@/utils/supabase/client";
 import { User } from "@supabase/supabase-js";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-export function ProfileMenu() {
-  const [user, setUser] = useState<User | null>(null);
-  const [role, setRole] = useState<string>("user");
-  const [loading, setLoading] = useState(true);
+export function ProfileMenu({ initialUser = null, initialRole = "user", initialQrCode = null }: { initialUser?: any, initialRole?: string, initialQrCode?: string | null }) {
+  const [user, setUser] = useState<any>(initialUser);
+  const [role, setRole] = useState<string>(initialRole);
+  const [qrCode, setQrCode] = useState<string | null>(initialQrCode);
+  const [loading, setLoading] = useState(false);
+  const [qrOpen, setQrOpen] = useState(false);
   const supabase = createClient();
   const router = useRouter();
 
@@ -30,11 +34,12 @@ export function ProfileMenu() {
       try {
         const { data: profile } = await supabase
           .from('users')
-          .select('role')
+          .select('role, qr_code')
           .eq('id', userId)
           .single();
         if (mounted && profile) {
           setRole(profile.role);
+          setQrCode(profile.qr_code);
         }
       } catch (error) {
         console.error("Error fetching role:", error);
@@ -120,6 +125,7 @@ export function ProfileMenu() {
   const fullName = user.user_metadata?.full_name || user.email?.split('@')[0] || "User";
 
   return (
+    <>
     <DropdownMenu>
       <DropdownMenuTrigger className="rounded-full shrink-0 overflow-hidden outline-none ring-2 ring-transparent focus-visible:ring-[#cfe467] transition-all">
         <Avatar className="h-9 w-9 border border-[#E5E5EA]">
@@ -141,6 +147,12 @@ export function ProfileMenu() {
           </DropdownMenuLabel>
         </DropdownMenuGroup>
         <DropdownMenuSeparator className="bg-[#E5E5EA] my-1" />
+        <DropdownMenuItem 
+          className="cursor-pointer rounded-lg px-2 py-2 text-sm text-[#111111] hover:bg-[#F5F5F7] focus:bg-[#F5F5F7]"
+          onClick={() => setQrOpen(true)}
+        >
+          My QR
+        </DropdownMenuItem>
         <DropdownMenuItem className="cursor-pointer rounded-lg px-2 py-2 text-sm text-[#111111] hover:bg-[#F5F5F7] focus:bg-[#F5F5F7]">
           Profile
         </DropdownMenuItem>
@@ -164,5 +176,75 @@ export function ProfileMenu() {
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+
+    <Dialog open={qrOpen} onOpenChange={setQrOpen}>
+      <DialogContent 
+        className="sm:max-w-sm rounded-[32px] p-0 bg-white border border-[#E5E5EA] overflow-hidden [&>button]:right-6 [&>button]:top-6 [&>button]:text-[#6E6E73] hover:[&>button]:text-[#111111]"
+        style={{
+          maskImage: 'radial-gradient(circle at left calc(100% - 340px), transparent 16px, black 17px, black 100%), radial-gradient(circle at right calc(100% - 340px), transparent 16px, black 17px, black 100%)',
+          maskSize: '51% 100%',
+          maskPosition: 'left, right',
+          maskRepeat: 'no-repeat',
+          WebkitMaskImage: 'radial-gradient(circle at left calc(100% - 340px), transparent 16px, black 17px, black 100%), radial-gradient(circle at right calc(100% - 340px), transparent 16px, black 17px, black 100%)',
+          WebkitMaskSize: '51% 100%',
+          WebkitMaskPosition: 'left, right',
+          WebkitMaskRepeat: 'no-repeat',
+        }}
+      >
+        <div className="relative flex flex-col items-center p-8 bg-gradient-to-b from-[#F5F5F7]/80 to-white">
+          {/* Decorative blur */}
+          <div className="absolute top-[-10%] right-[-10%] w-64 h-64 bg-[#cfe467]/20 rounded-full blur-3xl pointer-events-none" />
+          
+          {/* Ticket cutout dashed line */}
+          <div className="absolute left-6 right-6 top-[calc(100%-340px)] border-t-[2px] border-dotted border-[#E5E5EA] z-0" />
+          
+          <DialogHeader className="w-full relative z-10 mb-8 mt-2">
+            <DialogTitle className="text-center text-sm font-bold text-[#6E6E73] uppercase tracking-[0.2em]">Digital Pass</DialogTitle>
+          </DialogHeader>
+
+          {qrCode ? (
+            <div className="relative z-10 flex flex-col items-center w-full">
+              {/* User Info */}
+              <div className="flex flex-col items-center mb-8">
+                <Avatar className="h-20 w-20 border-[3px] border-white shadow-sm mb-4 ring-1 ring-[#E5E5EA]">
+                  <AvatarImage src={`https://api.dicebear.com/7.x/notionists/svg?seed=${user.id}`} alt={fullName} />
+                  <AvatarFallback className="bg-[#cfe467] text-[#111111] font-bold text-xl">
+                    {getInitials(fullName)}
+                  </AvatarFallback>
+                </Avatar>
+                <h3 className="text-2xl font-bold text-[#111111] tracking-tight text-center">{fullName}</h3>
+                <p className="text-sm font-medium text-[#6E6E73] capitalize mt-1">
+                  {role === 'user' ? 'Member' : role}
+                </p>
+              </div>
+
+              {/* QR Code Container */}
+              <div className="bg-white p-5 rounded-[28px] border border-[#E5E5EA] w-full max-w-[220px] aspect-square flex items-center justify-center relative">
+                <QRCode 
+                  value={qrCode.toUpperCase()} 
+                  size={200}
+                  style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                  fgColor="#111111"
+                  bgColor="#ffffff"
+                  level="Q"
+                />
+              </div>
+
+              {/* ID Number */}
+              <div className="mt-5 flex flex-col items-center">
+                <div className="bg-[#F5F5F7] rounded-2xl px-6 py-2.5 border border-[#E5E5EA]/60">
+                  <p className="text-xl font-mono font-bold text-[#111111] tracking-[0.15em]">{qrCode.toUpperCase()}</p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="w-[200px] h-[200px] bg-[#F5F5F7] rounded-2xl flex items-center justify-center border-2 border-dashed border-[#E5E5EA] mt-12">
+              <p className="text-sm text-[#6E6E73] font-medium px-4 text-center">No QR code found for this profile.</p>
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
