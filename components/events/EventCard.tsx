@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Calendar, Clock, MapPin, Users, Bookmark, BookmarkCheck } from "lucide-react";
 import type { Event } from "@/data/events";
 
@@ -26,109 +27,76 @@ export default function EventCard({ event }: EventCardProps) {
   const isLow = seatsPercent < 20;
 
   return (
-    <article
-      className="group bg-white rounded-2xl overflow-hidden flex flex-col transition-all duration-300 cursor-pointer"
-      style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)", border: "1px solid #F0F0F0" }}
-      onMouseEnter={(e) => {
-        const el = e.currentTarget;
-        el.style.transform = "translateY(-6px)";
-        el.style.boxShadow = "0 20px 50px rgba(0,0,0,0.12)";
-      }}
-      onMouseLeave={(e) => {
-        const el = e.currentTarget;
-        el.style.transform = "translateY(0)";
-        el.style.boxShadow = "0 2px 12px rgba(0,0,0,0.06)";
-      }}
-    >
-      <div className="relative overflow-hidden aspect-[16/9]">
-        <img
-          src={event.image}
-          alt={event.title}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-          loading="lazy"
-        />
-        <div
-          className="absolute inset-0"
-          style={{ background: "linear-gradient(to top, rgba(0,0,0,0.35) 0%, transparent 55%)" }}
-        />
-        <div className="absolute top-3 left-3 flex gap-2">
-          <span
-            className="px-2.5 py-1 rounded-lg text-[11px] font-semibold"
-            style={{ background: colors.bg, color: colors.text }}
-          >
-            {event.category}
-          </span>
-          {event.price === "free" && (
-            <span
-              className="px-2.5 py-1 rounded-lg text-[11px] font-semibold"
-              style={{ background: "rgba(52,199,89,0.15)", color: "#34C759" }}
-            >
-              Free
-            </span>
-          )}
-        </div>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setSaved(!saved);
-          }}
-          aria-label={saved ? "Unsave event" : "Save event"}
-          className="absolute top-3 right-3 -full flex items-center justify-center transition-all duration-200 hover:scale-110"
-          style={{ background: "rgba(255,255,255,0.9)" }}
-        >
-          {saved ? (
-            <BookmarkCheck size={15} style={{ color: "#cfe467" }} />
-          ) : (
-            <Bookmark size={15} style={{ color: "#6E6E73" }} />
-          )}
-        </button>
-      </div>
+    <Link href={`/events/${event.id}`} className="group block h-full">
+      <article className="relative h-full rounded-xl bg-white overflow-hidden transition-colors duration-300 border border-[#F0F0F0] hover:border-[#D1D1D6]">
+        {/* Image & Overlays */}
+        <div className="relative aspect-[16/9] overflow-hidden">
+          <img
+            src={event.image}
+            alt={event.title}
+            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-black/20 opacity-80 group-hover:opacity-100 transition-opacity duration-300" />
 
-      <div className="p-5 flex flex-col flex-1">
-        <h3
-          className="font-semibold text-[15px] leading-snug mb-2 line-clamp-2"
-          style={{ color: "#111111" }}
-        >
-          {event.title}
-        </h3>
-        <p className="text-xs leading-relaxed mb-4 line-clamp-2" style={{ color: "#6E6E73" }}>
-          {event.description}
-        </p>
-
-        <div className="space-y-1.5 mb-4">
-          <div className="flex items-center gap-2 text-xs" style={{ color: "#6E6E73" }}>
-            <Calendar size={12} style={{ color: "#cfe467" }} />
-            <span>{event.date}</span>
-            <span className="mx-1">·</span>
-            <Clock size={12} style={{ color: "#cfe467" }} />
-            <span>{event.time}</span>
-          </div>
-          <div className="flex items-center gap-2 text-xs" style={{ color: "#6E6E73" }}>
-            <MapPin size={12} style={{ color: "#cfe467" }} />
-            {event.venue}
-          </div>
-          <div className="flex items-center gap-2 text-xs" style={{ color: "#6E6E73" }}>
-            <Users size={12} style={{ color: isLow ? "#FF3B30" : "#cfe467" }} />
-            <span style={{ color: isLow ? "#FF3B30" : "#6E6E73" }}>
-              {event.seatsAvailable} seats left
-              {isLow && " — Almost full!"}
+          {/* Free/Paid Badge */}
+          <div className={`absolute top-4 right-4 px-3.5 py-1.5 rounded-[6px] shadow-sm flex items-center justify-center ${event.price === "paid" ? "bg-[#7B61FF]" : "bg-[#cfe467]"}`}>
+            <span className={`text-[12px] font-bold leading-none pt-[1px] ${event.price === "paid" ? "text-white" : "text-[#111111]"}`}>
+              {event.price === "paid" ? "Paid" : "Free"}
             </span>
           </div>
         </div>
 
-        <div className="flex items-center justify-between text-xs mb-4" style={{ color: "#6E6E73" }}>
-          <span>by <strong style={{ color: "#111111" }}>{event.organizer}</strong></span>
-        </div>
+        {/* Details */}
+        <div className="p-5 flex flex-col gap-6">
+          {/* Title with left accent border */}
+          <div className="relative pl-4 flex flex-col justify-center min-h-[48px]">
+            <div className="absolute left-0 top-1 bottom-1 w-1 bg-[#cfe467] rounded-full" />
+            {event.organizer && (
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#6E6E73] mb-0.5">
+                {event.organizer}
+              </span>
+            )}
+            <h3 className="font-bold text-[17px] leading-snug text-[#111111] truncate">
+              {event.title}
+            </h3>
+          </div>
 
-        <div className="mt-auto">
-          <button
-            id={`register-${event.id}`}
-            className="w-full py-2.5 rounded-xl text-sm font-semibold text-[#111111] transition-all duration-200" style={{ background: "#cfe467" }}
-          >
-            Register Now
-          </button>
+          <div className="flex flex-col gap-4">
+            {/* Time */}
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-[10px] border border-[#E5E5EA] bg-white flex items-center justify-center shrink-0">
+                <Clock size={16} className="text-[#111111]" strokeWidth={1.5} />
+              </div>
+              <div className="flex flex-col justify-center min-h-[40px]">
+                <span className="text-[12px] font-medium text-[#6E6E73] mb-0.5">Time</span>
+                <span className="text-[13px] font-medium text-[#111111]">{event.time}</span>
+              </div>
+            </div>
+
+            {/* Date */}
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-[10px] border border-[#E5E5EA] bg-white flex items-center justify-center shrink-0">
+                <Calendar size={16} className="text-[#111111]" strokeWidth={1.5} />
+              </div>
+              <div className="flex flex-col justify-center min-h-[40px]">
+                <span className="text-[12px] font-medium text-[#6E6E73] mb-0.5">Date</span>
+                <span className="text-[13px] font-medium text-[#111111]">{event.date}</span>
+              </div>
+            </div>
+
+            {/* Location */}
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-[10px] border border-[#E5E5EA] bg-white flex items-center justify-center shrink-0">
+                <MapPin size={16} className="text-[#111111]" strokeWidth={1.5} />
+              </div>
+              <div className="flex flex-col justify-center min-h-[40px]">
+                <span className="text-[12px] font-medium text-[#6E6E73] mb-0.5">Vanue</span>
+                <span className="text-[13px] font-medium text-[#111111] line-clamp-1">{event.location || event.venue}</span>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-    </article>
+      </article>
+    </Link>
   );
 }
