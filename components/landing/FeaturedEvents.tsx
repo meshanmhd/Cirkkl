@@ -17,7 +17,7 @@ const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
 
 export default async function FeaturedEvents() {
   const supabase = await createClient();
-  const { data: featured } = await supabase.from('events').select('*').eq('featured', true).limit(3);
+  const { data: featured } = await supabase.from('events').select('*').eq('status', 'published').eq('featured', true).limit(3);
   
   return (
     <section className="pb-24 px-6 pt-0 mt-0" id="featured">

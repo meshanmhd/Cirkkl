@@ -7,7 +7,7 @@ import { createClient } from "@/utils/supabase/client";
 import {
   ArrowLeft, LayoutDashboard, Users, CheckSquare, Shield,
   Calendar, MapPin, Globe, Tag, Eye, EyeOff,
-  Edit, Trash2, Search, Check, X, AlertTriangle, UserPlus, Download
+  Edit, Trash2, Search, Check, X, AlertTriangle, UserPlus, Download, ScanLine
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -90,6 +90,7 @@ export function EventManagePage({ event: initialEvent, registrations: initialReg
   const [deleting, setDeleting] = useState(false);
   const [toggling, setToggling] = useState(false);
   const [regSearch, setRegSearch] = useState("");
+  const [regFilterStatus, setRegFilterStatus] = useState("all");
   const [attSearch, setAttSearch] = useState("");
   const [addRoleOpen, setAddRoleOpen] = useState(false);
   const [addRoleMember, setAddRoleMember] = useState<string>("");
@@ -112,17 +113,19 @@ export function EventManagePage({ event: initialEvent, registrations: initialReg
   }, [orgMembers]);
 
   const filteredRegs = useMemo(() => regs.filter(r => {
+    if (regFilterStatus !== "all" && r.status !== regFilterStatus) return false;
     const p = profileMap[r.user_id];
     const term = regSearch.toLowerCase();
     return !term || p?.full_name?.toLowerCase().includes(term) || p?.email?.toLowerCase().includes(term) || r.ticket_code?.toLowerCase().includes(term);
-  }), [regs, regSearch, profileMap]);
+  }), [regs, regSearch, regFilterStatus, profileMap]);
 
   const approvedRegs = useMemo(() => regs.filter(r => r.status === "approved"), [regs]);
-  const filteredAtt = useMemo(() => approvedRegs.filter(r => {
+  const filteredAtt = useMemo(() => regs.filter(r => {
+    if (!r.attended) return false;
     const p = profileMap[r.user_id];
     const term = attSearch.toLowerCase();
     return !term || p?.full_name?.toLowerCase().includes(term) || p?.email?.toLowerCase().includes(term);
-  }), [approvedRegs, attSearch, profileMap]);
+  }), [regs, attSearch, profileMap]);
 
   const attendedCount = regs.filter(r => r.attended).length;
   const isPublished = event.status === "published";
@@ -198,6 +201,10 @@ export function EventManagePage({ event: initialEvent, registrations: initialReg
           <div className="w-px h-4 bg-[#E5E5EA]" />
           <p className="text-[14px] font-semibold text-[#111111] truncate flex-1">{event.title}</p>
           <div className="flex items-center gap-2 shrink-0">
+            <button onClick={() => setActiveSection("attendance")} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] border border-[#E5E5EA] text-[13px] font-medium text-[#111111] hover:bg-[#F5F5F7] transition-all">
+              <ScanLine size={13} />
+              Mark Attendance
+            </button>
             <button onClick={togglePublish} disabled={toggling} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] border border-[#E5E5EA] text-[13px] font-medium text-[#111111] hover:bg-[#F5F5F7] transition-all disabled:opacity-50">
               {isPublished ? <EyeOff size={13} /> : <Eye size={13} />}
               {isPublished ? "Unpublish" : "Publish"}
@@ -484,15 +491,27 @@ export function EventManagePage({ event: initialEvent, registrations: initialReg
           {activeSection === "registration" && (
             <SectionCard id="registration" title="Registration" subtitle="Participants who have registered for this event"
               action={<button onClick={exportCSV} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] border border-[#E5E5EA] text-[12px] font-medium text-[#6E6E73] hover:bg-[#F5F5F7] transition-all"><Download size={12} />Export CSV</button>}>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <StatCard label="Total" value={regs.length} />
                 <StatCard label="Approved" value={regs.filter((r: any) => r.status === "approved").length} color="#34C759" />
                 <StatCard label="Pending" value={regs.filter((r: any) => r.status === "pending").length} color="#FF9500" />
-                <StatCard label="Capacity" value={event.seats ?? 0} />
               </div>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9E9EA7] pointer-events-none" style={{ width: "14px", height: "14px" }} />
-                <input placeholder="Search by name, email or ticket code..." value={regSearch} onChange={e => setRegSearch(e.target.value)} className="w-full pl-9 pr-4 py-2 rounded-[10px] border border-[#E5E5EA] bg-white text-[13px] text-[#111111] placeholder:text-[#9E9EA7] outline-none focus:border-[#cfe467] focus:ring-1 focus:ring-[#cfe467] transition-all" />
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9E9EA7] pointer-events-none" style={{ width: "14px", height: "14px" }} />
+                  <input placeholder="Search by name, email or ticket code..." value={regSearch} onChange={e => setRegSearch(e.target.value)} className="w-full pl-9 pr-4 py-2 rounded-[10px] border border-[#E5E5EA] bg-white text-[13px] text-[#111111] placeholder:text-[#9E9EA7] outline-none focus:border-[#cfe467] focus:ring-1 focus:ring-[#cfe467] transition-all" />
+                </div>
+                <div className="flex bg-[#F5F5F7] p-1 rounded-[10px] w-full sm:w-[280px]">
+                  {["all", "approved", "pending"].map(tab => (
+                    <button
+                      key={tab}
+                      onClick={() => setRegFilterStatus(tab)}
+                      className={`flex-1 text-[13px] font-medium py-1.5 rounded-[8px] transition-all capitalize ${regFilterStatus === tab ? 'bg-white text-[#111111] shadow-sm' : 'text-[#6E6E73] hover:text-[#111111]'}`}
+                    >
+                      {tab}
+                    </button>
+                  ))}
+                </div>
               </div>
               <div className="overflow-x-auto rounded-[12px] border border-[#E5E5EA]">
                 <table className="w-full">
@@ -505,9 +524,9 @@ export function EventManagePage({ event: initialEvent, registrations: initialReg
                       return (
                         <tr key={r.id} className={`border-b border-[#F5F5F7] hover:bg-[#FAFAFA] transition-colors ${idx === filteredRegs.length - 1 ? "border-b-0" : ""}`}>
                           <td className="px-5 py-3"><div className="flex items-center gap-2.5"><Avatar className="h-7 w-7 border border-[#E5E5EA] shrink-0"><AvatarImage src={p?.avatar_url ?? `https://api.dicebear.com/7.x/notionists/svg?seed=${r.user_id}`} /><AvatarFallback className="text-[10px] font-medium bg-[#F5F5F7]">{getInitials(p?.full_name)}</AvatarFallback></Avatar><div className="min-w-0"><p className="text-[13px] font-medium text-[#111111] truncate">{p?.full_name ?? "-"}</p><p className="text-[11px] text-[#9E9EA7] truncate">{p?.email ?? "-"}</p></div></div></td>
-                          <td className="px-5 py-3 text-center"><span className="text-[12px] font-mono text-[#6E6E73]">{r.ticket_code ?? "-"}</span></td>
-                          <td className="px-5 py-3 text-center"><span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${r.status === "approved" ? "bg-[#F0FFF4] text-[#34C759]" : r.status === "pending" ? "bg-[#FFF8ED] text-[#FF9500]" : "bg-[#FFF0F0] text-[#FF3B30]"}`}>{r.status ?? "-"}</span></td>
-                          <td className="px-5 py-3 text-center"><span className="text-[12px] text-[#6E6E73] whitespace-nowrap">{formatDateTime(r.created_at)}</span></td>
+                          <td className="px-5 py-3 text-center"><span className="text-[13px] text-[#6E6E73]">{r.ticket_code ?? "-"}</span></td>
+                          <td className="px-5 py-3 text-center"><span className="text-[13px] text-[#6E6E73] capitalize">{r.status ?? "-"}</span></td>
+                          <td className="px-5 py-3 text-center"><span className="text-[13px] text-[#6E6E73] whitespace-nowrap">{formatDateTime(r.created_at)}</span></td>
                           <td className="px-5 py-3 text-right">{event.approval_required && r.status === "pending" && (<div className="flex items-center justify-end gap-1.5"><button onClick={() => approveReg(r.id)} className="px-2.5 py-1 rounded-[6px] text-[11px] font-semibold bg-[#F0FFF4] text-[#34C759] hover:bg-[#34C759] hover:text-white transition-all">Approve</button><button onClick={() => rejectReg(r.id)} className="px-2.5 py-1 rounded-[6px] text-[11px] font-semibold bg-[#FFF0F0] text-[#FF3B30] hover:bg-[#FF3B30] hover:text-white transition-all">Reject</button></div>)}</td>
                         </tr>
                       );
@@ -527,7 +546,7 @@ export function EventManagePage({ event: initialEvent, registrations: initialReg
               </div>
               <div className="overflow-x-auto rounded-[12px] border border-[#E5E5EA]">
                 <table className="w-full">
-                  <thead><tr className="border-b border-[#E5E5EA]">{["PARTICIPANT", "TICKET CODE", "ATTENDED"].map(col => (<th key={col} className={`px-5 py-3 text-[11px] font-medium text-[#9E9EA7] tracking-[0.05em] uppercase whitespace-nowrap ${col === "PARTICIPANT" ? "text-left" : "text-center"}`}>{col}</th>))}</tr></thead>
+                  <thead><tr className="border-b border-[#E5E5EA]">{["PARTICIPANT", "TICKET CODE", "TIME"].map(col => (<th key={col} className={`px-5 py-3 text-[11px] font-medium text-[#9E9EA7] tracking-[0.05em] uppercase whitespace-nowrap ${col === "PARTICIPANT" ? "text-left" : "text-center"}`}>{col}</th>))}</tr></thead>
                   <tbody>
                     {filteredAtt.length === 0 ? (
                       <tr><td colSpan={3} className="py-12 text-center text-[13px] text-[#9E9EA7]">No approved registrants yet</td></tr>
@@ -536,8 +555,8 @@ export function EventManagePage({ event: initialEvent, registrations: initialReg
                       return (
                         <tr key={r.id} className={`border-b border-[#F5F5F7] hover:bg-[#FAFAFA] transition-colors ${idx === filteredAtt.length - 1 ? "border-b-0" : ""}`}>
                           <td className="px-5 py-3"><div className="flex items-center gap-2.5"><Avatar className="h-7 w-7 border border-[#E5E5EA] shrink-0"><AvatarImage src={p?.avatar_url ?? `https://api.dicebear.com/7.x/notionists/svg?seed=${r.user_id}`} /><AvatarFallback className="text-[10px] font-medium bg-[#F5F5F7]">{getInitials(p?.full_name)}</AvatarFallback></Avatar><div className="min-w-0"><p className="text-[13px] font-medium text-[#111111] truncate">{p?.full_name ?? "-"}</p><p className="text-[11px] text-[#9E9EA7] truncate">{p?.email ?? "-"}</p></div></div></td>
-                          <td className="px-5 py-3 text-center"><span className="text-[12px] font-mono text-[#6E6E73]">{r.ticket_code ?? "-"}</span></td>
-                          <td className="px-5 py-3 text-center"><button onClick={() => toggleAttendance(r.id, r.attended)} className={`w-8 h-8 rounded-[8px] flex items-center justify-center mx-auto transition-all duration-200 ${r.attended ? "bg-[#cfe467] text-[#111111]" : "border border-[#E5E5EA] text-[#9E9EA7] hover:border-[#cfe467] hover:text-[#111111]"}`}><Check size={14} strokeWidth={2.5} /></button></td>
+                          <td className="px-5 py-3 text-center"><span className="text-[13px] text-[#6E6E73]">{r.ticket_code ?? "-"}</span></td>
+                          <td className="px-5 py-3 text-center"><span className="text-[13px] text-[#6E6E73] whitespace-nowrap">{r.attended_at ? formatDateTime(r.attended_at) : formatDateTime(r.created_at)}</span></td>
                         </tr>
                       );
                     })}

@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
+import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { EventManagePage } from "@/components/dashboard/EventManagePage";
 
 export const dynamic = 'force-dynamic';
@@ -21,16 +22,20 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
 
   const { data: registrations } = await supabase
     .from("registrations")
-    .select("id, user_id, status, ticket_code, created_at, custom_field_values, attended")
+    .select("*")
     .eq("event_id", id)
     .order("created_at", { ascending: false });
 
   const userIds = (registrations ?? []).map((r: any) => r.user_id).filter(Boolean);
   let profiles: any[] = [];
   if (userIds.length > 0) {
-    const { data } = await supabase
+    const adminSupabase = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+    const { data } = await adminSupabase
       .from("users")
-      .select("id, full_name, email, avatar_url")
+      .select("id, full_name, email")
       .in("id", userIds);
     profiles = data ?? [];
   }
