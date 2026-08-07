@@ -42,7 +42,7 @@ export default function Navbar({ initialUser = null, initialRole = "user", initi
             isCollapsed ? 'max-w-0 opacity-0 -ml-4 pointer-events-none' : 'max-w-[120px] opacity-100'
           }`}
         >
-          <span>Cirkkl</span>
+          <span className="font-geist">Cirkkl</span>
         </Link>
 
         {/* Links */}

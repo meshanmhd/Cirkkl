@@ -40,7 +40,7 @@
   body {
     background-color: var(--bg);
     color: var(--text-primary);
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+    font-family: 'Inter', 'Inter Fallback';
     line-height: 1.6;
     @apply bg-background text-foreground;
   }
@@ -82,6 +82,10 @@
 
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
+  }
+
+  .font-geist {
+    font-family: var(--font-geist), sans-serif;
   }
 
   .animate-fade-up {

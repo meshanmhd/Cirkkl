@@ -35,7 +35,7 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-6 py-16">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-12">
           <div className="md:col-span-2">
-            <Link href="/" className="flex items-center gap-2 font-bold text-xl text-[#111111]">
+            <Link href="/" className="flex items-center gap-2 font-bold text-xl text-[#111111] font-geist">
               Cirkkl
             </Link>
             <p className="mt-4 text-[#6E6E73] text-sm leading-relaxed max-w-xs">

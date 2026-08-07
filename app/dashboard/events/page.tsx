@@ -37,14 +37,14 @@ export default async function EventsDashboardPage() {
             <div className="absolute inset-0 rounded-full opacity-20" style={{ background: "#cfe467" }} />
             <Sparkles className="text-[#111111] relative z-10" size={32} strokeWidth={1.5} />
           </div>
-          
+
           <div className="max-w-sm">
             <h3 className="text-xl font-bold tracking-tight text-[#111111] mb-2">No events yet</h3>
             <p className="text-[15px] text-[#6E6E73] leading-relaxed">
               You haven't hosted any events. Start building your community by creating your first event.
             </p>
           </div>
-          
+
           <Link
             href="/dashboard/events/new"
             className="inline-flex items-center gap-2.5 px-6 py-3 rounded-xl text-[15px] font-semibold text-[#111111] transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0"

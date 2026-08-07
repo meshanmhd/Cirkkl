@@ -7,13 +7,14 @@ import {
   ArrowLeft, Image as ImageIcon, Plus, X, Loader2,
   Upload, Globe, MapPin, Wifi, Car, UtensilsCrossed,
   Calendar, Clock, Users, FileText, Tag, Trash2, ChevronDown, Check,
-  Info, ListPlus, Mic
+  Info, ListPlus, Mic, Search, Eye, RefreshCw
 } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { Calendar as CalendarUI } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const CATEGORIES = ["General", "Technical", "Hackathons", "Cultural", "Workshops", "Seminars", "Sports", "Competitions", "Music"];
 const FIELD_TYPES = [
@@ -37,7 +38,7 @@ const SECTIONS = [
 ];
 
 type CustomField = { id: string; label: string; type: string; required: boolean; options: string };
-type TicketType = { id: string; name: string; price: string; quantity: string };
+type TicketType = { id: string; name: string; price: string; quantity: string; unlimited: boolean; qrCodeFile: File | null; qrCodePreview: string | null };
 type ImageState = { file: File | null; preview: string | null };
 type Speaker = { id: string; name: string; subtext: string; imageFile: File | null; imageUrl: string };
 type Member = { id: string; name: string; avatar_url?: string };
@@ -48,21 +49,15 @@ function TabSwitcher({ options, value, onChange }: {
   onChange: (v: string) => void;
 }) {
   return (
-    <div className="flex bg-[#F5F5F7] p-1 rounded-xl gap-1">
-      {options.map(opt => (
-        <button
-          key={opt.value}
-          type="button"
-          onClick={() => onChange(opt.value)}
-          className={`flex-1 py-2 px-3 rounded-[10px] text-[13px] font-semibold transition-all duration-200 ${value === opt.value
-              ? "bg-white text-[#111111] shadow-sm"
-              : "text-[#6E6E73] hover:text-[#111111]"
-            }`}
-        >
-          {opt.label}
-        </button>
-      ))}
-    </div>
+    <Tabs value={value} onValueChange={onChange} className="w-full">
+      <TabsList className="w-full flex bg-[#F5F5F7] p-1 rounded-xl">
+        {options.map(opt => (
+          <TabsTrigger key={opt.value} value={opt.value} className="flex-1 rounded-[10px] text-[13px] font-semibold data-[state=active]:bg-white data-[state=active]:text-[#111111] data-[state=active]:shadow-sm text-[#6E6E73] hover:text-[#111111] transition-all duration-200">
+            {opt.label}
+          </TabsTrigger>
+        ))}
+      </TabsList>
+    </Tabs>
   );
 }
 
@@ -275,6 +270,9 @@ export default function NewEventPage() {
   };
 
   const [hosts, setHosts] = useState<string[]>([]);
+  const [tempHosts, setTempHosts] = useState<string[]>([]);
+  const [hostModalOpen, setHostModalOpen] = useState(false);
+  const [hostSearch, setHostSearch] = useState("");
   const [speakers, setSpeakers] = useState<Speaker[]>([]);
   const [availableMembers, setAvailableMembers] = useState<Member[]>([]);
   const [isUnlimitedCapacity, setIsUnlimitedCapacity] = useState(true);
@@ -283,11 +281,12 @@ export default function NewEventPage() {
     async function fetchMembers() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      // Fetching from a standard 'profiles' table for now
-      // Update this query to match the actual organisation members relation once established
+
       const { data, error } = await supabase
-        .from('profiles')
-        .select('id, name:full_name, avatar_url');
+        .from('members')
+        .select('id, name:full_name, avatar_url')
+        .eq('org_id', user.id);
+
       if (data && !error) {
         setAvailableMembers(data as Member[]);
       }
@@ -313,8 +312,8 @@ export default function NewEventPage() {
   const set = (key: string, val: any) => setForm(f => ({ ...f, [key]: val }));
 
   const [tickets, setTickets] = useState<TicketType[]>([]);
-  const addTicket = () => setTickets(t => [...t, { id: crypto.randomUUID(), name: "", price: "", quantity: "" }]);
-  const updateTicket = (id: string, key: keyof TicketType, val: string) =>
+  const addTicket = () => setTickets(t => [...t, { id: Date.now().toString(), name: "", price: "", quantity: "", unlimited: false, qrCodeFile: null, qrCodePreview: null }]);
+  const updateTicket = (id: string, key: keyof TicketType, val: string | boolean) =>
     setTickets(t => t.map(tt => tt.id === id ? { ...tt, [key]: val } : tt));
   const removeTicket = (id: string) => setTickets(t => t.filter(tt => tt.id !== id));
 
@@ -326,6 +325,10 @@ export default function NewEventPage() {
 
   const toggleHost = (memberId: string) => {
     setHosts(prev => prev.includes(memberId) ? prev.filter(id => id !== memberId) : [...prev, memberId]);
+  };
+
+  const toggleTempHost = (memberId: string) => {
+    setTempHosts(prev => prev.includes(memberId) ? prev.filter(id => id !== memberId) : [...prev, memberId]);
   };
 
   const addSpeaker = () => setSpeakers(s => [...s, { id: crypto.randomUUID(), name: "", subtext: "", imageFile: null, imageUrl: "" }]);
@@ -410,9 +413,9 @@ export default function NewEventPage() {
         location_type: form.locationType,
         meeting_link: form.meetingLink,
         price: form.price,
-        priceAmount: singleTicketPrice,
-        seats: isUnlimitedCapacity ? null : (parseInt(form.capacity) || 0),
-        seats_available: isUnlimitedCapacity ? null : (parseInt(form.capacity) || 0),
+        price_amount: singleTicketPrice,
+        seats: isUnlimitedCapacity ? null : (parseInt(form.capacity) || null),
+        seatsAvailable: isUnlimitedCapacity ? null : (parseInt(form.capacity) || null),
         approval_required: form.approvalRequired === "true",
         registration_deadline: form.registrationDeadline || null,
         registration_end_time: form.registrationEndTime || null,
@@ -426,7 +429,13 @@ export default function NewEventPage() {
         photography_policy: form.photographyPolicy,
         visibility: form.visibility,
         custom_fields: validFields,
-        ticket_types: tickets.filter(t => t.name.trim()),
+        ticket_types: tickets.filter(t => t.name.trim()).map(t => ({
+          id: t.id,
+          name: t.name,
+          price: parseFloat(t.price) || 0,
+          quantity: t.unlimited ? null : (parseInt(t.quantity) || null),
+          unlimited: t.unlimited,
+        })),
         org_id: user.id,
         status: isDraft ? "draft" : "published",
         organizer: user.user_metadata?.full_name || user.email,
@@ -623,16 +632,118 @@ export default function NewEventPage() {
                       <span className="text-[13px] font-bold text-[#6E6E73]">Ticket {i + 1}</span>
                       <button type="button" onClick={() => removeTicket(t.id)} className="text-[#6E6E73] hover:text-red-500 transition-colors"><Trash2 size={14} /></button>
                     </div>
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-2 gap-3">
                       <FormInput label="Name">
                         <input className={inputCls} placeholder="General" value={t.name} onChange={e => updateTicket(t.id, "name", e.target.value)} />
                       </FormInput>
                       <FormInput label="Price (₹)">
                         <input type="number" min="0" className={inputCls} placeholder="500" value={t.price} onChange={e => updateTicket(t.id, "price", e.target.value.replace('-', ''))} />
                       </FormInput>
-                      <FormInput label="Quantity">
-                        <input type="number" min="0" className={inputCls} placeholder="100" value={t.quantity} onChange={e => updateTicket(t.id, "quantity", e.target.value.replace('-', ''))} />
-                      </FormInput>
+                    </div>
+                    <div className="flex gap-4 items-start">
+                      {form.price === "paid" && (
+                        <div className="w-1/2">
+                          <FormInput label="Payment QR Code">
+                            {!t.qrCodePreview ? (
+                              <label className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl border border-dashed border-[#E5E5EA] bg-white hover:bg-[#F5F5F7] hover:border-[#D1D1D6] transition-all cursor-pointer h-[46px]">
+                                <Upload size={16} className="text-[#6E6E73]" />
+                                <span className="text-[14px] font-medium text-[#111111]">Upload Payment QR</span>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      const preview = URL.createObjectURL(file);
+                                      const newTickets = tickets.map(ticket => ticket.id === t.id ? { ...ticket, qrCodeFile: file, qrCodePreview: preview } : ticket);
+                                      setTickets(newTickets);
+                                    }
+                                  }}
+                                />
+                              </label>
+                            ) : (
+                              <div className="flex items-center justify-between w-full p-2.5 rounded-xl border border-[#E5E5EA] bg-white h-[46px]">
+                                <div className="flex items-center gap-2.5 overflow-hidden">
+                                  <img src={t.qrCodePreview} alt="QR" className="w-6 h-6 rounded object-cover shrink-0 border border-[#E5E5EA]" />
+                                  <span className="text-[13px] font-medium text-[#111111] truncate max-w-[120px]" title={t.qrCodeFile?.name}>
+                                    {t.qrCodeFile?.name || "QR Code"}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-7 w-7 p-0 text-[#6E6E73] hover:text-[#111111]"
+                                    onClick={() => window.open(t.qrCodePreview || "", "_blank")}
+                                    title="Preview"
+                                  >
+                                    <Eye size={14} />
+                                  </Button>
+                                  <label className="flex items-center justify-center h-7 w-7 rounded-md text-[#6E6E73] hover:text-[#111111] hover:bg-accent cursor-pointer transition-colors" title="Replace">
+                                    <RefreshCw size={14} />
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      className="hidden"
+                                      onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) {
+                                          const preview = URL.createObjectURL(file);
+                                          const newTickets = tickets.map(ticket => ticket.id === t.id ? { ...ticket, qrCodeFile: file, qrCodePreview: preview } : ticket);
+                                          setTickets(newTickets);
+                                        }
+                                      }}
+                                    />
+                                  </label>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-7 w-7 p-0 text-[#6E6E73] hover:text-red-500"
+                                    onClick={() => {
+                                      const newTickets = tickets.map(ticket => ticket.id === t.id ? { ...ticket, qrCodeFile: null, qrCodePreview: null } : ticket);
+                                      setTickets(newTickets);
+                                    }}
+                                    title="Delete"
+                                  >
+                                    <Trash2 size={14} />
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+                          </FormInput>
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <FormInput label="Quantity">
+                          <div className={`flex items-center px-4 py-2.5 rounded-xl border transition-all ${t.unlimited ? 'bg-[#F5F5F7] border-[#E5E5EA]' : 'bg-white border-[#E5E5EA] focus-within:border-[#cfe467] focus-within:ring-2 focus-within:ring-[#cfe467]/20'}`}>
+                            <input
+                              type="number"
+                              min="0"
+                              disabled={t.unlimited}
+                              className="flex-1 w-full bg-transparent text-[14px] text-[#111111] placeholder:text-[#9E9EA7] outline-none disabled:opacity-50"
+                              placeholder="e.g. 100"
+                              value={t.quantity}
+                              onChange={e => updateTicket(t.id, "quantity", e.target.value.replace('-', ''))}
+                            />
+                            <div className="w-px h-5 bg-[#E5E5EA] mx-3 shrink-0" />
+                            <label className="flex items-center gap-2 cursor-pointer select-none shrink-0">
+                              <input
+                                type="checkbox"
+                                className="w-4 h-4 accent-[#111111] rounded cursor-pointer"
+                                checked={t.unlimited}
+                                onChange={e => {
+                                  updateTicket(t.id, "unlimited", e.target.checked);
+                                  if (e.target.checked) updateTicket(t.id, "quantity", "");
+                                }}
+                              />
+                              <span className="text-[13px] font-semibold text-[#6E6E73]">Unlimited</span>
+                            </label>
+                          </div>
+                        </FormInput>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -651,7 +762,7 @@ export default function NewEventPage() {
                   </PopoverContent>
                 </Popover>
               </FormInput>
-              
+
               <FormInput label="Registration Time" required>
                 <div className="relative">
                   <input type="time" className={inputCls} value={form.registrationEndTime} onChange={e => set("registrationEndTime", e.target.value)} />
@@ -671,8 +782,8 @@ export default function NewEventPage() {
 
               <FormInput label="Max Capacity">
                 <div className={`flex items-center px-4 py-2.5 rounded-xl border transition-all ${isUnlimitedCapacity ? 'bg-[#F5F5F7] border-[#E5E5EA]' : 'bg-white border-[#E5E5EA] focus-within:border-[#cfe467] focus-within:ring-2 focus-within:ring-[#cfe467]/20'}`}>
-                  <input 
-                    type="number" 
+                  <input
+                    type="number"
                     min="0"
                     disabled={isUnlimitedCapacity}
                     className="flex-1 w-full bg-transparent text-[14px] text-[#111111] placeholder:text-[#9E9EA7] outline-none disabled:opacity-50"
@@ -682,8 +793,8 @@ export default function NewEventPage() {
                   />
                   <div className="w-px h-5 bg-[#E5E5EA] mx-3 shrink-0" />
                   <label className="flex items-center gap-2 cursor-pointer select-none shrink-0">
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       className="w-4 h-4 accent-[#111111] rounded cursor-pointer"
                       checked={isUnlimitedCapacity}
                       onChange={e => {
@@ -751,41 +862,54 @@ export default function NewEventPage() {
 
         {/* 6.5 Hosts & Speakers */}
         <div ref={el => { sectionRefs.current["hosts_speakers"] = el; }} id="hosts_speakers" className="scroll-mt-24">
-          <SectionCard 
-            id="hosts_speakers" 
+          <SectionCard
+            id="hosts_speakers"
             title="Hosts & Speakers"
             subtitle="Select members to host this event, and add external speakers."
           >
             <div className="flex flex-col gap-6">
-              
+
               {/* Hosts */}
               <div className="flex flex-col gap-3">
-                <p className="text-[13px] font-bold text-[#111111]">Hosts</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  {availableMembers.map(member => (
-                    <label key={member.id} className="flex items-center gap-3 p-3 rounded-xl border border-[#E5E5EA] bg-white cursor-pointer hover:border-[#cfe467] transition-all">
-                      <input 
-                        type="checkbox" 
-                        className="w-4 h-4 accent-[#111111]" 
-                        checked={hosts.includes(member.id)} 
-                        onChange={() => toggleHost(member.id)} 
-                      />
-                      {member.avatar_url ? (
-                        <img src={member.avatar_url} alt={member.name} className="w-8 h-8 rounded-full object-cover" />
-                      ) : (
-                        <div className="w-8 h-8 rounded-full bg-[#F5F5F7] flex items-center justify-center text-xs font-bold text-[#6E6E73] border border-[#E5E5EA]">
-                          {member.name.substring(0, 2).toUpperCase()}
-                        </div>
-                      )}
-                      <span className="text-[14px] text-[#111111] font-medium">{member.name}</span>
-                    </label>
-                  ))}
-                  {availableMembers.length === 0 && (
-                    <p className="col-span-full text-[12px] text-[#6E6E73] p-4 bg-[#F9F9FB] rounded-xl border border-[#E5E5EA] text-center">
-                      No members found in your organisation.
-                    </p>
-                  )}
+                <div className="flex items-center justify-between">
+                  <p className="text-[13px] font-bold text-[#111111]">Hosts</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTempHosts([...hosts]);
+                      setHostModalOpen(true);
+                    }}
+                    className="inline-flex shrink-0 items-center gap-1.5 text-[12px] font-semibold px-3 py-1.5 rounded-lg bg-white border border-[#E5E5EA] hover:bg-[#F5F5F7] transition-colors text-[#111111]"
+                  >
+                    <Plus size={12} strokeWidth={2.5} /> Add Host
+                  </button>
                 </div>
+
+                {hosts.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
+                    {availableMembers.filter(m => hosts.includes(m.id)).map(member => (
+                      <div key={member.id} className="flex items-center justify-between p-3 rounded-xl border border-[#E5E5EA] bg-white">
+                        <div className="flex items-center gap-3">
+                          {member.avatar_url ? (
+                            <img src={member.avatar_url} alt={member.name} className="w-8 h-8 rounded-full object-cover" />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-[#F5F5F7] flex items-center justify-center text-xs font-bold text-[#6E6E73] border border-[#E5E5EA]">
+                              {member.name.substring(0, 2).toUpperCase()}
+                            </div>
+                          )}
+                          <span className="text-[14px] text-[#111111] font-medium">{member.name}</span>
+                        </div>
+                        <button type="button" onClick={() => toggleHost(member.id)} className="text-[#6E6E73] hover:text-red-500 transition-colors">
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-4 bg-[#F9F9FB] rounded-xl border border-[#E5E5EA] text-center">
+                    <p className="text-[12px] text-[#6E6E73]">No hosts added. Click "Add Host" to select members.</p>
+                  </div>
+                )}
               </div>
 
               {/* Speakers */}
@@ -805,7 +929,7 @@ export default function NewEventPage() {
                       <span className="text-[13px] font-bold text-[#6E6E73]">Speaker {i + 1}</span>
                       <button type="button" onClick={() => removeSpeaker(s.id)} className="text-[#6E6E73] hover:text-red-500 transition-colors"><Trash2 size={14} /></button>
                     </div>
-                    
+
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
                       <div className="shrink-0 flex flex-col gap-2">
                         <label className="relative w-20 h-20 rounded-full bg-[#F5F5F7] border border-[#E5E5EA] flex items-center justify-center cursor-pointer overflow-hidden hover:bg-[#EBEBEF] transition-colors group mx-auto sm:mx-0">
@@ -820,7 +944,7 @@ export default function NewEventPage() {
                           </div>
                         </label>
                       </div>
-                      
+
                       <div className="flex-1 w-full grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <FormInput label="Name">
                           <input className={inputCls} placeholder="e.g. Jane Doe" value={s.name} onChange={e => updateSpeaker(s.id, "name", e.target.value)} />
@@ -869,13 +993,118 @@ export default function NewEventPage() {
             type="button"
             onClick={() => handleSubmit(false)}
             disabled={loading || savingDraft}
-            className="inline-flex items-center gap-2 px-8 py-3 rounded-xl text-[14px] font-semibold text-[#111111] transition-all hover:-translate-y-0.5 hover:shadow-md disabled:opacity-50 disabled:transform-none disabled:shadow-none"
-            style={{ background: "linear-gradient(135deg, #cfe467 0%, #b8d44e 100%)" }}
+            className="inline-flex items-center gap-2 px-7 py-3.5 rounded-lg text-[14px] font-semibold text-[#111111] transition-all duration-200 hover:opacity-90 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:transform-none disabled:shadow-none disabled:hover:scale-100 disabled:active:scale-100"
+            style={{
+              background: "#cfe467",
+              boxShadow: "0 4px 20px rgba(207,228,103,0.35)",
+            }}
           >
             {loading ? <><Loader2 size={15} className="animate-spin" /> Publishing…</> : "Publish Event"}
           </button>
         </div>
       </div>
+
+      {/* Host Modal */}
+      {hostModalOpen && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setTempHosts([]);
+              setHostModalOpen(false);
+            }
+          }}
+        >
+          <div className="bg-white rounded-[20px] w-full max-w-lg p-6 shadow-xl relative animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[80vh]">
+            <div className="flex items-start justify-between mb-1">
+              <h3 className="text-[18px] font-bold text-[#111111]">Select Hosts</h3>
+              <button
+                type="button"
+                onClick={() => {
+                  setTempHosts([]);
+                  setHostModalOpen(false);
+                }}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-[#6E6E73] hover:bg-[#F5F5F7] hover:text-[#111111] transition-all -mt-1 -mr-1 shrink-0"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <p className="text-[14px] text-[#6E6E73] mb-4">
+              Choose members from your organisation to host this event.
+            </p>
+
+            <div className="relative mb-4 shrink-0">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9E9EA7]" />
+              <input
+                type="text"
+                placeholder="Search members by name..."
+                value={hostSearch}
+                onChange={e => setHostSearch(e.target.value)}
+                className="w-full pl-9 pr-4 py-2.5 bg-[#F5F5F7] border border-transparent rounded-[12px] text-[14px] text-[#111111] placeholder:text-[#9E9EA7] outline-none focus:bg-white focus:border-[#cfe467] focus:ring-2 focus:ring-[#cfe467]/20 transition-all"
+              />
+            </div>
+
+            <div className="flex-1 overflow-y-auto min-h-0 mb-6 pr-2">
+              <div className="flex flex-col gap-2">
+                {availableMembers
+                  .filter(m => m.name.toLowerCase().includes(hostSearch.toLowerCase()))
+                  .map(member => {
+                    const isSelected = tempHosts.includes(member.id);
+                    return (
+                      <div
+                        key={member.id}
+                        onClick={() => toggleTempHost(member.id)}
+                        className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${isSelected ? 'border-[#cfe467] bg-[#cfe467]/10' : 'border-[#E5E5EA] bg-white hover:border-[#D1D1D6]'
+                          }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          {member.avatar_url ? (
+                            <img src={member.avatar_url} alt={member.name} className="w-10 h-10 rounded-full object-cover" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-[#F5F5F7] flex items-center justify-center text-[13px] font-bold text-[#6E6E73] border border-[#E5E5EA]">
+                              {member.name.substring(0, 2).toUpperCase()}
+                            </div>
+                          )}
+                          <span className="text-[14px] text-[#111111] font-bold">{member.name}</span>
+                        </div>
+                        <div className={`w-5 h-5 rounded-full flex items-center justify-center border transition-all ${isSelected ? 'border-[#cfe467] bg-[#cfe467] text-[#111111]' : 'border-[#D1D1D6] bg-white text-transparent'
+                          }`}>
+                          <Check size={12} strokeWidth={3} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                {availableMembers.filter(m => m.name.toLowerCase().includes(hostSearch.toLowerCase())).length === 0 && (
+                  <p className="text-[12px] text-[#6E6E73] p-4 bg-[#F9F9FB] rounded-xl border border-[#E5E5EA] text-center">
+                    {availableMembers.length === 0 ? "No members found in your organisation." : "No members match your search."}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 shrink-0 pt-4 border-t border-[#E5E5EA]">
+              <button
+                onClick={() => {
+                  setTempHosts([]);
+                  setHostModalOpen(false);
+                }}
+                className="px-6 py-2.5 rounded-[10px] text-[14px] font-semibold text-[#6E6E73] hover:text-[#111111] hover:bg-[#F5F5F7] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setHosts([...tempHosts]);
+                  setHostModalOpen(false);
+                }}
+                className="px-6 py-2.5 rounded-[10px] text-[14px] font-semibold text-[#111111] bg-[#cfe467] hover:opacity-90 transition-opacity"
+              >
+                Save Selection
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

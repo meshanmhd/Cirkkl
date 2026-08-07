@@ -19,7 +19,7 @@ export function Sidebar() {
       <div className="flex flex-col h-full">
         <div className="h-[56px] flex items-center px-6 border-b border-[#E5E5EA]">
           <Link href="/dashboard" className="flex items-center">
-            <span className="text-[20px] font-bold tracking-tight text-[#111111]">Cirkkl Hub</span>
+            <span className="text-[20px] font-bold tracking-tight text-[#111111] font-geist">Cirkkl Hub</span>
           </Link>
         </div>
 

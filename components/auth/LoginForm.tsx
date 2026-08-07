@@ -9,8 +9,9 @@ import { loginAction } from "@/app/actions/auth";
 
 export function LoginForm({
   className,
+  redirectTo,
   ...props
-}: React.ComponentPropsWithoutRef<"div">) {
+}: React.ComponentPropsWithoutRef<"div"> & { redirectTo?: string }) {
   const [state, formAction, isPending] = useActionState(loginAction, null);
 
   return (
@@ -23,6 +24,7 @@ export function LoginForm({
       </div>
       <form action={formAction} className="flex flex-col gap-6">
         <div className="grid gap-4">
+          {redirectTo && <input type="hidden" name="redirectTo" value={redirectTo} />}
           {state?.error && (
             <div className="text-red-500 text-sm font-medium text-center">
               {state.error}

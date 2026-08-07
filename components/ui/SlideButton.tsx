@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { ArrowRight, X, ChevronDown } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
+import { LoginForm } from '@/components/auth/LoginForm';
+import { usePathname } from 'next/navigation';
 
 type CustomField = {
   id?: string;
@@ -57,7 +59,8 @@ function RegistrationModal({
             <X size={16} />
           </button>
         </div>
-        <form onSubmit={handleSubmit} className="px-6 py-5 flex flex-col gap-4 max-h-[60vh] overflow-y-auto">
+        <form id="registration-form" onSubmit={handleSubmit} className="flex flex-col max-h-[70vh]">
+          <div className="px-6 py-5 flex flex-col gap-4 overflow-y-auto">
           {fields.map((field, i) => (
             <div key={i}>
               <label className="block text-[13px] font-semibold text-[#111111] mb-1.5">
@@ -106,17 +109,18 @@ function RegistrationModal({
               )}
             </div>
           ))}
+          </div>
+          <div className="px-6 pb-6 pt-4 border-t border-[#E5E5EA]">
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3.5 rounded-2xl text-[15px] font-bold text-[#111111] transition-all hover:-translate-y-0.5 hover:shadow-md disabled:opacity-60 disabled:transform-none"
+              style={{ background: "linear-gradient(135deg, #cfe467 0%, #b8d44e 100%)" }}
+            >
+              {loading ? "Registering…" : "Confirm Registration"}
+            </button>
+          </div>
         </form>
-        <div className="px-6 pb-6 pt-4 border-t border-[#E5E5EA]">
-          <button
-            onClick={(e) => handleSubmit(e as any)}
-            disabled={loading}
-            className="w-full py-3.5 rounded-2xl text-[15px] font-bold text-[#111111] transition-all hover:-translate-y-0.5 hover:shadow-md disabled:opacity-60 disabled:transform-none"
-            style={{ background: "linear-gradient(135deg, #cfe467 0%, #b8d44e 100%)" }}
-          >
-            {loading ? "Registering…" : "Confirm Registration"}
-          </button>
-        </div>
       </div>
     </div>
   );
@@ -127,10 +131,27 @@ export const SlideButton = ({ onComplete, eventId, customFields = [], isFull = f
   const [position, setPosition] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const thumbRef = useRef<HTMLDivElement>(null);
   const supabase = createClient();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    
+    // Listen for auth state changes so if they login in the modal, we update
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null);
+      if (session?.user) {
+        setShowLoginModal(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const hasCustomFields = customFields.length > 0;
   
@@ -153,6 +174,13 @@ export const SlideButton = ({ onComplete, eventId, customFields = [], isFull = f
     setPosition(newX);
     if (newX >= maxScroll - 5) {
       setIsDragging(false);
+      
+      if (!user) {
+        setPosition(0);
+        setShowLoginModal(true);
+        return;
+      }
+
       if (hasCustomFields) {
         setPosition(0);
         setShowModal(true);
@@ -195,6 +223,17 @@ export const SlideButton = ({ onComplete, eventId, customFields = [], isFull = f
 
   return (
     <>
+      {showLoginModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowLoginModal(false)} />
+          <div className="relative z-10 w-full max-w-md bg-white rounded-[28px] shadow-2xl overflow-hidden p-8">
+            <button onClick={() => setShowLoginModal(false)} className="absolute top-6 right-6 w-8 h-8 rounded-full flex items-center justify-center bg-[#F5F5F7] text-[#6E6E73] hover:bg-[#E5E5EA] transition-colors">
+              <X size={16} />
+            </button>
+            <LoginForm redirectTo={pathname} />
+          </div>
+        </div>
+      )}
       {showModal && (
         <RegistrationModal
           fields={customFields}
