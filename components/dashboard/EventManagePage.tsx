@@ -7,7 +7,7 @@ import { createClient } from "@/utils/supabase/client";
 import {
   ArrowLeft, LayoutDashboard, Users, CheckSquare, Shield,
   Calendar, MapPin, Globe, Tag, Eye, EyeOff,
-  Edit, Trash2, Search, Check, X, AlertTriangle, UserPlus, Download, ScanLine
+  Edit, Trash2, Search, Check, X, AlertTriangle, UserPlus, Download, ScanLine, Image as ImageIcon
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -96,6 +96,8 @@ export function EventManagePage({ event: initialEvent, registrations: initialReg
   const [addRoleMember, setAddRoleMember] = useState<string>("");
   const [addRoleValue, setAddRoleValue] = useState("viewer");
   const [savingRole, setSavingRole] = useState(false);
+  const [viewingReg, setViewingReg] = useState<any>(null);
+  const [regToDelete, setRegToDelete] = useState<any>(null);
   const sectionIds = SECTIONS.map(s => s.id);
 
 
@@ -154,6 +156,12 @@ export function EventManagePage({ event: initialEvent, registrations: initialReg
     setRegs((prev: any[]) => prev.map(r => r.id === id ? { ...r, status: "rejected" } : r));
   }
 
+  async function deleteReg(id: string) {
+    await supabase.from("registrations").delete().eq("id", id);
+    setRegs((prev: any[]) => prev.filter(r => r.id !== id));
+    setViewingReg(null);
+  }
+
   async function toggleAttendance(regId: string, current: boolean) {
     await supabase.from("registrations").update({ attended: !current }).eq("id", regId);
     setRegs((prev: any[]) => prev.map(r => r.id === regId ? { ...r, attended: !current } : r));
@@ -201,10 +209,10 @@ export function EventManagePage({ event: initialEvent, registrations: initialReg
           <div className="w-px h-4 bg-[#E5E5EA]" />
           <p className="text-[14px] font-semibold text-[#111111] truncate flex-1">{event.title}</p>
           <div className="flex items-center gap-2 shrink-0">
-            <button onClick={() => setActiveSection("attendance")} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] border border-[#E5E5EA] text-[13px] font-medium text-[#111111] hover:bg-[#F5F5F7] transition-all">
+            <Link href={`/dashboard/events/${eventId}/attendance`} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] border border-[#E5E5EA] text-[13px] font-medium text-[#111111] hover:bg-[#F5F5F7] transition-all">
               <ScanLine size={13} />
               Mark Attendance
-            </button>
+            </Link>
             <button onClick={togglePublish} disabled={toggling} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] border border-[#E5E5EA] text-[13px] font-medium text-[#111111] hover:bg-[#F5F5F7] transition-all disabled:opacity-50">
               {isPublished ? <EyeOff size={13} /> : <Eye size={13} />}
               {isPublished ? "Unpublish" : "Publish"}
@@ -334,7 +342,7 @@ export function EventManagePage({ event: initialEvent, registrations: initialReg
                         </p>
                       </div>
                     </div>
-                    
+
                     {event.price === "paid" && (
                       <div className="mt-1">
                         <p className="text-[12px] font-semibold text-[#111111] mb-2">Ticket Tiers</p>
@@ -363,18 +371,18 @@ export function EventManagePage({ event: initialEvent, registrations: initialReg
                           </div>
                         ) : (
                           <div className="bg-[#F5F5F7] p-3.5 rounded-[12px] border border-dashed border-[#E5E5EA] flex items-center justify-between">
-                             <div>
-                               <p className="text-[13px] font-bold text-[#111111]">General Admission</p>
-                             </div>
-                             <div className="text-right">
-                               <p className="text-[14px] font-bold text-[#111111]">₹{event.price_amount || "0"}</p>
-                             </div>
+                            <div>
+                              <p className="text-[13px] font-bold text-[#111111]">General Admission</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-[14px] font-bold text-[#111111]">₹{event.price_amount || "0"}</p>
+                            </div>
                           </div>
                         )}
                       </div>
                     )}
                   </div>
-                  
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
                     <div className="bg-[#F5F5F7] p-3.5 rounded-[12px] border border-[#E5E5EA]">
                       <p className="text-[11px] font-semibold text-[#6E6E73] uppercase tracking-wider mb-1">Registration Deadline</p>
@@ -433,7 +441,7 @@ export function EventManagePage({ event: initialEvent, registrations: initialReg
                           </div>
                         </div>
                       )}
-                      
+
                       {event.speakers?.length > 0 && (
                         <div>
                           <p className="text-[11px] font-semibold text-[#6E6E73] uppercase tracking-wider mb-2">Speakers</p>
@@ -522,10 +530,10 @@ export function EventManagePage({ event: initialEvent, registrations: initialReg
                     ) : filteredRegs.map((r: any, idx: number) => {
                       const p = profileMap[r.user_id];
                       return (
-                        <tr key={r.id} className={`border-b border-[#F5F5F7] hover:bg-[#FAFAFA] transition-colors ${idx === filteredRegs.length - 1 ? "border-b-0" : ""}`}>
+                        <tr key={r.id} onClick={() => setViewingReg(r)} className={`cursor-pointer border-b border-[#F5F5F7] hover:bg-[#FAFAFA] transition-colors ${idx === filteredRegs.length - 1 ? "border-b-0" : ""}`}>
                           <td className="px-5 py-3"><div className="flex items-center gap-2.5"><Avatar className="h-7 w-7 border border-[#E5E5EA] shrink-0"><AvatarImage src={p?.avatar_url ?? `https://api.dicebear.com/7.x/notionists/svg?seed=${r.user_id}`} /><AvatarFallback className="text-[10px] font-medium bg-[#F5F5F7]">{getInitials(p?.full_name)}</AvatarFallback></Avatar><div className="min-w-0"><p className="text-[13px] font-medium text-[#111111] truncate">{p?.full_name ?? "-"}</p><p className="text-[11px] text-[#9E9EA7] truncate">{p?.email ?? "-"}</p></div></div></td>
                           <td className="px-5 py-3 text-center"><span className="text-[13px] text-[#6E6E73]">{r.ticket_code ?? "-"}</span></td>
-                          <td className="px-5 py-3 text-center"><span className="text-[13px] text-[#6E6E73] capitalize">{r.status ?? "-"}</span></td>
+                          <td className="px-5 py-3 text-center"><span className="text-[13px] text-[#6E6E73] capitalize">{r.attended ? "attended" : (r.status ?? "-")}</span></td>
                           <td className="px-5 py-3 text-center"><span className="text-[13px] text-[#6E6E73] whitespace-nowrap">{formatDateTime(r.created_at)}</span></td>
                           <td className="px-5 py-3 text-right">{event.approval_required && r.status === "pending" && (<div className="flex items-center justify-end gap-1.5"><button onClick={() => approveReg(r.id)} className="px-2.5 py-1 rounded-[6px] text-[11px] font-semibold bg-[#F0FFF4] text-[#34C759] hover:bg-[#34C759] hover:text-white transition-all">Approve</button><button onClick={() => rejectReg(r.id)} className="px-2.5 py-1 rounded-[6px] text-[11px] font-semibold bg-[#FFF0F0] text-[#FF3B30] hover:bg-[#FF3B30] hover:text-white transition-all">Reject</button></div>)}</td>
                         </tr>
@@ -636,6 +644,136 @@ export function EventManagePage({ event: initialEvent, registrations: initialReg
               <button onClick={() => setAddRoleOpen(false)} className="flex-1 py-2.5 rounded-[10px] border border-[#E5E5EA] text-[13px] font-medium text-[#111111] hover:bg-[#F5F5F7] transition-all">Cancel</button>
               <button onClick={addRole} disabled={!addRoleMember || savingRole} className="flex-1 py-2.5 rounded-[10px] text-[13px] font-semibold text-[#111111] transition-all disabled:opacity-50 hover:opacity-90" style={{ background: "linear-gradient(135deg, #cfe467 0%, #c0d955 100%)" }}>{savingRole ? "Saving..." : "Assign"}</button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Registration Details Modal */}
+      <Dialog open={!!viewingReg} onOpenChange={(open) => !open && setViewingReg(null)}>
+        <DialogContent className="max-w-md rounded-[24px] p-0 overflow-hidden shadow-xl border border-[#E5E5EA] bg-white">
+          {viewingReg && (
+            <div className="flex flex-col max-h-[85vh] bg-white">
+              <div className="px-6 py-5 shrink-0 border-b border-dotted border-[#E5E5EA] flex items-center justify-between">
+                <DialogTitle className="text-[15px] font-bold text-[#111111]">Registration Details</DialogTitle>
+              </div>
+              <div className="p-6 overflow-y-auto flex flex-col gap-8 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-[#E5E5EA] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent">
+                <div className="flex flex-col items-center gap-2 text-center">
+                  <Avatar className="h-16 w-16 border border-[#E5E5EA]">
+                    <AvatarImage src={profileMap[viewingReg.user_id]?.avatar_url ?? `https://api.dicebear.com/7.x/notionists/svg?seed=${viewingReg.user_id}`} />
+                    <AvatarFallback className="text-[16px] font-medium bg-[#F5F5F7]">{getInitials(profileMap[viewingReg.user_id]?.full_name)}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="text-[16px] font-bold text-[#111111]">{profileMap[viewingReg.user_id]?.full_name ?? "-"}</p>
+                    <p className="text-[13px] font-medium text-[#6E6E73] mt-0.5">{profileMap[viewingReg.user_id]?.email ?? "-"}</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-[#F5F5F7] p-3.5 rounded-[12px] border border-dotted border-[#E5E5EA] flex flex-col items-center justify-center text-center">
+                    <p className="text-[11px] font-semibold text-[#6E6E73] uppercase tracking-wider mb-1">Ticket Code</p>
+                    <p className="text-[14px] font-mono font-bold text-[#111111]">{viewingReg.ticket_code ?? "-"}</p>
+                  </div>
+                  <div className="bg-[#F5F5F7] p-3.5 rounded-[12px] border border-dotted border-[#E5E5EA] flex flex-col items-center justify-center text-center">
+                    <p className="text-[11px] font-semibold text-[#6E6E73] uppercase tracking-wider mb-1">Status</p>
+                    <span className={`text-[13px] font-semibold capitalize ${viewingReg.attended ? "text-[#111111]" :
+                        viewingReg.status === "approved" ? "text-[#111111]" :
+                          viewingReg.status === "pending" ? "text-[#FF9500]" :
+                            "text-[#6E6E73]"
+                      }`}>
+                      {viewingReg.attended ? "Attended" : (viewingReg.status ?? "-")}
+                    </span>
+                  </div>
+                </div>
+
+                {viewingReg.transaction_id && (
+                  <div>
+                    <h4 className="text-[12px] font-bold text-[#111111] mb-2 uppercase tracking-wider">Payment Details</h4>
+                    <div className="bg-[#F5F5F7] p-4 rounded-[12px] border border-dotted border-[#E5E5EA] flex flex-col gap-4">
+                      <div>
+                        <p className="text-[11px] font-semibold text-[#6E6E73] uppercase tracking-wider">Transaction ID</p>
+                        <p className="text-[14px] font-mono font-bold text-[#111111] mt-0.5">{viewingReg.transaction_id}</p>
+                      </div>
+                      {viewingReg.payment_proof_url && (
+                        <div>
+                          <p className="text-[11px] font-semibold text-[#6E6E73] uppercase tracking-wider mb-2">Payment Screenshot</p>
+                          <a href={viewingReg.payment_proof_url} target="_blank" rel="noreferrer" className="flex items-center justify-between p-2.5 bg-white border border-[#E5E5EA] rounded-[10px] hover:bg-[#F9F9FB] transition-all group">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-[6px] bg-[#F5F5F7] flex items-center justify-center shrink-0">
+                                <ImageIcon size={14} className="text-[#9E9EA7]" />
+                              </div>
+                              <span className="text-[13px] font-medium text-[#111111]">Payment Receipt</span>
+                            </div>
+                            <div className="w-8 h-8 rounded-[6px] flex items-center justify-center text-[#6E6E73] group-hover:bg-[#E5E5EA] group-hover:text-[#111111] transition-colors">
+                              <Eye size={16} />
+                            </div>
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {viewingReg.custom_field_values && Object.keys(viewingReg.custom_field_values).length > 0 && (
+                  <div>
+                    <h4 className="text-[12px] font-bold text-[#111111] mb-2 uppercase tracking-wider">Custom Answers</h4>
+                    <div className="flex flex-col gap-2">
+                      {Object.entries(viewingReg.custom_field_values).map(([q, a]: any) => (
+                        <div key={q} className="bg-[#F5F5F7] border border-dotted border-[#E5E5EA] rounded-[12px] p-3.5">
+                          <p className="text-[11px] font-semibold text-[#6E6E73] uppercase tracking-wider mb-1">{q}</p>
+                          <p className="text-[13px] font-medium text-[#111111]">{a || "-"}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="p-4 border-t border-dotted border-[#E5E5EA] bg-white flex justify-end gap-2 shrink-0">
+                <button
+                  onClick={() => setRegToDelete(viewingReg)}
+                  className="px-4 py-2 bg-white border border-[#E5E5EA] rounded-[8px] text-[13px] font-semibold text-red-500 hover:bg-red-50 hover:border-red-200 transition-colors"
+                >
+                  Remove Registration
+                </button>
+                <button
+                  onClick={() => setViewingReg(null)}
+                  className="px-4 py-2 bg-white border border-[#E5E5EA] text-[#111111] rounded-[8px] text-[13px] font-semibold hover:bg-[#F5F5F7] transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Registration Confirmation Modal */}
+      <Dialog open={!!regToDelete} onOpenChange={(open) => !open && setRegToDelete(null)}>
+        <DialogContent className="max-w-sm rounded-[24px] p-6 overflow-hidden shadow-xl border border-[#E5E5EA] bg-white text-center flex flex-col items-center gap-4">
+          <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center shrink-0">
+            <Trash2 size={20} className="text-red-500" />
+          </div>
+          <div>
+            <DialogTitle className="text-[17px] font-bold text-[#111111]">Remove Registration?</DialogTitle>
+            <p className="text-[13px] text-[#6E6E73] mt-2">
+              This action cannot be undone. Are you sure you want to permanently remove this registration?
+            </p>
+          </div>
+          <div className="flex gap-3 w-full mt-2">
+            <button
+              onClick={() => setRegToDelete(null)}
+              className="flex-1 px-4 py-2.5 bg-white border border-[#E5E5EA] rounded-[10px] text-[13px] font-semibold text-[#111111] hover:bg-[#F5F5F7] transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => {
+                deleteReg(regToDelete.id);
+                setRegToDelete(null);
+              }}
+              className="flex-1 px-4 py-2.5 bg-red-500 text-white rounded-[10px] text-[13px] font-semibold hover:bg-red-600 transition-colors"
+            >
+              Yes, Remove
+            </button>
           </div>
         </DialogContent>
       </Dialog>

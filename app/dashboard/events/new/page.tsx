@@ -7,7 +7,7 @@ import {
   ArrowLeft, Image as ImageIcon, Plus, X, Loader2,
   Upload, Globe, MapPin, Wifi, Car, UtensilsCrossed,
   Calendar, Clock, Users, FileText, Tag, Trash2, ChevronDown, Check,
-  Info, ListPlus, Mic, Search, Eye, RefreshCw
+  Info, ListPlus, Mic, Search, Eye, RefreshCw, Lock
 } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
@@ -438,7 +438,7 @@ export default function NewEventPage() {
         price_amount: singleTicketPrice,
         seats: isUnlimitedCapacity ? null : (parseInt(form.capacity) || null),
         seatsAvailable: isUnlimitedCapacity ? null : (parseInt(form.capacity) || null),
-        approval_required: form.approvalRequired === "true",
+        approval_required: form.price === "paid" ? true : form.approvalRequired === "true",
         registration_deadline: form.registrationDeadline || null,
         registration_end_time: form.registrationEndTime || null,
         cancellation_policy: form.cancellationPolicy,
@@ -774,12 +774,19 @@ export default function NewEventPage() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
-              <FormInput label="Approval Mode">
-                <TabSwitcher
-                  options={[{ value: "false", label: "Auto-Approve" }, { value: "true", label: "Manual Approval" }]}
-                  value={form.approvalRequired}
-                  onChange={v => set("approvalRequired", v)}
-                />
+              <FormInput label="Approval Mode" hint={form.price === "paid" ? "Paid events require manual approval." : undefined}>
+                {form.price === "paid" ? (
+                  <div className="flex items-center justify-between px-4 py-2.5 rounded-xl border border-[#E5E5EA] bg-[#F5F5F7] text-[#9E9EA7] text-[14px] font-semibold cursor-not-allowed">
+                    <span className="text-[#111111]">Manual Approval</span>
+                    <Lock size={15} />
+                  </div>
+                ) : (
+                  <TabSwitcher
+                    options={[{ value: "false", label: "Auto-Approve" }, { value: "true", label: "Manual Approval" }]}
+                    value={form.approvalRequired}
+                    onChange={v => set("approvalRequired", v)}
+                  />
+                )}
               </FormInput>
 
               <FormInput label="Max Capacity">

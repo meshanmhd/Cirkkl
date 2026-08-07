@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { ArrowRight, X, CheckCircle2, ChevronDown } from 'lucide-react';
+import { ArrowRight, X, CheckCircle2, ChevronDown, Upload } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { usePathname } from 'next/navigation';
@@ -186,7 +186,7 @@ function RegistrationModal({
 }: {
   event: any;
   onClose: () => void;
-  onSubmit: (values: Record<string, string>, transactionId: string, ticketTierId: string) => void;
+  onSubmit: (values: Record<string, string>, transactionId: string, ticketTierId: string, paymentProofFile: File | null) => void;
   loading: boolean;
 }) {
   const customFields: CustomField[] = event.custom_fields || [];
@@ -205,6 +205,8 @@ function RegistrationModal({
   const [values, setValues] = useState<Record<string, string>>({});
   const [selectedTicketId, setSelectedTicketId] = useState<string>(ticketTypes.length === 1 ? ticketTypes[0].id : "");
   const [transactionId, setTransactionId] = useState("");
+  const [paymentProofFile, setPaymentProofFile] = useState<File | null>(null);
+  const [paymentProofPreview, setPaymentProofPreview] = useState<string | null>(null);
   const [declarationChecked, setDeclarationChecked] = useState(false);
 
   const selectedTicket = ticketTypes.find(t => t.id === selectedTicketId) || ticketTypes[0];
@@ -222,7 +224,7 @@ function RegistrationModal({
   };
 
   const isSlideDisabled = 
-    (currentStep === "payment" && (!transactionId.trim() || !declarationChecked)) ||
+    (currentStep === "payment" && (!transactionId.trim() || !paymentProofFile || !declarationChecked)) ||
     (currentStep === "ticket_select" && !selectedTicketId);
 
   const inputCls = "w-full px-4 py-3 rounded-xl border border-[#E5E5EA] bg-white text-[14px] text-[#111111] placeholder:text-[#9E9EA7] focus:outline-none focus:border-[#cfe467] focus:ring-2 focus:ring-[#cfe467]/20 transition-all";
@@ -323,7 +325,9 @@ function RegistrationModal({
             {currentStep === "payment" && (
               <div className="flex flex-col gap-5">
                 <div className="bg-[#F5F5F7] p-4 rounded-[16px] flex flex-col items-center gap-3">
-                  <p className="text-[13px] font-bold text-[#111111]">Scan and pay ₹{selectedTicket?.price || event.priceAmount || "0"}</p>
+                  <div className="border-2 border-dotted border-[#E5E5EA] px-5 py-2 rounded-xl mb-1 bg-white">
+                    <p className="text-[13px] font-semibold text-[#111111]">Scan and pay ₹{selectedTicket?.price || event.priceAmount || "0"}</p>
+                  </div>
                   {qrCodeUrl ? (
                     <img src={qrCodeUrl} alt="Payment QR Code" className="w-40 h-40 rounded-[12px] shadow-sm border border-[#E5E5EA] object-cover" />
                   ) : (
@@ -331,16 +335,50 @@ function RegistrationModal({
                   )}
                 </div>
 
-                <div>
-                  <label className="block text-[13px] font-semibold text-[#111111] mb-1.5">Transaction ID <span className="text-red-500">*</span></label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Enter UPI / Transaction ID"
-                    value={transactionId}
-                    onChange={e => setTransactionId(e.target.value.replace(/[^0-9]/g, ''))}
-                    className={inputCls}
-                  />
+                <div className="flex flex-col gap-4">
+                  <div>
+                    <label className="block text-[13px] font-semibold text-[#111111] mb-1.5">Payment Screenshot <span className="text-red-500">*</span></label>
+                    {!paymentProofPreview ? (
+                      <label className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl border-2 border-dashed border-[#E5E5EA] bg-[#F5F5F7] hover:bg-[#EBEBEF] transition-all cursor-pointer">
+                        <Upload size={16} className="text-[#6E6E73]" />
+                        <span className="text-[13px] font-medium text-[#111111]">Upload Screenshot</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              setPaymentProofFile(file);
+                              setPaymentProofPreview(URL.createObjectURL(file));
+                            }
+                          }}
+                        />
+                      </label>
+                    ) : (
+                      <div className="flex items-center justify-between p-2.5 rounded-xl border border-[#E5E5EA] bg-white h-[50px]">
+                        <div className="flex items-center gap-2.5 overflow-hidden">
+                          <img src={paymentProofPreview} alt="Preview" className="w-8 h-8 rounded object-cover border border-[#E5E5EA]" />
+                          <span className="text-[13px] font-medium text-[#111111] truncate">{paymentProofFile?.name}</span>
+                        </div>
+                        <button type="button" onClick={() => { setPaymentProofFile(null); setPaymentProofPreview(null); }} className="p-1.5 text-[#6E6E73] hover:text-red-500 transition-colors">
+                          <X size={14} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-[13px] font-semibold text-[#111111] mb-1.5">Transaction ID <span className="text-red-500">*</span></label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Enter UPI / Transaction ID"
+                      value={transactionId}
+                      onChange={e => setTransactionId(e.target.value.replace(/[^0-9]/g, ''))}
+                      className={inputCls}
+                    />
+                  </div>
                 </div>
 
                 <label className="flex items-start gap-3 cursor-pointer bg-[#F5F5F7] p-3 rounded-[12px]">
@@ -372,7 +410,7 @@ function RegistrationModal({
                     form.reportValidity();
                     return;
                   }
-                  onSubmit(values, transactionId, selectedTicketId);
+                  onSubmit(values, transactionId, selectedTicketId, paymentProofFile);
                 }}
               />
             ) : (
@@ -430,7 +468,7 @@ export const SlideButton = ({ onComplete, event, isFull = false, userRegistratio
     ? (userRegistration.status === 'pending' ? "Pending Approval" : "Registered")
     : (isFull ? "Pending (Waitlist)" : (approvalRequired ? "Pending Approval" : "Registered"));
 
-  const doRegister = async (fieldValues: Record<string, string> = {}, transactionId: string = "", ticketTierId: string = "") => {
+  const doRegister = async (fieldValues: Record<string, string> = {}, transactionId: string = "", ticketTierId: string = "", paymentProofFile: File | null = null) => {
     setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -439,18 +477,34 @@ export const SlideButton = ({ onComplete, event, isFull = false, userRegistratio
         return;
       }
       if (event?.id) {
-        // Fetch user's ckl_id from profile to use as ticket code if available, else fallback
-        const { data: profile } = await supabase.from('users').select('ckl_id').eq('id', user.id).single();
-        const cklId = profile?.ckl_id || `clk-${Math.floor(10000 + Math.random() * 90000)}`;
+        // Fetch user's qr_code from profile to use as ticket code if available, else fallback
+        const { data: profile } = await supabase.from('users').select('qr_code').eq('id', user.id).single();
+        const finalTicketCode = profile?.qr_code || `ckl-${Math.floor(10000 + Math.random() * 90000)}`;
+
+        let paymentProofUrl = null;
+        if (paymentProofFile) {
+          const fileExt = paymentProofFile.name.split('.').pop();
+          const fileName = `${user.id}_${event.id}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+          
+          const { error: uploadError, data } = await supabase.storage
+            .from('payment_proofs')
+            .upload(fileName, paymentProofFile);
+            
+          if (!uploadError && data) {
+            const { data: publicUrlData } = supabase.storage.from('payment_proofs').getPublicUrl(fileName);
+            paymentProofUrl = publicUrlData.publicUrl;
+          }
+        }
 
         const { error: insertError } = await supabase.from('registrations').insert({
           event_id: event.id,
           user_id: user.id,
           custom_field_values: fieldValues,
           status: pendingStatus ? 'pending' : 'approved',
-          ticket_code: cklId,
+          ticket_code: finalTicketCode,
           transaction_id: transactionId || null,
           ticket_tier_id: ticketTierId || (ticketTypes.length === 1 ? ticketTypes[0].id : null),
+          payment_proof_url: paymentProofUrl,
         });
         
         if (insertError) {

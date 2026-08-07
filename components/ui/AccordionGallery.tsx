@@ -134,7 +134,9 @@ export function AccordionGallery({ items }: AccordionGalleryProps) {
                   </span>
                 </div>
                 
-                <SlideButton onComplete={() => {
+                <SlideButton 
+                  event={selectedItem}
+                  onComplete={() => {
                   setTimeout(() => {
                     setSelectedItem(null);
                   }, 1000); // Close after showing "Registered!" briefly
