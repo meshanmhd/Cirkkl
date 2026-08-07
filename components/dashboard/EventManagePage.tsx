@@ -35,11 +35,15 @@ function getInitials(name: string | null) {
 }
 function formatDate(d: string | null) {
   if (!d) return "-";
-  return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  // Ensure YYYY-MM-DD doesn't shift timezones by treating it as local midnight instead of UTC
+  const dateObj = d.includes('T') ? new Date(d) : new Date(d + 'T00:00:00');
+  return dateObj.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 function formatDateTime(d: string | null) {
   if (!d) return "-";
-  return new Date(d).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
+  // If the database string doesn't specify timezone, force it to be UTC so it converts to local correctly
+  const dateStr = (d.includes('Z') || d.includes('+')) ? d : `${d}Z`;
+  return new Date(dateStr).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
 function SectionCard({ id, title, subtitle, action, children }: { id: string; title: string; subtitle?: string; action?: React.ReactNode; children: React.ReactNode; }) {
@@ -335,8 +339,17 @@ export function EventManagePage({ event: initialEvent, registrations: initialReg
                                   <p className="text-[13px] font-bold text-[#111111]">{t.name || "Null"}</p>
                                   <p className="text-[12px] text-[#6E6E73] mt-0.5">Capacity: {t.unlimited ? "Unlimited" : (t.quantity ? `${t.quantity} seats` : "Null")}</p>
                                 </div>
-                                <div className="text-right">
-                                  <p className="text-[14px] font-bold text-[#111111]">₹{t.price || "0"}</p>
+                                <div className="flex items-center gap-4">
+                                  {t.qr_code_url && (
+                                    <div className="shrink-0 flex items-center">
+                                      <a href={t.qr_code_url} target="_blank" rel="noreferrer" className="block relative group">
+                                        <img src={t.qr_code_url} alt="Payment QR" className="w-10 h-10 rounded-[8px] object-cover border border-[#E5E5EA] shadow-sm group-hover:border-[#cfe467] transition-colors" />
+                                      </a>
+                                    </div>
+                                  )}
+                                  <div className="text-right">
+                                    <p className="text-[14px] font-bold text-[#111111]">₹{t.price || "0"}</p>
+                                  </div>
                                 </div>
                               </div>
                             ))}

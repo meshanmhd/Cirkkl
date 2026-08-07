@@ -31,6 +31,19 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
 
   const isFull = event.seats !== null && count !== null ? count >= event.seats : false;
 
+  // Check if current user is already registered
+  const { data: { user } } = await supabase.auth.getUser();
+  let userRegistration = null;
+  if (user) {
+    const { data: reg } = await supabase
+      .from('registrations')
+      .select('status')
+      .eq('event_id', id)
+      .eq('user_id', user.id)
+      .single();
+    if (reg) userRegistration = reg;
+  }
+
 
   return (
     <div className="min-h-screen bg-white pb-20 font-sans">
@@ -152,10 +165,9 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
 
                   <div className="pt-2">
                     <SlideButton
-                      eventId={event.id}
-                      customFields={event.custom_fields ?? []}
+                      event={event}
                       isFull={isFull}
-                      approvalRequired={event.approval_required}
+                      userRegistration={userRegistration}
                     />
                   </div>
                 </div>

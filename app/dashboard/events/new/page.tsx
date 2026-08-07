@@ -343,10 +343,14 @@ export default function NewEventPage() {
   };
 
   const uploadImage = async (state: ImageState, path: string) => {
-    if (!state.file) return null;
+    if (!state.file) return state.preview;
     const ext = state.file.name.split('.').pop();
     const fullPath = `${path}.${ext}`;
-    await supabase.storage.from('events').upload(fullPath, state.file, { upsert: true });
+    const { error } = await supabase.storage.from('events').upload(fullPath, state.file, { upsert: true });
+    if (error) {
+      console.error("Image upload failed:", error);
+      throw new Error(`Failed to upload image: ${error.message}`);
+    }
     const { data } = supabase.storage.from('events').getPublicUrl(fullPath);
     return data.publicUrl;
   };
@@ -377,8 +381,14 @@ export default function NewEventPage() {
         throw new Error("You must select at least one host for the event.");
       }
 
-      if (form.price === "paid" && (!form.cancellationPolicy.trim() || !form.refundPolicy.trim())) {
-        throw new Error("Cancellation and Refund policies are required for paid events.");
+      if (form.price === "paid") {
+        if (!form.cancellationPolicy.trim() || !form.refundPolicy.trim()) {
+          throw new Error("Cancellation and Refund policies are required for paid events.");
+        }
+        const missingQrCodes = tickets.filter(t => t.name.trim()).some(t => !t.qrCodeFile && !t.qrCodePreview);
+        if (missingQrCodes) {
+          throw new Error("Payment QR codes are required for all paid ticket types.");
+        }
       }
 
       const uploadedSpeakers = await Promise.all(speakers.map(async (s) => {
@@ -387,6 +397,21 @@ export default function NewEventPage() {
           return { id: s.id, name: s.name, subtext: s.subtext, imageUrl: url };
         }
         return { id: s.id, name: s.name, subtext: s.subtext, imageUrl: s.imageUrl };
+      }));
+
+      const uploadedTickets = await Promise.all(tickets.filter(t => t.name.trim()).map(async (t) => {
+        let qrUrl = t.qrCodePreview;
+        if (t.qrCodeFile) {
+          qrUrl = await uploadImage({ file: t.qrCodeFile, preview: null }, `${user.id}/${uid}/tickets/${t.id}`);
+        }
+        return {
+          id: t.id,
+          name: t.name,
+          price: parseFloat(t.price) || 0,
+          quantity: t.unlimited ? null : (parseInt(t.quantity) || null),
+          unlimited: t.unlimited,
+          qr_code_url: qrUrl,
+        };
       }));
 
       const { error: insertError } = await supabase.from("events").insert({
@@ -421,13 +446,7 @@ export default function NewEventPage() {
         photography_policy: form.photographyPolicy,
         visibility: form.visibility,
         custom_fields: validFields,
-        ticket_types: tickets.filter(t => t.name.trim()).map(t => ({
-          id: t.id,
-          name: t.name,
-          price: parseFloat(t.price) || 0,
-          quantity: t.unlimited ? null : (parseInt(t.quantity) || null),
-          unlimited: t.unlimited,
-        })),
+        ticket_types: uploadedTickets,
         org_id: user.id,
         status: isDraft ? "draft" : "published",
         organizer: user.user_metadata?.full_name || user.email,
@@ -626,7 +645,7 @@ export default function NewEventPage() {
                     <div className="flex gap-4 items-start">
                       {form.price === "paid" && (
                         <div className="w-1/2">
-                          <FormInput label="Payment QR Code">
+                          <FormInput label="Payment QR Code" required>
                             {!t.qrCodePreview ? (
                               <label className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl border border-dashed border-[#E5E5EA] bg-white hover:bg-[#F5F5F7] hover:border-[#D1D1D6] transition-all cursor-pointer h-[46px]">
                                 <Upload size={16} className="text-[#6E6E73]" />
