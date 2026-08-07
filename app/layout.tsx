@@ -1,19 +1,6 @@
 import type { Metadata } from "next";
-import { Inter, Geist } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
-
-const inter = Inter({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800"],
-  display: "swap",
-  variable: "--font-sans",
-});
-
-const geist = Geist({
-  subsets: ["latin"],
-  variable: "--font-geist",
-});
 
 export const metadata: Metadata = {
   title: "Campus Events — Discover Everything Happening on Your Campus",
@@ -33,7 +20,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={cn("font-sans", inter.variable, geist.variable)}>
+    <html lang="en" className={cn("font-sans")}>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+      </head>
       <body>{children}</body>
     </html>
   );

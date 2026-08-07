@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import {
   ArrowLeft, Image as ImageIcon, Plus, X, Loader2,
@@ -232,11 +232,14 @@ function FormInput({ label, required, hint, children }: { label: string; require
 
 const inputCls = "w-full px-4 py-2.5 rounded-xl border border-[#E5E5EA] bg-white text-[14px] text-[#111111] placeholder:text-[#9E9EA7] focus:outline-none focus:border-[#cfe467] focus:ring-2 focus:ring-[#cfe467]/20 transition-all";
 
-export default function NewEventPage() {
+export default function EditEventPage() {
   const router = useRouter();
+  const params = useParams();
+  const eventId = params.id as string;
   const supabase = createClient();
   const [loading, setLoading] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [error, setError] = useState("");
   const [activeSection, setActiveSection] = useState("basic");
 
@@ -343,13 +346,55 @@ export default function NewEventPage() {
   };
 
   const uploadImage = async (state: ImageState, path: string) => {
-    if (!state.file) return null;
+    if (!state.file) return state.preview;
     const ext = state.file.name.split('.').pop();
     const fullPath = `${path}.${ext}`;
     await supabase.storage.from('events').upload(fullPath, state.file, { upsert: true });
     const { data } = supabase.storage.from('events').getPublicUrl(fullPath);
     return data.publicUrl;
   };
+
+  useEffect(() => {
+    if (!eventId) return;
+    async function loadEvent() {
+      const { data, error } = await supabase.from("events").select("*").eq("id", eventId).single();
+      if (error || !data) {
+        setError("Failed to load event data");
+        return;
+      }
+
+      setForm({
+        title: data.title || "", tagline: data.tagline || "", description: data.description || "", category: data.category || "General",
+        startDate: data.date || "", startTime: data.time || "", endDate: data.end_date || "", endTime: data.end_time || "",
+        locationType: data.location_type || "physical", venue: data.venue || "", locationLink: data.location_link || "", city: data.city || "",
+        meetingLink: data.meeting_link || "", platform: data.platform || "",
+        price: data.price || "free", capacity: data.seats ? data.seats.toString() : "", approvalRequired: data.approval_required ? "true" : "false",
+        registrationDeadline: data.registration_deadline || "", registrationEndTime: data.registration_end_time || "",
+        cancellationPolicy: data.cancellation_policy || "", refundPolicy: data.refund_policy || "", photographyPolicy: data.photography_policy || "",
+        visibility: data.visibility || "public",
+      });
+      setIsUnlimitedCapacity(data.seats === null);
+      if (data.image) setBanner({ file: null, preview: data.image });
+      if (data.poster_image) setPoster({ file: null, preview: data.poster_image });
+      if (data.tags) setTags(data.tags);
+      if (data.hosts) setHosts(data.hosts);
+      if (data.ticket_types) {
+        setTickets(data.ticket_types.map((t: any) => ({
+          id: t.id || Date.now().toString(), name: t.name || "", price: t.price?.toString() || "0",
+          quantity: t.quantity ? t.quantity.toString() : "", unlimited: t.quantity === null || t.unlimited,
+          qrCodeFile: null, qrCodePreview: t.qr_code_url || null
+        })));
+      }
+      if (data.custom_fields) setCustomFields(data.custom_fields);
+      if (data.speakers) {
+        setSpeakers(data.speakers.map((s: any) => ({
+          id: s.id || Date.now().toString(), name: s.name, subtext: s.subtext, imageFile: null, imageUrl: s.imageUrl
+        })));
+      }
+      setIsDataLoaded(true);
+    }
+    loadEvent();
+  }, [eventId, supabase]);
 
   const handleSubmit = async (isDraft = false) => {
     if (isDraft) setSavingDraft(true); else setLoading(true);
@@ -358,8 +403,8 @@ export default function NewEventPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
       const uid = crypto.randomUUID();
-      if (!banner.file) throw new Error("A Banner image is required.");
-      if (!poster.file) throw new Error("A Poster image is required.");
+      if (!banner.file && !banner.preview) throw new Error("A Banner image is required.");
+      if (!poster.file && !poster.preview) throw new Error("A Poster image is required.");
 
       const [bannerUrl, posterUrl] = await Promise.all([
         uploadImage(banner, `${user.id}/${uid}/banner`),
@@ -389,7 +434,7 @@ export default function NewEventPage() {
         return { id: s.id, name: s.name, subtext: s.subtext, imageUrl: s.imageUrl };
       }));
 
-      const { error: insertError } = await supabase.from("events").insert({
+      const { error: updateError } = await supabase.from("events").update({
         title: form.title,
         tagline: form.tagline,
         description: form.description,
@@ -412,7 +457,6 @@ export default function NewEventPage() {
         price: form.price,
         price_amount: singleTicketPrice,
         seats: isUnlimitedCapacity ? null : (parseInt(form.capacity) || null),
-        seatsAvailable: isUnlimitedCapacity ? null : (parseInt(form.capacity) || null),
         approval_required: form.approvalRequired === "true",
         registration_deadline: form.registrationDeadline || null,
         registration_end_time: form.registrationEndTime || null,
@@ -428,21 +472,27 @@ export default function NewEventPage() {
           quantity: t.unlimited ? null : (parseInt(t.quantity) || null),
           unlimited: t.unlimited,
         })),
-        org_id: user.id,
         status: isDraft ? "draft" : "published",
-        organizer: user.user_metadata?.full_name || user.email,
-      });
+      }).eq("id", eventId);
 
-      if (insertError) throw insertError;
-      router.push("/dashboard/events");
+      if (updateError) throw updateError;
+      router.push(`/dashboard/events/${eventId}`);
       router.refresh();
     } catch (err: any) {
-      setError(err.message || "Failed to create event");
+      setError(err.message || "Failed to save event edits");
     } finally {
       setLoading(false);
       setSavingDraft(false);
     }
   };
+
+  if (!isDataLoaded) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 size={32} className="animate-spin text-[#cfe467]" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex gap-6 max-w-6xl mx-auto pb-20">
@@ -982,7 +1032,7 @@ export default function NewEventPage() {
               boxShadow: "0 4px 20px rgba(207,228,103,0.35)",
             }}
           >
-            {loading ? <><Loader2 size={15} className="animate-spin" /> Publishing…</> : "Publish Event"}
+            {loading ? <><Loader2 size={15} className="animate-spin" /> Republishing…</> : "Republish Event"}
           </button>
         </div>
       </div>

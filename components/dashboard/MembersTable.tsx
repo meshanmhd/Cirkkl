@@ -188,7 +188,7 @@ export function MembersTable({ members: initialMembers }: MembersTableProps) {
         <table className="w-full">
           <thead>
             <tr className="border-b border-[#E5E5EA]">
-              {["MEMBER", "DEPARTMENT", "ROLE", "CKL ID", "JOINED ON"].map((col) => (
+              {["MEMBER", "ROLE", "DEPARTMENT", "CKL ID", "JOINED ON"].map((col) => (
                 <th
                   key={col}
                   className={`px-6 py-4 text-[12px] font-medium text-[#9E9EA7] tracking-[0.05em] uppercase whitespace-nowrap ${
@@ -254,12 +254,6 @@ export function MembersTable({ members: initialMembers }: MembersTableProps) {
                     </td>
 
                     <td className="px-6 py-4 text-center">
-                      <span className="text-[14px] font-medium text-[#111111]">
-                        {member.department || "—"}
-                      </span>
-                    </td>
-
-                    <td className="px-6 py-4 text-center">
                       {isEditing ? (
                         <DropdownMenu>
                           <DropdownMenuTrigger className="inline-flex items-center justify-between gap-2 min-w-[110px] border border-[#E5E5EA] rounded-[8px] px-3 py-1.5 text-[13px] font-medium text-[#111111] bg-white outline-none focus:border-[#cfe467] capitalize">
@@ -285,6 +279,12 @@ export function MembersTable({ members: initialMembers }: MembersTableProps) {
                           {member.role || "Member"}
                         </span>
                       )}
+                    </td>
+
+                    <td className="px-6 py-4 text-center">
+                      <span className="text-[14px] font-medium text-[#111111]">
+                        {member.department || "—"}
+                      </span>
                     </td>
 
                     <td className="px-6 py-4 text-center">
