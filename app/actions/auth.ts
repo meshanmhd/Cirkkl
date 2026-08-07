@@ -7,6 +7,7 @@ import { revalidatePath } from 'next/cache'
 export async function loginAction(prevState: any, formData: FormData) {
   const email = formData.get('email') as string
   const password = formData.get('password') as string
+  const redirectTo = formData.get('redirectTo') as string
   const supabase = await createClient()
 
   const { error } = await supabase.auth.signInWithPassword({
@@ -19,6 +20,9 @@ export async function loginAction(prevState: any, formData: FormData) {
   }
 
   revalidatePath('/', 'layout')
+  if (redirectTo) {
+    redirect(redirectTo)
+  }
   redirect('/')
 }
 

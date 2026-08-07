@@ -16,7 +16,7 @@ const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
 
 export default async function UpcomingEvents() {
   const supabase = await createClient();
-  const { data: upcoming } = await supabase.from('events').select('*').limit(6);
+  const { data: upcoming } = await supabase.from('events').select('*').eq('status', 'published').limit(6);
 
   return (
     <section className="pb-0 pt-0 px-6" id="upcoming">

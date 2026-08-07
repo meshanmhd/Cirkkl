@@ -7,7 +7,7 @@ export default function LoginPage() {
     <div className="grid min-h-screen lg:grid-cols-2 bg-white">
       <div className="flex flex-col gap-4 p-6 md:p-10 border-r border-[#E5E5EA]">
         <div className="flex justify-center gap-2 md:justify-start">
-          <Link href="/" className="flex items-center font-bold text-xl text-[#111111]">
+          <Link href="/" className="flex items-center font-bold text-xl text-[#111111] font-geist">
             Cirkkl
           </Link>
         </div>

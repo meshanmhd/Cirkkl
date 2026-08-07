@@ -36,7 +36,8 @@ export default function EventsClient() {
       const supabase = createClient();
       const { data, error } = await supabase
         .from('events')
-        .select('*');
+        .select('*')
+        .eq('status', 'published');
       
       if (error) {
         console.error("Error fetching events:", error);
