@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import QRCode from "react-qr-code";
+import { DotQRCode } from "@/components/ui/DotQRCode";
 import { createClient } from "@/utils/supabase/client";
 import { User } from "@supabase/supabase-js";
 import Link from "next/link";
@@ -220,14 +220,7 @@ export function ProfileMenu({ initialUser = null, initialRole = "user", initialQ
 
               {/* QR Code Container */}
               <div className="bg-white p-5 rounded-[28px] border border-[#E5E5EA] w-full max-w-[220px] aspect-square flex items-center justify-center relative">
-                <QRCode 
-                  value={qrCode.toUpperCase()} 
-                  size={200}
-                  style={{ height: "auto", maxWidth: "100%", width: "100%" }}
-                  fgColor="#111111"
-                  bgColor="#ffffff"
-                  level="Q"
-                />
+                <DotQRCode value={qrCode.toUpperCase()} size={180} />
               </div>
 
               {/* ID Number */}
