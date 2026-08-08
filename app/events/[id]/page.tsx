@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, Calendar, Clock, MapPin, Ticket, User, Users, Globe, ExternalLink, Info, ShieldCheck, Banknote, Camera } from "lucide-react";
 import { Metadata } from "next";
 import { SlideButton } from "@/components/ui/SlideButton";
+import CursorGrid from "@/components/CursorGrid";
 import { format, parse } from "date-fns";
 import {
   Accordion,
@@ -120,7 +121,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
   const isEnded = eventStatus === 'ended';
 
   return (
-    <div className="min-h-screen bg-[#F9F9FB] pb-20 font-sans">
+    <div className="min-h-screen bg-[#F9F9FB] pb-20 font-sans relative">
       {/* Banner */}
       <div className="w-full h-[45vh] fixed top-0 left-0 z-0">
         <img
@@ -135,8 +136,11 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
       <div className="relative z-10 w-full mt-[35vh]">
         <div className="w-full h-[10vh] bg-gradient-to-b from-[#F9F9FB]/0 to-[#F9F9FB]" />
 
-        <div className="bg-[#F9F9FB] w-full min-h-screen pt-4">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="bg-[#F9F9FB] w-full min-h-screen pt-4 relative overflow-hidden">
+          <div className="absolute inset-0 pointer-events-none z-0 mix-blend-multiply opacity-70">
+            <CursorGrid color="#cfe467" radius={100} />
+          </div>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 items-start">
 
               {/* Left Details */}
@@ -195,8 +199,8 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                     <hr className="border-[#E5E5EA] my-8" />
                     <div className="mb-8">
                       <h3 className="text-2xl font-semibold text-[#111111] mb-5 tracking-tight">
-                      {event.speakers.length > 1 ? "Speakers" : "Speaker"}
-                    </h3>
+                        {event.speakers.length > 1 ? "Speakers" : "Speaker"}
+                      </h3>
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {event.speakers.map((speaker: any) => (
                           <div key={speaker.id} className="flex items-center gap-4 p-4 rounded-2xl bg-white border border-[#E5E5EA]">
@@ -225,7 +229,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                   <div>
                     <h3 className="text-2xl font-semibold text-[#111111] mb-5 tracking-tight">Organized by</h3>
                     <div className="flex flex-wrap gap-10 items-center">
-                      
+
                       {/* Organizer */}
                       <div className="flex items-center gap-3">
                         <div className="w-12 h-12 rounded-full bg-[#F5F5F7] flex items-center justify-center border border-[#E5E5EA] shrink-0">
@@ -240,10 +244,10 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                       {/* Hosts */}
                       {eventHosts.map((host: any) => (
                         <div key={host.id} className="flex items-center gap-3">
-                          <img 
-                            src={host.avatar_url || `https://api.dicebear.com/7.x/notionists/svg?seed=${host.id}`} 
-                            alt={host.name} 
-                            className="w-12 h-12 rounded-full object-cover border border-[#E5E5EA] shrink-0 bg-white" 
+                          <img
+                            src={host.avatar_url || `https://api.dicebear.com/7.x/notionists/svg?seed=${host.id}`}
+                            alt={host.name}
+                            className="w-12 h-12 rounded-full object-cover border border-[#E5E5EA] shrink-0 bg-white"
                           />
                           <div className="flex flex-col">
                             <span className="font-bold text-[15px] text-[#111111]">{host.name}</span>
@@ -261,49 +265,49 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                     <>
                       <hr className="border-[#E5E5EA] my-8" />
                       <div className="mb-8">
-                      <h3 className="text-2xl font-semibold text-[#111111] mb-5 tracking-tight">Policies & Guidelines</h3>
-                      <Accordion className="w-full space-y-4">
-                        {event.cancellation_policy && event.cancellation_policy.trim() !== "" && (
-                          <AccordionItem value="cancellation" className="border border-[#E5E5EA] bg-white rounded-2xl px-5">
-                            <AccordionTrigger className="hover:no-underline py-5">
-                              <div className="flex items-center gap-3">
-                                <ShieldCheck size={20} className="text-[#111111]" />
-                                <h4 className="font-semibold text-[15px] text-[#111111] tracking-tight">Cancellation Policy</h4>
-                              </div>
-                            </AccordionTrigger>
-                            <AccordionContent className="text-sm text-[#6E6E73] whitespace-pre-wrap pb-5">
-                              {event.cancellation_policy}
-                            </AccordionContent>
-                          </AccordionItem>
-                        )}
-                        {event.refund_policy && event.refund_policy.trim() !== "" && (
-                          <AccordionItem value="refund" className="border border-[#E5E5EA] bg-white rounded-2xl px-5">
-                            <AccordionTrigger className="hover:no-underline py-5">
-                              <div className="flex items-center gap-3">
-                                <Banknote size={20} className="text-[#111111]" />
-                                <h4 className="font-semibold text-[15px] text-[#111111] tracking-tight">Refund Policy</h4>
-                              </div>
-                            </AccordionTrigger>
-                            <AccordionContent className="text-sm text-[#6E6E73] whitespace-pre-wrap pb-5">
-                              {event.refund_policy}
-                            </AccordionContent>
-                          </AccordionItem>
-                        )}
-                        {event.photography_policy && event.photography_policy.trim() !== "" && (
-                          <AccordionItem value="photography" className="border border-[#E5E5EA] bg-white rounded-2xl px-5">
-                            <AccordionTrigger className="hover:no-underline py-5">
-                              <div className="flex items-center gap-3">
-                                <Camera size={20} className="text-[#111111]" />
-                                <h4 className="font-semibold text-[15px] text-[#111111] tracking-tight">Photography Policy</h4>
-                              </div>
-                            </AccordionTrigger>
-                            <AccordionContent className="text-sm text-[#6E6E73] whitespace-pre-wrap pb-5">
-                              {event.photography_policy}
-                            </AccordionContent>
-                          </AccordionItem>
-                        )}
-                      </Accordion>
-                    </div>
+                        <h3 className="text-2xl font-semibold text-[#111111] mb-5 tracking-tight">Policies & Guidelines</h3>
+                        <Accordion className="w-full space-y-4">
+                          {event.cancellation_policy && event.cancellation_policy.trim() !== "" && (
+                            <AccordionItem value="cancellation" className="border border-[#E5E5EA] bg-white rounded-2xl px-5">
+                              <AccordionTrigger className="hover:no-underline py-5">
+                                <div className="flex items-center gap-3">
+                                  <ShieldCheck size={20} className="text-[#111111]" />
+                                  <h4 className="font-semibold text-[15px] text-[#111111] tracking-tight">Cancellation Policy</h4>
+                                </div>
+                              </AccordionTrigger>
+                              <AccordionContent className="text-sm text-[#6E6E73] whitespace-pre-wrap pb-5">
+                                {event.cancellation_policy}
+                              </AccordionContent>
+                            </AccordionItem>
+                          )}
+                          {event.refund_policy && event.refund_policy.trim() !== "" && (
+                            <AccordionItem value="refund" className="border border-[#E5E5EA] bg-white rounded-2xl px-5">
+                              <AccordionTrigger className="hover:no-underline py-5">
+                                <div className="flex items-center gap-3">
+                                  <Banknote size={20} className="text-[#111111]" />
+                                  <h4 className="font-semibold text-[15px] text-[#111111] tracking-tight">Refund Policy</h4>
+                                </div>
+                              </AccordionTrigger>
+                              <AccordionContent className="text-sm text-[#6E6E73] whitespace-pre-wrap pb-5">
+                                {event.refund_policy}
+                              </AccordionContent>
+                            </AccordionItem>
+                          )}
+                          {event.photography_policy && event.photography_policy.trim() !== "" && (
+                            <AccordionItem value="photography" className="border border-[#E5E5EA] bg-white rounded-2xl px-5">
+                              <AccordionTrigger className="hover:no-underline py-5">
+                                <div className="flex items-center gap-3">
+                                  <Camera size={20} className="text-[#111111]" />
+                                  <h4 className="font-semibold text-[15px] text-[#111111] tracking-tight">Photography Policy</h4>
+                                </div>
+                              </AccordionTrigger>
+                              <AccordionContent className="text-sm text-[#6E6E73] whitespace-pre-wrap pb-5">
+                                {event.photography_policy}
+                              </AccordionContent>
+                            </AccordionItem>
+                          )}
+                        </Accordion>
+                      </div>
                     </>
                   )}
 
