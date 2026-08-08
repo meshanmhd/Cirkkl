@@ -7,7 +7,7 @@ import {
   ArrowLeft, Image as ImageIcon, Plus, X, Loader2,
   Upload, Globe, MapPin, Wifi, Car, UtensilsCrossed,
   Calendar, Clock, Users, FileText, Tag, Trash2, ChevronDown, Check,
-  Info, ListPlus, Mic, Search, Eye, RefreshCw
+  Info, ListPlus, Mic, Search, Eye, RefreshCw, Lock
 } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
@@ -474,6 +474,7 @@ export default function EditEventPage() {
         end_date: form.endDate,
         end_time: form.endTime,
         venue: form.venue,
+        location: form.venue || form.city || form.locationLink || form.platform || "TBA",
         location_link: form.locationLink,
         city: form.city,
         location_type: form.locationType,
@@ -482,7 +483,7 @@ export default function EditEventPage() {
         price: form.price,
         price_amount: singleTicketPrice,
         seats: isUnlimitedCapacity ? null : (parseInt(form.capacity) || null),
-        approval_required: form.approvalRequired === "true",
+        approval_required: form.price === "paid" ? true : form.approvalRequired === "true",
         registration_deadline: form.registrationDeadline || null,
         registration_end_time: form.registrationEndTime || null,
         cancellation_policy: form.cancellationPolicy,
@@ -825,11 +826,23 @@ export default function EditEventPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
               <FormInput label="Approval Mode">
-                <TabSwitcher
-                  options={[{ value: "false", label: "Auto-Approve" }, { value: "true", label: "Manual Approval" }]}
-                  value={form.approvalRequired}
-                  onChange={v => set("approvalRequired", v)}
-                />
+                {form.price === "paid" ? (
+                  <div className="flex items-center gap-2 p-3 rounded-xl bg-[#F5F5F7] border border-[#E5E5EA]">
+                    <div className="w-8 h-8 rounded-lg bg-white border border-[#E5E5EA] flex items-center justify-center shrink-0">
+                      <Lock size={14} className="text-[#9E9EA7]" />
+                    </div>
+                    <div>
+                      <p className="text-[13px] font-semibold text-[#111111]">Manual Approval (Locked)</p>
+                      <p className="text-[11px] text-[#6E6E73] mt-0.5">Paid events require manual approval.</p>
+                    </div>
+                  </div>
+                ) : (
+                  <TabSwitcher
+                    options={[{ value: "false", label: "Auto-Approve" }, { value: "true", label: "Manual Approval" }]}
+                    value={form.approvalRequired}
+                    onChange={v => set("approvalRequired", v)}
+                  />
+                )}
               </FormInput>
 
               <FormInput label="Max Capacity">

@@ -429,6 +429,7 @@ export default function NewEventPage() {
         end_date: form.endDate,
         end_time: form.endTime,
         venue: form.venue,
+        location: form.venue || form.city || form.locationLink || form.platform || "TBA",
         location_link: form.locationLink,
         city: form.city,
         location_type: form.locationType,
@@ -774,11 +775,16 @@ export default function NewEventPage() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
-              <FormInput label="Approval Mode" hint={form.price === "paid" ? "Paid events require manual approval." : undefined}>
+              <FormInput label="Approval Mode">
                 {form.price === "paid" ? (
-                  <div className="flex items-center justify-between px-4 py-2.5 rounded-xl border border-[#E5E5EA] bg-[#F5F5F7] text-[#9E9EA7] text-[14px] font-semibold cursor-not-allowed">
-                    <span className="text-[#111111]">Manual Approval</span>
-                    <Lock size={15} />
+                  <div className="flex items-center gap-2 p-3 rounded-xl bg-[#F5F5F7] border border-[#E5E5EA]">
+                    <div className="w-8 h-8 rounded-lg bg-white border border-[#E5E5EA] flex items-center justify-center shrink-0">
+                      <Lock size={14} className="text-[#9E9EA7]" />
+                    </div>
+                    <div>
+                      <p className="text-[13px] font-semibold text-[#111111]">Manual Approval (Locked)</p>
+                      <p className="text-[11px] text-[#6E6E73] mt-0.5">Paid events require manual approval.</p>
+                    </div>
                   </div>
                 ) : (
                   <TabSwitcher

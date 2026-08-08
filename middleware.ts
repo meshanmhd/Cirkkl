@@ -41,15 +41,15 @@ export async function middleware(request: NextRequest) {
     const path = request.nextUrl.pathname;
     
     // Organisation routing logic
-    if (role === 'org') {
+    if (role === 'org' || role === 'organisation') {
       if (!isOtpVerified && path !== '/verify-org' && path !== '/login' && path !== '/signup') {
         // Not verified yet, lock them out of everything except verify page
         return NextResponse.redirect(new URL('/verify-org', request.url));
       }
       
-      if (isOtpVerified && (path === '/' || path === '/verify-org')) {
-        // Verified orgs shouldn't be on the landing page or verify page, redirect to dashboard
-        return NextResponse.redirect(new URL('/dashboard', request.url));
+      if (isOtpVerified && !path.startsWith('/dashboard') && path !== '/pending-approval') {
+        // Verified orgs shouldn't be on the landing page, events page, or anywhere else. Redirect to dashboard.
+        return NextResponse.redirect(new URL('/dashboard/events', request.url));
       }
     }
   }

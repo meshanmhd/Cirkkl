@@ -7,7 +7,7 @@ import { createClient } from "@/utils/supabase/client";
 import {
   ArrowLeft, LayoutDashboard, Users, CheckSquare, Shield,
   Calendar, MapPin, Globe, Tag, Eye, EyeOff,
-  Edit, Trash2, Search, Check, X, AlertTriangle, UserPlus, Download, ScanLine, Image as ImageIcon
+  Edit, Trash2, Search, Check, X, AlertTriangle, UserPlus, Download, ScanLine, Image as ImageIcon, MoreHorizontal
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -157,7 +157,12 @@ export function EventManagePage({ event: initialEvent, registrations: initialReg
   }
 
   async function deleteReg(id: string) {
-    await supabase.from("registrations").delete().eq("id", id);
+    const { error } = await supabase.from("registrations").delete().eq("id", id);
+    if (error) {
+      console.error("Error deleting registration:", error);
+      alert("Failed to delete registration. Make sure you have the necessary permissions (RLS).");
+      return;
+    }
     setRegs((prev: any[]) => prev.filter(r => r.id !== id));
     setViewingReg(null);
   }
@@ -535,7 +540,20 @@ export function EventManagePage({ event: initialEvent, registrations: initialReg
                           <td className="px-5 py-3 text-center"><span className="text-[13px] text-[#6E6E73]">{r.ticket_code ?? "-"}</span></td>
                           <td className="px-5 py-3 text-center"><span className="text-[13px] text-[#6E6E73] capitalize">{r.attended ? "attended" : (r.status ?? "-")}</span></td>
                           <td className="px-5 py-3 text-center"><span className="text-[13px] text-[#6E6E73] whitespace-nowrap">{formatDateTime(r.created_at)}</span></td>
-                          <td className="px-5 py-3 text-right">{event.approval_required && r.status === "pending" && (<div className="flex items-center justify-end gap-1.5"><button onClick={() => approveReg(r.id)} className="px-2.5 py-1 rounded-[6px] text-[11px] font-semibold bg-[#F0FFF4] text-[#34C759] hover:bg-[#34C759] hover:text-white transition-all">Approve</button><button onClick={() => rejectReg(r.id)} className="px-2.5 py-1 rounded-[6px] text-[11px] font-semibold bg-[#FFF0F0] text-[#FF3B30] hover:bg-[#FF3B30] hover:text-white transition-all">Reject</button></div>)}</td>
+                          <td className="px-5 py-3 text-right">
+                            <div className="flex items-center justify-end" onClick={e => e.stopPropagation()}>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger className="w-8 h-8 flex items-center justify-center rounded-lg text-[#9E9EA7] hover:bg-[#F5F5F7] hover:text-[#111111] transition-all outline-none">
+                                  <MoreHorizontal size={16} />
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-48 rounded-xl border-[#E5E5EA] shadow-lg p-1.5 z-[100] bg-white">
+                                  <DropdownMenuItem onClick={() => setRegToDelete(r)} className="group text-red-500 hover:text-[#111111] focus:text-[#111111] hover:bg-[#F5F5F7] focus:bg-[#F5F5F7] text-[13px] font-medium cursor-pointer flex items-center gap-2 py-2.5 px-3 rounded-lg outline-none transition-colors">
+                                    <Trash2 size={15} className="text-red-500 group-hover:text-[#111111] group-focus:text-[#111111] transition-colors" /> Cancel Registration
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                          </td>
                         </tr>
                       );
                     })}
@@ -650,11 +668,14 @@ export function EventManagePage({ event: initialEvent, registrations: initialReg
 
       {/* Registration Details Modal */}
       <Dialog open={!!viewingReg} onOpenChange={(open) => !open && setViewingReg(null)}>
-        <DialogContent className="max-w-md rounded-[24px] p-0 overflow-hidden shadow-xl border border-[#E5E5EA] bg-white">
+        <DialogContent className="max-w-md rounded-[24px] p-0 overflow-hidden shadow-xl border border-[#E5E5EA] bg-white [&>button]:hidden">
           {viewingReg && (
             <div className="flex flex-col max-h-[85vh] bg-white">
-              <div className="px-6 py-5 shrink-0 border-b border-dotted border-[#E5E5EA] flex items-center justify-between">
-                <DialogTitle className="text-[15px] font-bold text-[#111111]">Registration Details</DialogTitle>
+              <div className="px-6 py-5 shrink-0 border-b border-[#E5E5EA] flex items-center justify-between">
+                <DialogTitle className="text-[16px] font-bold text-[#111111]">Registration Details</DialogTitle>
+                <button onClick={() => setViewingReg(null)} className="w-8 h-8 flex items-center justify-center rounded-full bg-[#F5F5F7] text-[#6E6E73] hover:bg-[#E5E5EA] hover:text-[#111111] transition-colors outline-none">
+                  <X size={16} />
+                </button>
               </div>
               <div className="p-6 overflow-y-auto flex flex-col gap-8 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-[#E5E5EA] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent">
                 <div className="flex flex-col items-center gap-2 text-center">
@@ -727,20 +748,16 @@ export function EventManagePage({ event: initialEvent, registrations: initialReg
                   </div>
                 )}
               </div>
-              <div className="p-4 border-t border-dotted border-[#E5E5EA] bg-white flex justify-end gap-2 shrink-0">
-                <button
-                  onClick={() => setRegToDelete(viewingReg)}
-                  className="px-4 py-2 bg-white border border-[#E5E5EA] rounded-[8px] text-[13px] font-semibold text-red-500 hover:bg-red-50 hover:border-red-200 transition-colors"
-                >
-                  Remove Registration
-                </button>
-                <button
-                  onClick={() => setViewingReg(null)}
-                  className="px-4 py-2 bg-white border border-[#E5E5EA] text-[#111111] rounded-[8px] text-[13px] font-semibold hover:bg-[#F5F5F7] transition-colors"
-                >
-                  Close
-                </button>
-              </div>
+              {event.approval_required && viewingReg.status === "pending" && (
+                <div className="p-5 border-t border-[#E5E5EA] bg-white flex items-center gap-3 shrink-0 w-full">
+                  <button onClick={() => { rejectReg(viewingReg.id); setViewingReg({...viewingReg, status: "rejected"}); }} className="flex-1 py-3 bg-[#F5F5F7] text-[#111111] border border-[#E5E5EA] rounded-2xl text-[14px] font-bold hover:bg-[#E5E5EA] hover:border-[#D1D1D6] transition-all outline-none">
+                    Reject
+                  </button>
+                  <button onClick={() => { approveReg(viewingReg.id); setViewingReg({...viewingReg, status: "approved"}); }} className="flex-1 py-3 bg-[#cfe467] text-[#111111] rounded-2xl text-[14px] font-bold hover:bg-[#c0d955] transition-all outline-none shadow-sm">
+                    Approve
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </DialogContent>

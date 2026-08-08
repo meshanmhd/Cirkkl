@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { ArrowRight, X, CheckCircle2, ChevronDown, Upload } from 'lucide-react';
+import { ArrowRight, X, CheckCircle2, ChevronDown, Upload, ArrowLeft, Clock } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { usePathname } from 'next/navigation';
@@ -44,12 +44,12 @@ function CustomSelect({ options, value, onChange, placeholder, required }: {
 
   return (
     <div ref={ref} className="relative w-full">
-      <input 
+      <input
         type="text"
         required={required}
         value={value}
-        className="opacity-0 absolute w-0 h-0 pointer-events-none" 
-        onChange={() => {}}
+        className="opacity-0 absolute w-0 h-0 pointer-events-none"
+        onChange={() => { }}
         onFocus={() => setOpen(true)}
       />
       <button
@@ -86,18 +86,18 @@ function CustomSelect({ options, value, onChange, placeholder, required }: {
 // ----------------------------------------------------------------------
 // Dumb Slide Button Component
 // ----------------------------------------------------------------------
-function SlideButtonBase({ 
-  label, 
-  disabled, 
-  loading, 
-  onSlideComplete, 
+function SlideButtonBase({
+  label,
+  disabled,
+  loading,
+  onSlideComplete,
   successMessage,
   isCompleted: externalCompleted
-}: { 
-  label: string; 
-  disabled?: boolean; 
-  loading?: boolean; 
-  onSlideComplete: () => void; 
+}: {
+  label: string;
+  disabled?: boolean;
+  loading?: boolean;
+  onSlideComplete: () => void;
   successMessage?: string;
   isCompleted?: boolean;
 }) {
@@ -136,7 +136,7 @@ function SlideButtonBase({
   return (
     <div
       ref={containerRef}
-      className={`relative w-full h-[64px] rounded-full flex items-center overflow-hidden touch-none select-none shadow-md border ${disabled ? 'bg-[#F5F5F7] border-[#E5E5EA] opacity-60' : 'bg-[#111111] border-black/5'}`}
+      className={`relative w-full h-[64px] rounded-2xl flex items-center overflow-hidden touch-none select-none border ${disabled ? 'bg-[#F5F5F7] border-[#E5E5EA] opacity-60' : 'bg-[#111111] border-black/5'}`}
     >
       <div
         className={`absolute inset-0 flex items-center justify-center text-[16px] font-semibold tracking-wide z-0 ml-8 pointer-events-none transition-opacity duration-200 ${disabled ? 'text-[#9E9EA7]' : 'text-white/90'}`}
@@ -146,17 +146,17 @@ function SlideButtonBase({
       </div>
 
       <div
-        className={`absolute left-0 top-0 bottom-0 z-0 rounded-l-full ${disabled ? 'bg-[#E5E5EA]' : 'bg-[#cfe467]'}`}
+        className={`absolute left-0 top-0 bottom-0 z-0 rounded-l-2xl ${disabled ? 'bg-[#E5E5EA]' : 'bg-[#cfe467]'}`}
         style={{ width: `${position + 32}px`, transition: isDragging ? 'none' : 'width 0.3s ease' }}
       />
       <div
-        className={`absolute top-0 bottom-0 w-[64px] z-0 rounded-full ${disabled ? 'bg-[#E5E5EA]' : 'bg-[#cfe467]'}`}
+        className={`absolute top-0 bottom-0 w-[64px] z-0 rounded-2xl ${disabled ? 'bg-[#E5E5EA]' : 'bg-[#cfe467]'}`}
         style={{ left: `${position}px`, transition: isDragging ? 'none' : 'left 0.3s ease' }}
       />
 
       <div
         ref={thumbRef}
-        className={`absolute z-10 left-1 w-[56px] h-[56px] bg-white rounded-full flex items-center justify-center shadow-sm ${disabled ? 'cursor-not-allowed' : 'cursor-grab active:cursor-grabbing'}`}
+        className={`absolute z-10 left-1 w-[56px] h-[56px] bg-white rounded-[14px] flex items-center justify-center shadow-sm ${disabled ? 'cursor-not-allowed' : 'cursor-grab active:cursor-grabbing'}`}
         style={{ transform: `translateX(${position}px)`, transition: isDragging ? 'none' : 'transform 0.3s ease' }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
@@ -167,7 +167,14 @@ function SlideButtonBase({
       </div>
 
       {externalCompleted && (
-        <div className={`absolute inset-0 flex items-center justify-center text-[#111111] font-bold z-20 animate-fade-in text-lg ${!successMessage?.includes('Pending') ? 'bg-[#cfe467]' : 'bg-[#F5F5F7]'}`}>
+        <div
+          className={`absolute inset-0 flex items-center justify-center font-bold z-40 animate-fade-in text-[16px] rounded-2xl ${successMessage?.includes('Pending') ? 'text-[#6E6E73] border border-[#D1D1D6]' :
+            successMessage === 'Thank you for attending!' || successMessage === 'Attended' ? 'bg-white text-[#111111] border border-[#D1D1D6]' : 'bg-[#F1F7D1] text-[#111111]'
+            }`}
+          style={successMessage?.includes('Pending') ? {
+            backgroundImage: 'repeating-linear-gradient(45deg, #F5F5F7, #F5F5F7 12px, #EBEBEF 12px, #EBEBEF 24px)'
+          } : undefined}
+        >
           {successMessage || "Registered"}
         </div>
       )}
@@ -192,7 +199,7 @@ function RegistrationModal({
   const customFields: CustomField[] = event.custom_fields || [];
   const ticketTypes: any[] = event.ticket_types || [];
   const isPaid = event.price === "paid";
-  
+
   const steps: string[] = [];
   if (customFields.length > 0) steps.push("custom_fields");
   if (isPaid && ticketTypes.length > 1) steps.push("ticket_select");
@@ -203,11 +210,19 @@ function RegistrationModal({
   const isLastStep = currentStepIdx === steps.length - 1 || steps.length === 0;
 
   const [values, setValues] = useState<Record<string, string>>({});
-  const [selectedTicketId, setSelectedTicketId] = useState<string>(ticketTypes.length === 1 ? ticketTypes[0].id : "");
+  const [selectedTicketId, setSelectedTicketId] = useState<string>(ticketTypes[0]?.id || "");
+  const [expandedTicketId, setExpandedTicketId] = useState<string | null>(ticketTypes[0]?.id || null);
   const [transactionId, setTransactionId] = useState("");
   const [paymentProofFile, setPaymentProofFile] = useState<File | null>(null);
   const [paymentProofPreview, setPaymentProofPreview] = useState<string | null>(null);
   const [declarationChecked, setDeclarationChecked] = useState(false);
+
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "auto";
+    };
+  }, []);
 
   const selectedTicket = ticketTypes.find(t => t.id === selectedTicketId) || ticketTypes[0];
   const qrCodeUrl = selectedTicket?.qr_code_url || ticketTypes[0]?.qr_code_url;
@@ -223,7 +238,7 @@ function RegistrationModal({
     }
   };
 
-  const isSlideDisabled = 
+  const isSlideDisabled =
     (currentStep === "payment" && (!transactionId.trim() || !paymentProofFile || !declarationChecked)) ||
     (currentStep === "ticket_select" && !selectedTicketId);
 
@@ -233,20 +248,37 @@ function RegistrationModal({
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div className="relative z-10 w-full max-w-md bg-white rounded-[28px] shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
-        <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-[#E5E5EA] shrink-0">
-          <div>
-            <h2 className="text-[17px] font-bold text-[#111111]">Registration</h2>
-            <p className="text-[13px] text-[#6E6E73] mt-0.5">
-              {currentStep === "custom_fields" ? "Please fill in your details." : 
-               currentStep === "ticket_select" ? "Select your ticket type." : 
-               currentStep === "payment" ? "Complete your payment." : ""}
-            </p>
+
+        {/* Stepper Header */}
+        {steps.length > 1 && (
+          <div className="flex items-center gap-1.5 px-6 pt-5 pb-2">
+            {steps.map((step, idx) => (
+              <div key={step} className={`h-1.5 flex-1 rounded-full transition-colors ${idx <= currentStepIdx ? 'bg-[#cfe467]' : 'bg-[#F5F5F7]'}`} />
+            ))}
           </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center bg-[#F5F5F7] text-[#6E6E73] hover:bg-[#E5E5EA] transition-colors">
+        )}
+
+        <div className="flex items-center justify-between px-6 pt-3 pb-4 border-b border-[#E5E5EA] shrink-0">
+          <div className="flex items-center gap-3">
+            {currentStepIdx > 0 && (
+              <button onClick={() => setCurrentStepIdx(idx => idx - 1)} className="w-8 h-8 rounded-full flex items-center justify-center bg-[#F5F5F7] text-[#6E6E73] hover:bg-[#E5E5EA] transition-colors shrink-0">
+                <ArrowLeft size={16} />
+              </button>
+            )}
+            <div>
+              <h2 className="text-[17px] font-bold text-[#111111]">Registration</h2>
+              <p className="text-[13px] text-[#6E6E73] mt-0.5">
+                {currentStep === "custom_fields" ? "Please fill in your details." :
+                  currentStep === "ticket_select" ? "Select your ticket type." :
+                    currentStep === "payment" ? "Complete your payment." : ""}
+              </p>
+            </div>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center bg-[#F5F5F7] text-[#6E6E73] hover:bg-[#E5E5EA] transition-colors shrink-0">
             <X size={16} />
           </button>
         </div>
-        
+
         <form id="reg-modal-form" onSubmit={handleNext} className="flex flex-col flex-1 overflow-hidden">
           <div className="px-6 py-5 flex flex-col gap-4 overflow-y-auto">
             {currentStep === "custom_fields" && (
@@ -305,18 +337,36 @@ function RegistrationModal({
 
             {currentStep === "ticket_select" && (
               <div className="flex flex-col gap-3">
+                <h3 className="text-[15px] font-semibold text-[#111111] mb-1">Tickets</h3>
                 {ticketTypes.map(t => (
-                  <label key={t.id} className={`flex items-center justify-between p-4 rounded-[16px] border-2 cursor-pointer transition-all ${selectedTicketId === t.id ? 'border-[#cfe467] bg-[#cfe467]/5' : 'border-[#E5E5EA] hover:border-[#D1D1D6]'}`}>
-                    <div className="flex items-center gap-3">
-                      <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${selectedTicketId === t.id ? 'border-[#cfe467] bg-[#cfe467]' : 'border-[#E5E5EA]'}`}>
-                        {selectedTicketId === t.id && <CheckCircle2 size={12} className="text-white" />}
+                  <label
+                    key={t.id}
+                    className={`flex flex-col p-4 rounded-[16px] border-2 cursor-pointer transition-all ${selectedTicketId === t.id ? 'border-[#cfe467] bg-[#cfe467]/5' : 'border-[#E5E5EA] hover:border-[#D1D1D6]'}`}
+                    onClick={() => setSelectedTicketId(t.id)}
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ${selectedTicketId === t.id ? 'border-[#cfe467] bg-[#cfe467]' : 'border-[#E5E5EA]'}`}>
+                          {selectedTicketId === t.id && <CheckCircle2 size={12} className="text-white" />}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-[16px] text-[#111111] tracking-tight">{t.name} Ticket</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-[14px] font-bold text-[#111111]">{t.name}</p>
-                        <p className="text-[12px] text-[#6E6E73]">{t.unlimited ? "Unlimited" : (t.quantity ? `${t.quantity} left` : "Available")}</p>
-                      </div>
+                      <p className="font-semibold text-[16px] text-[#111111] tracking-tight">₹{t.price}</p>
                     </div>
-                    <p className="text-[15px] font-bold text-[#111111]">₹{t.price}</p>
+
+                    <div className="ml-8 mt-2">
+                      <button type="button" onClick={(e) => { e.preventDefault(); setExpandedTicketId(expandedTicketId === t.id ? null : t.id); }} className="flex items-center gap-1 text-[13px] font-semibold text-[#6E6E73] hover:text-[#111111] transition-colors cursor-pointer">
+                        View Details <ChevronDown size={14} className={`transition-transform ${expandedTicketId === t.id ? "rotate-180" : ""}`} />
+                      </button>
+
+                      {expandedTicketId === t.id && (
+                        <div className="mt-2 text-[13px] text-[#6E6E73]">
+                          <p className="leading-relaxed">This ticket grants you full access to the {t.name} tier. Please arrive on time with your ticket code.</p>
+                        </div>
+                      )}
+                    </div>
                   </label>
                 ))}
               </div>
@@ -416,8 +466,7 @@ function RegistrationModal({
             ) : (
               <button
                 type="submit"
-                className="w-full py-3.5 rounded-2xl text-[15px] font-bold text-[#111111] transition-all hover:-translate-y-0.5 hover:shadow-md"
-                style={{ background: "linear-gradient(135deg, #cfe467 0%, #b8d44e 100%)" }}
+                className="w-full py-4 rounded-2xl text-[16px] font-bold text-[#111111] transition-all hover:opacity-90 shadow-sm bg-[#cfe467] cursor-pointer"
               >
                 Next Step
               </button>
@@ -438,7 +487,7 @@ export const SlideButton = ({ onComplete, event, isFull = false, userRegistratio
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
-  
+
   const supabase = createClient();
   const pathname = usePathname();
 
@@ -454,18 +503,18 @@ export const SlideButton = ({ onComplete, event, isFull = false, userRegistratio
   const customFields: CustomField[] = event?.custom_fields || [];
   const ticketTypes: any[] = event?.ticket_types || [];
   const isPaid = event?.price === "paid";
-  
+
   const steps: string[] = [];
   if (customFields.length > 0) steps.push("custom_fields");
   if (isPaid && ticketTypes.length > 1) steps.push("ticket_select");
   if (isPaid) steps.push("payment");
 
   const requiresModal = steps.length > 0;
-  
-  const approvalRequired = event?.approval_required;
+
+  const approvalRequired = event?.approval_required || event?.price === "paid";
   const pendingStatus = isFull || approvalRequired;
-  const successMessage = userRegistration 
-    ? (userRegistration.status === 'pending' ? "Pending Approval" : "Registered")
+  const successMessage = userRegistration
+    ? (userRegistration.attended || userRegistration.status === 'attended' ? "Thank you for attending" : userRegistration.status === 'pending' ? "Pending Approval" : "Registered")
     : (isFull ? "Pending (Waitlist)" : (approvalRequired ? "Pending Approval" : "Registered"));
 
   const doRegister = async (fieldValues: Record<string, string> = {}, transactionId: string = "", ticketTierId: string = "", paymentProofFile: File | null = null) => {
@@ -485,11 +534,11 @@ export const SlideButton = ({ onComplete, event, isFull = false, userRegistratio
         if (paymentProofFile) {
           const fileExt = paymentProofFile.name.split('.').pop();
           const fileName = `${user.id}_${event.id}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-          
+
           const { error: uploadError, data } = await supabase.storage
             .from('payment_proofs')
             .upload(fileName, paymentProofFile);
-            
+
           if (!uploadError && data) {
             const { data: publicUrlData } = supabase.storage.from('payment_proofs').getPublicUrl(fileName);
             paymentProofUrl = publicUrlData.publicUrl;
@@ -506,7 +555,7 @@ export const SlideButton = ({ onComplete, event, isFull = false, userRegistratio
           ticket_tier_id: ticketTierId || (ticketTypes.length === 1 ? ticketTypes[0].id : null),
           payment_proof_url: paymentProofUrl,
         });
-        
+
         if (insertError) {
           console.error("Insert failed:", insertError);
           alert(`Registration failed: ${insertError.message}`);
@@ -544,7 +593,7 @@ export const SlideButton = ({ onComplete, event, isFull = false, userRegistratio
           </div>
         </div>
       )}
-      
+
       {showModal && (
         <RegistrationModal
           event={event}
@@ -557,8 +606,7 @@ export const SlideButton = ({ onComplete, event, isFull = false, userRegistratio
       {requiresModal && !isCompleted ? (
         <button
           onClick={handleStart}
-          className="w-full py-4 rounded-full text-[16px] font-bold text-[#111111] transition-all hover:opacity-90 shadow-sm"
-          style={{ background: "linear-gradient(135deg, #cfe467 0%, #b8d44e 100%)" }}
+          className="w-full py-4 rounded-2xl text-[16px] font-bold text-[#111111] transition-all hover:opacity-90 bg-[#cfe467]"
         >
           Register for Event
         </button>
