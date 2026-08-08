@@ -10,7 +10,7 @@ export async function loginAction(prevState: any, formData: FormData) {
   const redirectTo = formData.get('redirectTo') as string
   const supabase = await createClient()
 
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
   })
@@ -19,7 +19,14 @@ export async function loginAction(prevState: any, formData: FormData) {
     return { error: error.message }
   }
 
+  const role = data?.user?.user_metadata?.role
+
   revalidatePath('/', 'layout')
+  
+  if (role === 'organisation') {
+    redirect('/dashboard/events')
+  }
+  
   if (redirectTo) {
     redirect(redirectTo)
   }

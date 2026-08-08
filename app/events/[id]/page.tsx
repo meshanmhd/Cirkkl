@@ -45,7 +45,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
   if (user) {
     const { data: reg } = await supabase
       .from('registrations')
-      .select('status')
+      .select('status, attended')
       .eq('event_id', id)
       .eq('user_id', user.id)
       .single();
@@ -324,13 +324,26 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                         </div>
                         <div className="flex flex-col justify-center">
                           <span className="text-[13px] font-medium text-[#6E6E73] mb-1">Date & Time</span>
-                          <span className="text-[15px] font-semibold text-[#111111]">
-                            {formattedDate} {formattedTime ? `| ${formattedTime}` : ''} to
-                          </span>
-                          {(formattedEndDate || formattedEndTime) && (
-                            <span className="text-[15px] font-semibold text-[#111111] mt-0.5">
-                              {formattedEndDate || formattedDate} {formattedEndTime ? `| ${formattedEndTime}` : ''}
-                            </span>
+                          {(!formattedEndDate || formattedEndDate === formattedDate) ? (
+                            <>
+                              <span className="text-[15px] font-semibold text-[#111111]">
+                                {formattedDate}
+                              </span>
+                              {(formattedTime || formattedEndTime) && (
+                                <span className="text-[15px] font-semibold text-[#111111] mt-0.5">
+                                  {formattedTime} {formattedEndTime ? `to ${formattedEndTime}` : ''}
+                                </span>
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              <span className="text-[15px] font-semibold text-[#111111]">
+                                {formattedDate} {formattedTime ? `| ${formattedTime}` : ''} to
+                              </span>
+                              <span className="text-[15px] font-semibold text-[#111111] mt-0.5">
+                                {formattedEndDate} {formattedEndTime ? `| ${formattedEndTime}` : ''}
+                              </span>
+                            </>
                           )}
                         </div>
                       </div>
@@ -394,20 +407,20 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                     </div>
                   </div>
 
-                  <div className="pt-2">
-                    {!isEnded && (
+                  {(!isEnded || userRegistration?.attended || userRegistration?.status === 'attended') && (
+                    <div className="pt-2">
                       <SlideButton
                         event={event}
                         isFull={isFull}
                         userRegistration={userRegistration}
                       />
-                    )}
-                    {event.registration_deadline && !isEnded && (
-                      <p className="text-center text-xs text-[#6E6E73] mt-4 font-medium">
-                        Registration closes on {formattedRegDate} {formattedRegTime ? `at ${formattedRegTime}` : ''}
-                      </p>
-                    )}
-                  </div>
+                      {event.registration_deadline && (
+                        <p className="text-center text-xs text-[#6E6E73] mt-4 font-medium">
+                          Registration closes on {formattedRegDate} {formattedRegTime ? `at ${formattedRegTime}` : ''}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 

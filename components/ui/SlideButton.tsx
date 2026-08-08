@@ -44,12 +44,12 @@ function CustomSelect({ options, value, onChange, placeholder, required }: {
 
   return (
     <div ref={ref} className="relative w-full">
-      <input 
+      <input
         type="text"
         required={required}
         value={value}
-        className="opacity-0 absolute w-0 h-0 pointer-events-none" 
-        onChange={() => {}}
+        className="opacity-0 absolute w-0 h-0 pointer-events-none"
+        onChange={() => { }}
         onFocus={() => setOpen(true)}
       />
       <button
@@ -86,18 +86,18 @@ function CustomSelect({ options, value, onChange, placeholder, required }: {
 // ----------------------------------------------------------------------
 // Dumb Slide Button Component
 // ----------------------------------------------------------------------
-function SlideButtonBase({ 
-  label, 
-  disabled, 
-  loading, 
-  onSlideComplete, 
+function SlideButtonBase({
+  label,
+  disabled,
+  loading,
+  onSlideComplete,
   successMessage,
   isCompleted: externalCompleted
-}: { 
-  label: string; 
-  disabled?: boolean; 
-  loading?: boolean; 
-  onSlideComplete: () => void; 
+}: {
+  label: string;
+  disabled?: boolean;
+  loading?: boolean;
+  onSlideComplete: () => void;
   successMessage?: string;
   isCompleted?: boolean;
 }) {
@@ -167,13 +167,12 @@ function SlideButtonBase({
       </div>
 
       {externalCompleted && (
-        <div 
-          className={`absolute inset-0 flex items-center justify-center font-bold z-40 animate-fade-in text-[16px] rounded-2xl ${
-            successMessage?.includes('Pending') ? 'text-[#6E6E73] border border-[#D1D1D6]' :
-            successMessage === 'Attended' ? 'bg-white text-[#111111] border border-[#E5E5EA]' : 'bg-[#F1F7D1] text-[#111111]'
-          }`}
-          style={successMessage?.includes('Pending') ? { 
-            backgroundImage: 'repeating-linear-gradient(45deg, #F5F5F7, #F5F5F7 12px, #EBEBEF 12px, #EBEBEF 24px)' 
+        <div
+          className={`absolute inset-0 flex items-center justify-center font-bold z-40 animate-fade-in text-[16px] rounded-2xl ${successMessage?.includes('Pending') ? 'text-[#6E6E73] border border-[#D1D1D6]' :
+            successMessage === 'Thank you for attending!' || successMessage === 'Attended' ? 'bg-white text-[#111111] border border-[#D1D1D6]' : 'bg-[#F1F7D1] text-[#111111]'
+            }`}
+          style={successMessage?.includes('Pending') ? {
+            backgroundImage: 'repeating-linear-gradient(45deg, #F5F5F7, #F5F5F7 12px, #EBEBEF 12px, #EBEBEF 24px)'
           } : undefined}
         >
           {successMessage || "Registered"}
@@ -200,7 +199,7 @@ function RegistrationModal({
   const customFields: CustomField[] = event.custom_fields || [];
   const ticketTypes: any[] = event.ticket_types || [];
   const isPaid = event.price === "paid";
-  
+
   const steps: string[] = [];
   if (customFields.length > 0) steps.push("custom_fields");
   if (isPaid && ticketTypes.length > 1) steps.push("ticket_select");
@@ -239,7 +238,7 @@ function RegistrationModal({
     }
   };
 
-  const isSlideDisabled = 
+  const isSlideDisabled =
     (currentStep === "payment" && (!transactionId.trim() || !paymentProofFile || !declarationChecked)) ||
     (currentStep === "ticket_select" && !selectedTicketId);
 
@@ -249,7 +248,7 @@ function RegistrationModal({
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div className="relative z-10 w-full max-w-md bg-white rounded-[28px] shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
-        
+
         {/* Stepper Header */}
         {steps.length > 1 && (
           <div className="flex items-center gap-1.5 px-6 pt-5 pb-2">
@@ -269,9 +268,9 @@ function RegistrationModal({
             <div>
               <h2 className="text-[17px] font-bold text-[#111111]">Registration</h2>
               <p className="text-[13px] text-[#6E6E73] mt-0.5">
-                {currentStep === "custom_fields" ? "Please fill in your details." : 
-                 currentStep === "ticket_select" ? "Select your ticket type." : 
-                 currentStep === "payment" ? "Complete your payment." : ""}
+                {currentStep === "custom_fields" ? "Please fill in your details." :
+                  currentStep === "ticket_select" ? "Select your ticket type." :
+                    currentStep === "payment" ? "Complete your payment." : ""}
               </p>
             </div>
           </div>
@@ -279,7 +278,7 @@ function RegistrationModal({
             <X size={16} />
           </button>
         </div>
-        
+
         <form id="reg-modal-form" onSubmit={handleNext} className="flex flex-col flex-1 overflow-hidden">
           <div className="px-6 py-5 flex flex-col gap-4 overflow-y-auto">
             {currentStep === "custom_fields" && (
@@ -340,8 +339,8 @@ function RegistrationModal({
               <div className="flex flex-col gap-3">
                 <h3 className="text-[15px] font-semibold text-[#111111] mb-1">Tickets</h3>
                 {ticketTypes.map(t => (
-                  <label 
-                    key={t.id} 
+                  <label
+                    key={t.id}
                     className={`flex flex-col p-4 rounded-[16px] border-2 cursor-pointer transition-all ${selectedTicketId === t.id ? 'border-[#cfe467] bg-[#cfe467]/5' : 'border-[#E5E5EA] hover:border-[#D1D1D6]'}`}
                     onClick={() => setSelectedTicketId(t.id)}
                   >
@@ -361,7 +360,7 @@ function RegistrationModal({
                       <button type="button" onClick={(e) => { e.preventDefault(); setExpandedTicketId(expandedTicketId === t.id ? null : t.id); }} className="flex items-center gap-1 text-[13px] font-semibold text-[#6E6E73] hover:text-[#111111] transition-colors cursor-pointer">
                         View Details <ChevronDown size={14} className={`transition-transform ${expandedTicketId === t.id ? "rotate-180" : ""}`} />
                       </button>
-                      
+
                       {expandedTicketId === t.id && (
                         <div className="mt-2 text-[13px] text-[#6E6E73]">
                           <p className="leading-relaxed">This ticket grants you full access to the {t.name} tier. Please arrive on time with your ticket code.</p>
@@ -488,7 +487,7 @@ export const SlideButton = ({ onComplete, event, isFull = false, userRegistratio
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
-  
+
   const supabase = createClient();
   const pathname = usePathname();
 
@@ -504,18 +503,18 @@ export const SlideButton = ({ onComplete, event, isFull = false, userRegistratio
   const customFields: CustomField[] = event?.custom_fields || [];
   const ticketTypes: any[] = event?.ticket_types || [];
   const isPaid = event?.price === "paid";
-  
+
   const steps: string[] = [];
   if (customFields.length > 0) steps.push("custom_fields");
   if (isPaid && ticketTypes.length > 1) steps.push("ticket_select");
   if (isPaid) steps.push("payment");
 
   const requiresModal = steps.length > 0;
-  
+
   const approvalRequired = event?.approval_required || event?.price === "paid";
   const pendingStatus = isFull || approvalRequired;
-  const successMessage = userRegistration 
-    ? (userRegistration.status === 'pending' ? "Pending Approval" : userRegistration.status === 'attended' ? "Attended" : "Registered")
+  const successMessage = userRegistration
+    ? (userRegistration.attended || userRegistration.status === 'attended' ? "Thank you for attending" : userRegistration.status === 'pending' ? "Pending Approval" : "Registered")
     : (isFull ? "Pending (Waitlist)" : (approvalRequired ? "Pending Approval" : "Registered"));
 
   const doRegister = async (fieldValues: Record<string, string> = {}, transactionId: string = "", ticketTierId: string = "", paymentProofFile: File | null = null) => {
@@ -535,11 +534,11 @@ export const SlideButton = ({ onComplete, event, isFull = false, userRegistratio
         if (paymentProofFile) {
           const fileExt = paymentProofFile.name.split('.').pop();
           const fileName = `${user.id}_${event.id}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-          
+
           const { error: uploadError, data } = await supabase.storage
             .from('payment_proofs')
             .upload(fileName, paymentProofFile);
-            
+
           if (!uploadError && data) {
             const { data: publicUrlData } = supabase.storage.from('payment_proofs').getPublicUrl(fileName);
             paymentProofUrl = publicUrlData.publicUrl;
@@ -556,7 +555,7 @@ export const SlideButton = ({ onComplete, event, isFull = false, userRegistratio
           ticket_tier_id: ticketTierId || (ticketTypes.length === 1 ? ticketTypes[0].id : null),
           payment_proof_url: paymentProofUrl,
         });
-        
+
         if (insertError) {
           console.error("Insert failed:", insertError);
           alert(`Registration failed: ${insertError.message}`);
@@ -594,7 +593,7 @@ export const SlideButton = ({ onComplete, event, isFull = false, userRegistratio
           </div>
         </div>
       )}
-      
+
       {showModal && (
         <RegistrationModal
           event={event}
