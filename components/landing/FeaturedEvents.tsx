@@ -19,6 +19,8 @@ export default async function FeaturedEvents() {
   const supabase = await createClient();
   const { data: featured } = await supabase.from('events').select('*').eq('status', 'published').eq('featured', true).limit(3);
   
+  if (!featured || featured.length === 0) return null;
+  
   return (
     <section className="pb-24 px-6 pt-0 mt-0" id="featured">
       <div className="max-w-7xl mx-auto">

@@ -245,10 +245,10 @@ export function MembersTable({ members: initialMembers }: MembersTableProps) {
                           </AvatarFallback>
                         </Avatar>
                         <div className="min-w-0">
-                          <p className="text-[15px] font-bold text-[#111111] leading-snug truncate">
-                            {member.full_name || "—"}
+                          <p className="text-[13px] text-[#111111] truncate">
+                            {member.full_name || "-"}
                           </p>
-                          <p className="text-[13px] text-[#6E6E73] truncate mt-0.5">{member.email || "—"}</p>
+                          <p className="text-[12px] text-[#6E6E73] truncate mt-0.5">{member.email || "-"}</p>
                         </div>
                       </div>
                     </td>
@@ -275,26 +275,26 @@ export function MembersTable({ members: initialMembers }: MembersTableProps) {
                           </DropdownMenuContent>
                         </DropdownMenu>
                       ) : (
-                        <span className="text-[14px] font-medium text-[#111111] capitalize">
+                        <span className="text-[13px] text-[#111111] capitalize">
                           {member.role || "Member"}
                         </span>
                       )}
                     </td>
 
                     <td className="px-6 py-4 text-center">
-                      <span className="text-[14px] font-medium text-[#111111]">
+                      <span className="text-[13px] text-[#111111]">
                         {member.department || "—"}
                       </span>
                     </td>
 
                     <td className="px-6 py-4 text-center">
-                      <span className="text-[14px] font-medium text-[#111111]">
+                      <span className="text-[13px] text-[#111111]">
                         {member.ckl_id || "—"}
                       </span>
                     </td>
 
                     <td className="px-6 py-4 text-center">
-                      <span className="text-[14px] font-medium text-[#111111]">
+                      <span className="text-[13px] text-[#111111]">
                         {formatDate(member.joined_at)}
                       </span>
                     </td>

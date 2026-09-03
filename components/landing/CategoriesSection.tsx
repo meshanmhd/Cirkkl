@@ -91,10 +91,9 @@ export default function CategoriesSection() {
           {topMarqueeItems.map((cat, index) => {
             const IconComponent = IconMap[cat.name] || Terminal;
             return (
-              <Link
+              <div
                 key={`top-${cat.name}-${index}`}
-                href={`/events?category=${cat.name}`}
-                className="group flex-none w-[280px] h-[88px] bg-white border border-[#F0F0F0] hover:border-[#cfe467] transition-colors duration-300 rounded-[24px] flex items-center px-5 gap-5"
+                className="group flex-none w-[280px] h-[88px] bg-white border border-[#F0F0F0] hover:border-[#cfe467] transition-colors duration-300 rounded-[24px] flex items-center px-5 gap-5 cursor-default"
               >
                 <div 
                   className="w-[52px] h-[52px] rounded-[16px] flex items-center justify-center"
@@ -105,7 +104,7 @@ export default function CategoriesSection() {
                 <span className="font-bold text-[18px] text-[#111111] tracking-tight">
                   {cat.name}
                 </span>
-              </Link>
+              </div>
             );
           })}
         </div>
@@ -115,10 +114,9 @@ export default function CategoriesSection() {
           {bottomMarqueeItems.map((cat, index) => {
             const IconComponent = IconMap[cat.name] || Terminal;
             return (
-              <Link
+              <div
                 key={`bottom-${cat.name}-${index}`}
-                href={`/events?category=${cat.name}`}
-                className="group flex-none w-[280px] h-[88px] bg-white border border-[#F0F0F0] hover:border-[#cfe467] transition-colors duration-300 rounded-[24px] flex items-center px-5 gap-5"
+                className="group flex-none w-[280px] h-[88px] bg-white border border-[#F0F0F0] hover:border-[#cfe467] transition-colors duration-300 rounded-[24px] flex items-center px-5 gap-5 cursor-default"
               >
                 <div 
                   className="w-[52px] h-[52px] rounded-[16px] flex items-center justify-center"
@@ -129,7 +127,7 @@ export default function CategoriesSection() {
                 <span className="font-bold text-[18px] text-[#111111] tracking-tight">
                   {cat.name}
                 </span>
-              </Link>
+              </div>
             );
           })}
         </div>
