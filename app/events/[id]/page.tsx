@@ -121,55 +121,52 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
   const isEnded = eventStatus === 'ended';
 
   return (
-    <div className="min-h-screen bg-[#F9F9FB] pb-20 font-sans relative">
+    <div className="min-h-screen bg-white pb-20 font-sans relative text-[#111111] selection:bg-[#cfe467] selection:text-black">
+
       {/* Banner */}
-      <div className="w-full h-[45vh] fixed top-0 left-0 z-0">
-        <img
-          src={event.image}
-          alt={event.title}
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/40 to-[#F9F9FB]" />
+      <div className="relative z-10 w-full px-4 pt-4 sm:pt-8 max-w-7xl mx-auto">
+        <div className="w-full h-[35vh] md:h-[45vh] rounded-[2rem] overflow-hidden border border-[#E5E5EA]/50 relative bg-[#F5F5F7]">
+          <img
+            src={event.image}
+            alt={event.title}
+            className="w-full h-full object-cover"
+          />
+        </div>
       </div>
 
       {/* Main Content Area */}
-      <div className="relative z-10 w-full mt-[35vh]">
-        <div className="w-full h-[10vh] bg-gradient-to-b from-[#F9F9FB]/0 to-[#F9F9FB]" />
-
-        <div className="bg-[#F9F9FB] w-full min-h-screen pt-4 relative overflow-hidden">
-          <div className="absolute inset-0 pointer-events-none z-0 mix-blend-multiply opacity-70">
-            <CursorGrid color="#cfe467" radius={100} />
-          </div>
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      <div className="relative z-10 w-full mt-6">
+        <div className="w-full min-h-screen">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 items-start">
 
               {/* Left Details */}
               <div className="flex-1 pb-12">
-                <div className="mb-6">
-                  <div className="flex items-center gap-2 mb-4">
+                <div className="mb-8">
+                  <div className="flex flex-wrap items-center gap-3 mb-5">
                     {eventStatus === 'upcoming' && (
-                      <span className="inline-block px-3 py-1 bg-[#E5E5EA] text-[#111111] text-xs font-bold rounded-md uppercase tracking-wider">
+                      <span className="inline-block px-3 py-1 bg-white border border-[#E5E5EA] text-[#111111] text-xs font-bold rounded-lg uppercase tracking-wider">
                         Upcoming
                       </span>
                     )}
                     {eventStatus === 'live' && (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-100 text-red-600 text-xs font-bold rounded-md uppercase tracking-wider">
-                        <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse" />
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-50 border border-red-100 text-red-600 text-xs font-bold rounded-lg uppercase tracking-wider">
+                        <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
                         Live
                       </span>
                     )}
                     {eventStatus === 'ended' && (
-                      <span className="inline-block px-3 py-1 bg-red-100 text-red-600 text-xs font-bold rounded-md uppercase tracking-wider">
+                      <span className="inline-block px-3 py-1 bg-gray-100 border border-gray-200 text-gray-500 text-xs font-bold rounded-lg uppercase tracking-wider">
                         Ended
                       </span>
                     )}
                     {event.category && (
-                      <span className="inline-block px-3 py-1 bg-[#cfe467] text-[#111111] text-xs font-bold rounded-md uppercase tracking-wider">
+                      <span className="inline-block px-3 py-1 bg-[#cfe467] text-[#111111] text-xs font-bold rounded-lg uppercase tracking-wider">
                         {event.category}
                       </span>
                     )}
                   </div>
-                  <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-[#111111] mb-4 leading-tight">
+                  <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-[#111111] mb-4 leading-tight tracking-tight">
                     {event.title}
                   </h1>
                   {event.tagline && (
@@ -179,14 +176,14 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                   )}
                 </div>
 
-                <div className="prose prose-lg max-w-none text-[#333333] mb-6 whitespace-pre-wrap leading-relaxed">
+                <div className="prose prose-lg max-w-none text-[#333333] mb-8 whitespace-pre-wrap leading-relaxed">
                   {event.description}
                 </div>
 
                 {event.tags && event.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-8">
+                  <div className="flex flex-wrap gap-2 mb-10">
                     {event.tags.map((tag: string, i: number) => (
-                      <span key={i} className="px-3 py-1 bg-[#E5E5EA]/50 text-[#111111] text-xs font-semibold rounded-md uppercase tracking-wide border border-[#E5E5EA]">
+                      <span key={i} className="px-3 py-1.5 bg-white hover:bg-white transition-colors border border-[#E5E5EA] text-[#333333] text-xs font-semibold rounded-lg uppercase tracking-wide">
                         {tag}
                       </span>
                     ))}
@@ -196,18 +193,18 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                 {/* Speakers Section */}
                 {event.speakers && event.speakers.length > 0 && (
                   <>
-                    <hr className="border-[#E5E5EA] my-8" />
-                    <div className="mb-8">
-                      <h3 className="text-2xl font-semibold text-[#111111] mb-5 tracking-tight">
+                    <div className="h-px w-full bg-gradient-to-r from-transparent via-[#E5E5EA] to-transparent my-8" />
+                    <div className="mb-10">
+                      <h3 className="text-2xl font-semibold text-[#111111] mb-4 tracking-tight">
                         {event.speakers.length > 1 ? "Speakers" : "Speaker"}
                       </h3>
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {event.speakers.map((speaker: any) => (
-                          <div key={speaker.id} className="flex items-center gap-4 p-4 rounded-2xl bg-white border border-[#E5E5EA]">
+                          <div key={speaker.id} className="flex items-center gap-4 p-4 rounded-2xl bg-white border border-[#E5E5EA] hover:bg-white transition-colors">
                             {speaker.imageUrl ? (
-                              <img src={speaker.imageUrl} alt={speaker.name} className="w-14 h-14 rounded-full object-cover shrink-0" />
+                              <img src={speaker.imageUrl} alt={speaker.name} className="w-14 h-14 rounded-full object-cover shrink-0 ring-2 ring-white" />
                             ) : (
-                              <div className="w-14 h-14 rounded-full bg-[#F5F5F7] flex items-center justify-center shrink-0">
+                              <div className="w-14 h-14 rounded-full bg-[#F5F5F7] flex items-center justify-center shrink-0 ring-2 ring-white">
                                 <User className="text-[#9E9EA7]" size={24} />
                               </div>
                             )}
@@ -222,17 +219,17 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                   </>
                 )}
 
-                <hr className="border-[#E5E5EA] my-8" />
+                <div className="h-px w-full bg-gradient-to-r from-transparent via-[#E5E5EA] to-transparent my-8" />
 
                 {/* Organizer & Hosts Section */}
-                <div className="mb-8 flex flex-col gap-6">
+                <div className="mb-10 flex flex-col gap-6">
                   <div>
-                    <h3 className="text-2xl font-semibold text-[#111111] mb-5 tracking-tight">Organized by</h3>
+                    <h3 className="text-2xl font-semibold text-[#111111] mb-4 tracking-tight">Organized by</h3>
                     <div className="flex flex-wrap gap-10 items-center">
 
                       {/* Organizer */}
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-full bg-[#F5F5F7] flex items-center justify-center border border-[#E5E5EA] shrink-0">
+                      <div className="flex items-center gap-4 p-2 pr-6 rounded-full bg-white border border-[#E5E5EA]">
+                        <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center shrink-0 border border-[#E5E5EA]/50">
                           <Users className="text-[#6E6E73]" size={20} />
                         </div>
                         <div className="flex flex-col">
@@ -243,11 +240,11 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
 
                       {/* Hosts */}
                       {eventHosts.map((host: any) => (
-                        <div key={host.id} className="flex items-center gap-3">
+                        <div key={host.id} className="flex items-center gap-4 p-2 pr-6 rounded-full bg-white border border-[#E5E5EA]">
                           <img
                             src={host.avatar_url || `https://api.dicebear.com/7.x/notionists/svg?seed=${host.id}`}
                             alt={host.name}
-                            className="w-12 h-12 rounded-full object-cover border border-[#E5E5EA] shrink-0 bg-white"
+                            className="w-12 h-12 rounded-full object-cover shrink-0 ring-2 ring-white bg-white"
                           />
                           <div className="flex flex-col">
                             <span className="font-bold text-[15px] text-[#111111]">{host.name}</span>
@@ -263,16 +260,16 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                   (event.refund_policy && event.refund_policy.trim() !== "") ||
                   (event.photography_policy && event.photography_policy.trim() !== "")) && (
                     <>
-                      <hr className="border-[#E5E5EA] my-8" />
+                      <div className="h-px w-full bg-gradient-to-r from-transparent via-[#E5E5EA] to-transparent my-8" />
                       <div className="mb-8">
-                        <h3 className="text-2xl font-semibold text-[#111111] mb-5 tracking-tight">Policies & Guidelines</h3>
+                        <h3 className="text-2xl font-semibold text-[#111111] mb-6 tracking-tight">Policies & Guidelines</h3>
                         <Accordion className="w-full space-y-4">
                           {event.cancellation_policy && event.cancellation_policy.trim() !== "" && (
-                            <AccordionItem value="cancellation" className="border border-[#E5E5EA] bg-white rounded-2xl px-5">
-                              <AccordionTrigger className="hover:no-underline py-5">
+                            <AccordionItem value="cancellation" className="border border-[#E5E5EA] bg-white rounded-2xl px-5 overflow-hidden">
+                              <AccordionTrigger className="hover:no-underline py-5 text-[#111111]">
                                 <div className="flex items-center gap-3">
                                   <ShieldCheck size={20} className="text-[#111111]" />
-                                  <h4 className="font-semibold text-[15px] text-[#111111] tracking-tight">Cancellation Policy</h4>
+                                  <h4 className="font-semibold text-[15px] tracking-tight">Cancellation Policy</h4>
                                 </div>
                               </AccordionTrigger>
                               <AccordionContent className="text-sm text-[#6E6E73] whitespace-pre-wrap pb-5">
@@ -281,11 +278,11 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                             </AccordionItem>
                           )}
                           {event.refund_policy && event.refund_policy.trim() !== "" && (
-                            <AccordionItem value="refund" className="border border-[#E5E5EA] bg-white rounded-2xl px-5">
-                              <AccordionTrigger className="hover:no-underline py-5">
+                            <AccordionItem value="refund" className="border border-[#E5E5EA] bg-white rounded-2xl px-5 overflow-hidden">
+                              <AccordionTrigger className="hover:no-underline py-5 text-[#111111]">
                                 <div className="flex items-center gap-3">
                                   <Banknote size={20} className="text-[#111111]" />
-                                  <h4 className="font-semibold text-[15px] text-[#111111] tracking-tight">Refund Policy</h4>
+                                  <h4 className="font-semibold text-[15px] tracking-tight">Refund Policy</h4>
                                 </div>
                               </AccordionTrigger>
                               <AccordionContent className="text-sm text-[#6E6E73] whitespace-pre-wrap pb-5">
@@ -294,11 +291,11 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                             </AccordionItem>
                           )}
                           {event.photography_policy && event.photography_policy.trim() !== "" && (
-                            <AccordionItem value="photography" className="border border-[#E5E5EA] bg-white rounded-2xl px-5">
-                              <AccordionTrigger className="hover:no-underline py-5">
+                            <AccordionItem value="photography" className="border border-[#E5E5EA] bg-white rounded-2xl px-5 overflow-hidden">
+                              <AccordionTrigger className="hover:no-underline py-5 text-[#111111]">
                                 <div className="flex items-center gap-3">
                                   <Camera size={20} className="text-[#111111]" />
-                                  <h4 className="font-semibold text-[15px] text-[#111111] tracking-tight">Photography Policy</h4>
+                                  <h4 className="font-semibold text-[15px] tracking-tight">Photography Policy</h4>
                                 </div>
                               </AccordionTrigger>
                               <AccordionContent className="text-sm text-[#6E6E73] whitespace-pre-wrap pb-5">
@@ -314,16 +311,18 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
               </div>
 
               {/* Right Card */}
-              <div className="w-full lg:w-[400px] shrink-0 sticky top-24">
-                <div className="bg-white rounded-3xl p-6 lg:p-8 border border-[#E5E5EA] shadow-xl shadow-black/5 flex flex-col gap-8">
+              <div className="w-full lg:w-[400px] shrink-0">
+                <div className="bg-white rounded-[2rem] p-6 lg:p-8 border border-[#E5E5EA] shadow-sm shadow-black/5 flex flex-col gap-8 relative overflow-hidden">
+                  {/* Subtle inner gradient for the card */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/80 to-transparent pointer-events-none" />
 
-                  <div>
-                    <h3 className="text-2xl font-semibold text-[#111111] mb-5 tracking-tight">Event Details</h3>
+                  <div className="relative z-10">
+                    <h3 className="text-2xl font-semibold text-[#111111] mb-6 tracking-tight">Event Details</h3>
                     <div className="flex flex-col gap-6">
 
                       {/* Date & Time */}
                       <div className="flex gap-4">
-                        <div className="w-12 h-12 rounded-[14px] bg-[#cfe467]/30 flex items-center justify-center shrink-0">
+                        <div className="w-12 h-12 rounded-2xl bg-[#cfe467]/30 flex items-center justify-center shrink-0">
                           <Calendar size={22} className="text-[#111111]" strokeWidth={1.5} />
                         </div>
                         <div className="flex flex-col justify-center">
@@ -334,7 +333,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                                 {formattedDate}
                               </span>
                               {(formattedTime || formattedEndTime) && (
-                                <span className="text-[15px] font-semibold text-[#111111] mt-0.5">
+                                <span className="text-[15px] font-semibold text-[#333333] mt-0.5">
                                   {formattedTime} {formattedEndTime ? `to ${formattedEndTime}` : ''}
                                 </span>
                               )}
@@ -344,7 +343,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                               <span className="text-[15px] font-semibold text-[#111111]">
                                 {formattedDate} {formattedTime ? `| ${formattedTime}` : ''} to
                               </span>
-                              <span className="text-[15px] font-semibold text-[#111111] mt-0.5">
+                              <span className="text-[15px] font-semibold text-[#333333] mt-0.5">
                                 {formattedEndDate} {formattedEndTime ? `| ${formattedEndTime}` : ''}
                               </span>
                             </>
@@ -354,7 +353,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
 
                       {/* Location */}
                       <div className="flex gap-4">
-                        <div className="w-12 h-12 rounded-[14px] bg-[#cfe467]/30 flex items-center justify-center shrink-0">
+                        <div className="w-12 h-12 rounded-2xl bg-[#cfe467]/30 flex items-center justify-center shrink-0">
                           {event.location_type === 'online' ? (
                             <Globe size={22} className="text-[#111111]" strokeWidth={1.5} />
                           ) : (
@@ -366,15 +365,15 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                           <span className="text-[15px] font-semibold text-[#111111]">
                             {event.location_type === 'online' ? (event.platform || "Online Event") : (event.venue || event.location)}
                           </span>
-                          {event.city && <span className="text-[14px] text-[#6E6E73] mt-0.5">{event.city}</span>}
+                          {event.city && <span className="text-[14px] text-[#333333] mt-0.5">{event.city}</span>}
                           {event.location_link && (
-                            <a href={event.location_link} target="_blank" rel="noreferrer" className="text-[13px] font-semibold text-[#111111] flex items-center gap-1 mt-1 hover:underline">
-                              View Map <ExternalLink size={12} />
+                            <a href={event.location_link} target="_blank" rel="noreferrer" className="px-3 py-1.5 border border-[#E5E5EA] rounded-lg text-[#111111] font-semibold mt-3 hover:bg-[#F9F9FB] inline-flex items-center gap-1.5 w-fit text-[13px] transition-colors">
+                              View Map <ExternalLink size={14} />
                             </a>
                           )}
                           {event.meeting_link && event.location_type !== 'physical' && (
-                            <a href={event.meeting_link} target="_blank" rel="noreferrer" className="text-[13px] font-semibold text-[#111111] flex items-center gap-1 mt-1 hover:underline">
-                              Meeting Link <ExternalLink size={12} />
+                            <a href={event.meeting_link} target="_blank" rel="noreferrer" className="px-3 py-1.5 border border-[#E5E5EA] rounded-lg text-[#111111] font-semibold mt-3 hover:bg-[#F9F9FB] inline-flex items-center gap-1.5 w-fit text-[13px] transition-colors">
+                              Meeting Link <ExternalLink size={14} />
                             </a>
                           )}
                         </div>
@@ -383,7 +382,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                       {/* Capacity */}
                       {event.seats !== null && (
                         <div className="flex gap-4">
-                          <div className="w-12 h-12 rounded-[14px] bg-[#cfe467]/30 flex items-center justify-center shrink-0">
+                          <div className="w-12 h-12 rounded-2xl bg-[#cfe467]/30 flex items-center justify-center shrink-0">
                             <Users size={22} className="text-[#111111]" strokeWidth={1.5} />
                           </div>
                           <div className="flex flex-col justify-center">
@@ -397,7 +396,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
 
                       {/* Tickets Summary */}
                       <div className="flex gap-4">
-                        <div className="w-12 h-12 rounded-[14px] bg-[#cfe467]/30 flex items-center justify-center shrink-0">
+                        <div className="w-12 h-12 rounded-2xl bg-[#cfe467]/30 flex items-center justify-center shrink-0">
                           <Ticket size={22} className="text-[#111111]" strokeWidth={1.5} />
                         </div>
                         <div className="flex flex-col justify-center w-full">
@@ -412,7 +411,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                   </div>
 
                   {(!isEnded || userRegistration?.attended || userRegistration?.status === 'attended') && (
-                    <div className="pt-2">
+                    <div className="pt-4 relative z-10">
                       <SlideButton
                         event={event}
                         isFull={isFull}

@@ -136,7 +136,10 @@ function SlideButtonBase({
   return (
     <div
       ref={containerRef}
-      className={`relative w-full h-[64px] rounded-2xl flex items-center overflow-hidden touch-none select-none border ${disabled ? 'bg-[#F5F5F7] border-[#E5E5EA] opacity-60' : 'bg-[#111111] border-black/5'}`}
+      className={`relative w-full h-[72px] rounded-2xl flex items-center overflow-hidden touch-none select-none border ${
+        externalCompleted ? 'border-[#E5E5EA] bg-[#F6F7F0]' : 
+        disabled ? 'bg-[#F5F5F7] border-[#E5E5EA] opacity-60' : 'bg-[#111111] border-black/5'
+      }`}
     >
       <div
         className={`absolute inset-0 flex items-center justify-center text-[16px] font-semibold tracking-wide z-0 ml-8 pointer-events-none transition-opacity duration-200 ${disabled ? 'text-[#9E9EA7]' : 'text-white/90'}`}
@@ -156,7 +159,7 @@ function SlideButtonBase({
 
       <div
         ref={thumbRef}
-        className={`absolute z-10 left-1 w-[56px] h-[56px] bg-white rounded-[14px] flex items-center justify-center shadow-sm ${disabled ? 'cursor-not-allowed' : 'cursor-grab active:cursor-grabbing'}`}
+        className={`absolute z-10 left-1.5 w-[60px] h-[60px] bg-white rounded-[14px] flex items-center justify-center shadow-sm ${disabled ? 'cursor-not-allowed' : 'cursor-grab active:cursor-grabbing'}`}
         style={{ transform: `translateX(${position}px)`, transition: isDragging ? 'none' : 'transform 0.3s ease' }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
@@ -168,14 +171,32 @@ function SlideButtonBase({
 
       {externalCompleted && (
         <div
-          className={`absolute inset-0 flex items-center justify-center font-bold z-40 animate-fade-in text-[16px] rounded-2xl ${successMessage?.includes('Pending') ? 'text-[#6E6E73] border border-[#D1D1D6]' :
-            successMessage === 'Thank you for attending!' || successMessage === 'Attended' ? 'bg-white text-[#111111] border border-[#D1D1D6]' : 'bg-[#F1F7D1] text-[#111111]'
-            }`}
-          style={successMessage?.includes('Pending') ? {
-            backgroundImage: 'repeating-linear-gradient(45deg, #F5F5F7, #F5F5F7 12px, #EBEBEF 12px, #EBEBEF 24px)'
-          } : undefined}
+          className={`absolute inset-0 flex items-center px-6 gap-4 z-40 animate-fade-in rounded-2xl ${
+            successMessage?.includes('Pending') 
+              ? 'bg-[#F5F5F7] text-[#6E6E73] justify-center' 
+              : 'bg-[#F6F7F0]'
+          }`}
         >
-          {successMessage || "Registered"}
+          {successMessage?.includes('Pending') ? (
+            <>
+              <Clock size={18} className="text-[#6E6E73]" />
+              <span className="font-bold text-[16px]">{successMessage}</span>
+            </>
+          ) : (
+            <>
+              <div className="w-12 h-12 rounded-2xl bg-[#cfe467]/30 flex items-center justify-center shrink-0">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111111" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </div>
+              <div className="flex flex-col justify-center">
+                <span className="font-bold text-[15px] leading-tight text-[#111111] tracking-tight">
+                  {successMessage === 'Thank you for attending' || successMessage === 'Thankyou for attending' ? 'Thankyou for attending' : successMessage || 'Registered'}
+                </span>
+                <span className="text-[12px] text-[#6E6E73] font-medium mt-0.5">
+                  We're glad you're part of this!
+                </span>
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>

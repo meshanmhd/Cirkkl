@@ -34,14 +34,7 @@ export default function HeroSection() {
           >
             Discover
             <br />
-            <span
-              style={{
-                background: "linear-gradient(135deg, #cfe467 0%, #e4f399 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-              }}
-            >
+            <span style={{ color: "#cfe467" }}>
               Everything
             </span>
             <br />
