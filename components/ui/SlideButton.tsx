@@ -136,10 +136,9 @@ function SlideButtonBase({
   return (
     <div
       ref={containerRef}
-      className={`relative w-full h-[72px] rounded-2xl flex items-center overflow-hidden touch-none select-none border ${
-        externalCompleted ? 'border-[#E5E5EA] bg-[#F6F7F0]' : 
-        disabled ? 'bg-[#F5F5F7] border-[#E5E5EA] opacity-60' : 'bg-[#111111] border-black/5'
-      }`}
+      className={`relative w-full h-[72px] rounded-2xl flex items-center overflow-hidden touch-none select-none border ${externalCompleted ? 'border-[#E5E5EA] bg-[#F6F7F0]' :
+          disabled ? 'bg-[#F5F5F7] border-[#E5E5EA] opacity-60' : 'bg-[#111111] border-black/5'
+        }`}
     >
       <div
         className={`absolute inset-0 flex items-center justify-center text-[16px] font-semibold tracking-wide z-0 ml-8 pointer-events-none transition-opacity duration-200 ${disabled ? 'text-[#9E9EA7]' : 'text-white/90'}`}
@@ -171,11 +170,10 @@ function SlideButtonBase({
 
       {externalCompleted && (
         <div
-          className={`absolute inset-0 flex items-center px-6 gap-4 z-40 animate-fade-in rounded-2xl ${
-            successMessage?.includes('Pending') 
-              ? 'bg-[#F5F5F7] text-[#6E6E73] justify-center' 
+          className={`absolute inset-0 flex items-center px-6 gap-4 z-40 animate-fade-in rounded-2xl ${successMessage?.includes('Pending')
+              ? 'bg-[#F5F5F7] text-[#6E6E73] justify-center'
               : 'bg-[#F6F7F0]'
-          }`}
+            }`}
         >
           {successMessage?.includes('Pending') ? (
             <>
@@ -538,6 +536,20 @@ export const SlideButton = ({ onComplete, event, isFull = false, userRegistratio
     ? (userRegistration.attended || userRegistration.status === 'attended' ? "Thank you for attending" : userRegistration.status === 'pending' ? "Pending Approval" : "Registered")
     : (isFull ? "Pending (Waitlist)" : (approvalRequired ? "Pending Approval" : "Registered"));
 
+  const generateTicketId = (userId: string, eventId: string): string => {
+    const raw = userId + eventId;
+    let h = 0x811c9dc5;
+    for (let i = 0; i < raw.length; i++) {
+      h ^= raw.charCodeAt(i);
+      h = (h * 0x01000193) >>> 0;
+    }
+    const part1 = h.toString(36).toUpperCase().padStart(7, '0').slice(0, 7);
+    let h2 = h ^ 0xdeadbeef;
+    h2 = (h2 * 0x45d9f3b) >>> 0;
+    const part2 = h2.toString(36).toUpperCase().padStart(4, '0').slice(0, 4);
+    return `CKL-${part1}${part2}`;
+  };
+
   const doRegister = async (fieldValues: Record<string, string> = {}, transactionId: string = "", ticketTierId: string = "", paymentProofFile: File | null = null) => {
     setLoading(true);
     try {
@@ -547,9 +559,7 @@ export const SlideButton = ({ onComplete, event, isFull = false, userRegistratio
         return;
       }
       if (event?.id) {
-        // Fetch user's qr_code from profile to use as ticket code if available, else fallback
-        const { data: profile } = await supabase.from('users').select('qr_code').eq('id', user.id).single();
-        const finalTicketCode = profile?.qr_code || `ckl-${Math.floor(10000 + Math.random() * 90000)}`;
+        const finalTicketCode = generateTicketId(user.id, event.id);
 
         let paymentProofUrl = null;
         if (paymentProofFile) {
