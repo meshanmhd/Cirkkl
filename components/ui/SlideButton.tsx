@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { ArrowRight, X, CheckCircle2, ChevronDown, Upload, ArrowLeft, Clock } from 'lucide-react';
+import { ArrowRight, X, CheckCircle2, ChevronDown, Upload, ArrowLeft, Clock, Check, PartyPopper } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { usePathname } from 'next/navigation';
+import { createPortal } from 'react-dom';
 
 type CustomField = {
   id?: string;
@@ -19,6 +20,7 @@ interface SlideButtonProps {
   event: any;
   isFull?: boolean;
   userRegistration?: any;
+  label?: string;
 }
 
 // ----------------------------------------------------------------------
@@ -55,7 +57,7 @@ function CustomSelect({ options, value, onChange, placeholder, required }: {
       <button
         type="button"
         onClick={() => setOpen(o => !o)}
-        className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border border-[#E5E5EA] bg-white text-[14px] text-left focus:outline-none focus:border-[#cfe467] focus:ring-2 focus:ring-[#cfe467]/20 transition-all ${!value ? 'text-[#9E9EA7]' : 'text-[#111111]'}`}
+        className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border border-[#E5E5EA] bg-white text-[14px] text-left focus:outline-none focus:border-[#D1D1D6] transition-all ${!value ? 'text-[#9E9EA7]' : 'text-[#111111]'}`}
       >
         <span>{value || placeholder || "Select an option"}</span>
         <ChevronDown size={16} className={`text-[#6E6E73] transition-transform ${open ? "rotate-180" : ""}`} />
@@ -136,67 +138,63 @@ function SlideButtonBase({
   return (
     <div
       ref={containerRef}
-      className={`relative w-full h-[72px] rounded-2xl flex items-center overflow-hidden touch-none select-none border ${externalCompleted ? 'border-[#E5E5EA] bg-[#F6F7F0]' :
-          disabled ? 'bg-[#F5F5F7] border-[#E5E5EA] opacity-60' : 'bg-[#111111] border-black/5'
+      className={`relative w-full h-[56px] rounded-[14px] flex items-center overflow-hidden touch-none select-none border ${externalCompleted ? 'border-[#E5E5EA] bg-[#F6F7F0]' :
+        disabled ? 'bg-[#F5F5F7] border-[#E5E5EA] opacity-60' : 'bg-[#111111] border-black/5'
         }`}
     >
       <div
-        className={`absolute inset-0 flex items-center justify-center text-[16px] font-semibold tracking-wide z-0 ml-8 pointer-events-none transition-opacity duration-200 ${disabled ? 'text-[#9E9EA7]' : 'text-white/90'}`}
-        style={{ opacity: externalCompleted ? 0 : Math.max(0, 1 - (position / 80)) }}
+        className={`absolute top-0 bottom-0 left-0 right-0 flex items-center justify-center text-[14px] font-bold tracking-wide z-0 pointer-events-none transition-opacity duration-200 ${disabled ? 'text-[#9E9EA7]' : 'text-white/90'}`}
+        style={{ opacity: externalCompleted ? 0 : Math.max(0, 1 - (position / 60)), paddingLeft: '50px' }}
       >
         {externalCompleted ? "" : loading ? "Processing..." : label}
       </div>
 
       <div
-        className={`absolute left-0 top-0 bottom-0 z-0 rounded-l-2xl ${disabled ? 'bg-[#E5E5EA]' : 'bg-[#cfe467]'}`}
-        style={{ width: `${position + 32}px`, transition: isDragging ? 'none' : 'width 0.3s ease' }}
-      />
-      <div
-        className={`absolute top-0 bottom-0 w-[64px] z-0 rounded-2xl ${disabled ? 'bg-[#E5E5EA]' : 'bg-[#cfe467]'}`}
-        style={{ left: `${position}px`, transition: isDragging ? 'none' : 'left 0.3s ease' }}
+        className={`absolute left-0 top-0 bottom-0 z-0 ${disabled ? 'bg-[#E5E5EA]' : 'bg-[#cfe467]'}`}
+        style={{
+          width: `${position + 56}px`,
+          borderTopRightRadius: '10px',
+          borderBottomRightRadius: '10px',
+          transition: isDragging ? 'none' : 'width 0.3s ease'
+        }}
       />
 
       <div
         ref={thumbRef}
-        className={`absolute z-10 left-1.5 w-[60px] h-[60px] bg-white rounded-[14px] flex items-center justify-center shadow-sm ${disabled ? 'cursor-not-allowed' : 'cursor-grab active:cursor-grabbing'}`}
+        className={`absolute z-10 inset-y-[5px] left-[5px] w-[46px] bg-white rounded-[10px] flex items-center justify-center shadow-sm ${disabled ? 'cursor-not-allowed' : 'cursor-grab active:cursor-grabbing'}`}
         style={{ transform: `translateX(${position}px)`, transition: isDragging ? 'none' : 'transform 0.3s ease' }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
       >
-        <ArrowRight size={20} className={disabled ? "text-[#9E9EA7]" : "text-[#111111]"} />
+        <ArrowRight size={16} className={disabled ? "text-[#9E9EA7]" : "text-[#111111]"} />
       </div>
 
-      {externalCompleted && (
-        <div
-          className={`absolute inset-0 flex items-center px-6 gap-4 z-40 animate-fade-in rounded-2xl ${successMessage?.includes('Pending')
-              ? 'bg-[#F5F5F7] text-[#6E6E73] justify-center'
-              : 'bg-[#F6F7F0]'
-            }`}
-        >
-          {successMessage?.includes('Pending') ? (
-            <>
-              <Clock size={18} className="text-[#6E6E73]" />
-              <span className="font-bold text-[16px]">{successMessage}</span>
-            </>
-          ) : (
-            <>
-              <div className="w-12 h-12 rounded-2xl bg-[#cfe467]/30 flex items-center justify-center shrink-0">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111111" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              </div>
-              <div className="flex flex-col justify-center">
-                <span className="font-bold text-[15px] leading-tight text-[#111111] tracking-tight">
-                  {successMessage === 'Thank you for attending' || successMessage === 'Thankyou for attending' ? 'Thankyou for attending' : successMessage || 'Registered'}
-                </span>
-                <span className="text-[12px] text-[#6E6E73] font-medium mt-0.5">
-                  We're glad you're part of this!
-                </span>
-              </div>
-            </>
-          )}
-        </div>
-      )}
+      {externalCompleted && (() => {
+        const isAttended = successMessage === 'Thank you for attending' || successMessage === 'Thankyou for attending';
+        const isPending = successMessage?.includes('Pending');
+        const cfg = isAttended
+          ? { bg: 'bg-[#F6F7F0]', iconBg: 'bg-[#cfe467]/40', iconColor: 'text-[#4a6000]', Icon: PartyPopper, label: 'Thank you for attending', sub: 'See you at the next one!' }
+          : isPending
+            ? { bg: 'bg-amber-50', iconBg: 'bg-amber-100', iconColor: 'text-amber-600', Icon: Clock, label: successMessage!, sub: "We'll notify you once confirmed." }
+            : { bg: 'bg-[#F6F7F0]', iconBg: 'bg-[#cfe467]/40', iconColor: 'text-[#4a6000]', Icon: Check, label: 'Registered', sub: "We're glad you're part of this!" };
+        return (
+          <div className={`absolute inset-0 flex items-center px-3 gap-2.5 z-40 animate-fade-in rounded-[14px] ${cfg.bg}`}>
+            <div className={`w-8 h-8 rounded-[10px] ${cfg.iconBg} flex items-center justify-center shrink-0`}>
+              <cfg.Icon size={16} className={cfg.iconColor} strokeWidth={1.5} />
+            </div>
+            <div className="flex flex-col justify-center">
+              <span className="font-bold text-[13px] leading-tight text-[#111111] tracking-tight">
+                {cfg.label}
+              </span>
+              <span className="text-[11px] text-[#6E6E73] font-medium">
+                {cfg.sub}
+              </span>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -223,10 +221,12 @@ function RegistrationModal({
   if (customFields.length > 0) steps.push("custom_fields");
   if (isPaid && ticketTypes.length > 1) steps.push("ticket_select");
   if (isPaid) steps.push("payment");
+  steps.push("confirmation");
 
   const [currentStepIdx, setCurrentStepIdx] = useState(0);
   const currentStep = steps[currentStepIdx] || "done";
   const isLastStep = currentStepIdx === steps.length - 1 || steps.length === 0;
+  const isOnlyConfirmation = steps.length === 1 && steps[0] === "confirmation";
 
   const [values, setValues] = useState<Record<string, string>>({});
   const [selectedTicketId, setSelectedTicketId] = useState<string>(ticketTypes[0]?.id || "");
@@ -252,60 +252,76 @@ function RegistrationModal({
 
   const handleNext = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isLastStep) {
-      setCurrentStepIdx(idx => idx + 1);
+  };
+
+  const handleNextStep = () => {
+    if (currentStep === "custom_fields") {
+      for (const field of customFields) {
+        if (field.required) {
+          const val = values[field.label];
+          if (!val || val.trim() === '' || val === 'false') {
+            const el = document.querySelector(`[data-field="${field.label}"]`) as HTMLElement;
+            if (el) el.focus();
+            return;
+          }
+        }
+      }
     }
+    if (currentStep === "ticket_select" && !selectedTicketId) return;
+    setCurrentStepIdx(idx => idx + 1);
   };
 
   const isSlideDisabled =
     (currentStep === "payment" && (!transactionId.trim() || !paymentProofFile || !declarationChecked)) ||
     (currentStep === "ticket_select" && !selectedTicketId);
 
-  const inputCls = "w-full px-4 py-3 rounded-xl border border-[#E5E5EA] bg-white text-[14px] text-[#111111] placeholder:text-[#9E9EA7] focus:outline-none focus:border-[#cfe467] focus:ring-2 focus:ring-[#cfe467]/20 transition-all";
+  const inputCls = "w-full px-4 py-3 rounded-xl border border-[#E5E5EA] bg-white text-[14px] text-[#111111] placeholder:text-[#9E9EA7] focus:outline-none focus:border-[#D1D1D6] transition-all";
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-md bg-white rounded-[28px] shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+      <div className={`relative z-10 w-full max-w-sm bg-white rounded-[24px] border border-[#E5E5EA] overflow-hidden flex flex-col ${isOnlyConfirmation ? 'h-auto max-h-[85vh]' : 'h-[560px]'}`}>
 
-        {/* Stepper Header */}
+        {/* Stepper */}
         {steps.length > 1 && (
-          <div className="flex items-center gap-1.5 px-6 pt-5 pb-2">
+          <div className="flex items-center gap-1.5 px-5 pt-5 pb-0">
             {steps.map((step, idx) => (
-              <div key={step} className={`h-1.5 flex-1 rounded-full transition-colors ${idx <= currentStepIdx ? 'bg-[#cfe467]' : 'bg-[#F5F5F7]'}`} />
+              <div key={step} className={`h-[3px] flex-1 rounded-full transition-colors ${idx <= currentStepIdx ? 'bg-[#cfe467]' : 'bg-[#F0F0F2]'}`} />
             ))}
           </div>
         )}
 
-        <div className="flex items-center justify-between px-6 pt-3 pb-4 border-b border-[#E5E5EA] shrink-0">
-          <div className="flex items-center gap-3">
-            {currentStepIdx > 0 && (
-              <button onClick={() => setCurrentStepIdx(idx => idx - 1)} className="w-8 h-8 rounded-full flex items-center justify-center bg-[#F5F5F7] text-[#6E6E73] hover:bg-[#E5E5EA] transition-colors shrink-0">
-                <ArrowLeft size={16} />
-              </button>
-            )}
+        {/* Header */}
+        {!isOnlyConfirmation && (
+          <div className="flex items-center gap-3 px-5 pt-5 pb-4 border-b border-[#E5E5EA] shrink-0">
+            <button
+              onClick={currentStepIdx > 0 ? () => setCurrentStepIdx(idx => idx - 1) : onClose}
+              className="w-8 h-8 rounded-full flex items-center justify-center bg-[#F5F5F7] text-[#6E6E73] hover:bg-[#E5E5EA] transition-colors shrink-0"
+            >
+              <ArrowLeft size={15} strokeWidth={2} />
+            </button>
             <div>
-              <h2 className="text-[17px] font-bold text-[#111111]">Registration</h2>
-              <p className="text-[13px] text-[#6E6E73] mt-0.5">
-                {currentStep === "custom_fields" ? "Please fill in your details." :
-                  currentStep === "ticket_select" ? "Select your ticket type." :
-                    currentStep === "payment" ? "Complete your payment." : ""}
+              <h2 className="text-[15px] font-bold text-[#111111] tracking-tight">Registration</h2>
+              <p className="text-[12px] text-[#9E9EA7] font-medium mt-0.5">
+                {currentStep === "custom_fields" ? "Fill in your details below." :
+                  currentStep === "ticket_select" ? "Choose your ticket type." :
+                    currentStep === "payment" ? "Complete your payment to confirm." :
+                      currentStep === "confirmation" ? "Final confirmation." : ""}
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center bg-[#F5F5F7] text-[#6E6E73] hover:bg-[#E5E5EA] transition-colors shrink-0">
-            <X size={16} />
-          </button>
-        </div>
+        )}
 
-        <form id="reg-modal-form" onSubmit={handleNext} className="flex flex-col flex-1 overflow-hidden">
-          <div className="px-6 py-5 flex flex-col gap-4 overflow-y-auto">
+        <form id="reg-modal-form" onSubmit={handleNext} className="flex flex-col flex-1 overflow-hidden min-h-0">
+          <div className="px-5 pt-5 pb-2 flex flex-col gap-5 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-[#E5E5EA] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent">
+
+            {/* Custom Fields */}
             {currentStep === "custom_fields" && (
               <>
                 {customFields.map((field, i) => (
-                  <div key={i}>
-                    <label className="block text-[13px] font-semibold text-[#111111] mb-1.5">
-                      {field.label} {field.required && <span className="text-red-500">*</span>}
+                  <div key={i} className="flex flex-col gap-1.5">
+                    <label className="text-[11px] font-semibold text-[#9E9EA7] uppercase tracking-wider">
+                      {field.label}{field.required && <span className="text-red-400 ml-0.5">*</span>}
                     </label>
                     {field.type === "select" ? (
                       <CustomSelect
@@ -319,27 +335,28 @@ function RegistrationModal({
                       <textarea
                         required={field.required}
                         rows={3}
-                        placeholder={field.label}
+                        placeholder={`Enter ${field.label.toLowerCase()}`}
                         value={values[field.label] || ""}
                         onChange={e => handleChange(field.label, e.target.value)}
                         className={`${inputCls} resize-none`}
                       />
                     ) : field.type === "checkbox" ? (
-                      <label className="flex items-center gap-3 cursor-pointer">
+                      <label className="flex items-center gap-3 cursor-pointer py-1">
                         <input
                           type="checkbox"
                           checked={values[field.label] === "true"}
                           onChange={e => handleChange(field.label, e.target.checked ? "true" : "false")}
-                          className="w-4 h-4 accent-[#cfe467] rounded"
+                          className="w-4 h-4 accent-[#111111] rounded"
                         />
-                        <span className="text-[14px] text-[#111111]">{field.label}</span>
+                        <span className="text-[13px] text-[#111111] font-medium">{field.label}</span>
                       </label>
                     ) : (
                       <input
+                        data-field={field.label}
                         type={field.type === "number" ? "text" : field.type}
                         inputMode={field.type === "number" ? "numeric" : undefined}
                         required={field.required}
-                        placeholder={field.label}
+                        placeholder={`Enter ${field.label.toLowerCase()}`}
                         value={values[field.label] || ""}
                         onChange={e => {
                           let val = e.target.value;
@@ -354,36 +371,29 @@ function RegistrationModal({
               </>
             )}
 
+            {/* Ticket Select */}
             {currentStep === "ticket_select" && (
-              <div className="flex flex-col gap-3">
-                <h3 className="text-[15px] font-semibold text-[#111111] mb-1">Tickets</h3>
+              <div className="flex flex-col gap-2.5">
+                <p className="text-[11px] font-semibold text-[#9E9EA7] uppercase tracking-wider mb-1">Available Tickets</p>
                 {ticketTypes.map(t => (
                   <label
                     key={t.id}
-                    className={`flex flex-col p-4 rounded-[16px] border-2 cursor-pointer transition-all ${selectedTicketId === t.id ? 'border-[#cfe467] bg-[#cfe467]/5' : 'border-[#E5E5EA] hover:border-[#D1D1D6]'}`}
+                    className={`flex flex-col p-4 rounded-[14px] border cursor-pointer transition-all ${selectedTicketId === t.id ? 'border-[#cfe467] bg-[#cfe467]/5' : 'border-[#E5E5EA] hover:border-[#D1D1D6]'}`}
                     onClick={() => setSelectedTicketId(t.id)}
                   >
                     <div className="flex items-center justify-between w-full">
                       <div className="flex items-center gap-3">
-                        <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ${selectedTicketId === t.id ? 'border-[#cfe467] bg-[#cfe467]' : 'border-[#E5E5EA]'}`}>
-                          {selectedTicketId === t.id && <CheckCircle2 size={12} className="text-white" />}
-                        </div>
-                        <div>
-                          <p className="font-semibold text-[16px] text-[#111111] tracking-tight">{t.name} Ticket</p>
-                        </div>
+                        <div className={`w-4 h-4 rounded-full border-2 shrink-0 transition-all ${selectedTicketId === t.id ? 'border-[#8aab00] bg-[#cfe467]' : 'border-[#D1D1D6] bg-white'}`} />
+                        <p className="font-semibold text-[14px] text-[#111111]">{t.name} Ticket</p>
                       </div>
-                      <p className="font-semibold text-[16px] text-[#111111] tracking-tight">₹{t.price}</p>
+                      <p className="font-bold text-[14px] text-[#111111]">₹{t.price}</p>
                     </div>
-
-                    <div className="ml-8 mt-2">
-                      <button type="button" onClick={(e) => { e.preventDefault(); setExpandedTicketId(expandedTicketId === t.id ? null : t.id); }} className="flex items-center gap-1 text-[13px] font-semibold text-[#6E6E73] hover:text-[#111111] transition-colors cursor-pointer">
-                        View Details <ChevronDown size={14} className={`transition-transform ${expandedTicketId === t.id ? "rotate-180" : ""}`} />
+                    <div className="ml-7 mt-2">
+                      <button type="button" onClick={(e) => { e.preventDefault(); setExpandedTicketId(expandedTicketId === t.id ? null : t.id); }} className="flex items-center gap-1 text-[12px] font-medium text-[#9E9EA7] hover:text-[#111111] transition-colors">
+                        Details <ChevronDown size={13} className={`transition-transform ${expandedTicketId === t.id ? "rotate-180" : ""}`} />
                       </button>
-
                       {expandedTicketId === t.id && (
-                        <div className="mt-2 text-[13px] text-[#6E6E73]">
-                          <p className="leading-relaxed">This ticket grants you full access to the {t.name} tier. Please arrive on time with your ticket code.</p>
-                        </div>
+                        <p className="mt-1.5 text-[12px] text-[#6E6E73] leading-relaxed">Full access to the {t.name} tier. Please arrive on time with your ticket code.</p>
                       )}
                     </div>
                   </label>
@@ -391,101 +401,125 @@ function RegistrationModal({
               </div>
             )}
 
+            {/* Payment */}
             {currentStep === "payment" && (
               <div className="flex flex-col gap-5">
-                <div className="bg-[#F5F5F7] p-4 rounded-[16px] flex flex-col items-center gap-3">
-                  <div className="border-2 border-dotted border-[#E5E5EA] px-5 py-2 rounded-xl mb-1 bg-white">
-                    <p className="text-[13px] font-semibold text-[#111111]">Scan and pay ₹{selectedTicket?.price || event.priceAmount || "0"}</p>
-                  </div>
+                <div className="flex flex-col items-center gap-1.5 bg-[#F7F7F8] rounded-[16px] p-4 border border-[#E5E5EA]">
+                  <p className="text-[11px] font-semibold text-[#9E9EA7] uppercase tracking-wider">Scan & Pay</p>
+                  <p className="text-[20px] font-bold text-[#111111] tracking-tight">₹{selectedTicket?.price || event.priceAmount || "0"}</p>
                   {qrCodeUrl ? (
-                    <img src={qrCodeUrl} alt="Payment QR Code" className="w-40 h-40 rounded-[12px] shadow-sm border border-[#E5E5EA] object-cover" />
+                    <img src={qrCodeUrl} alt="Payment QR Code" className="w-36 h-36 rounded-[12px] border border-[#E5E5EA] object-cover" />
                   ) : (
-                    <div className="w-40 h-40 rounded-[12px] border-2 border-dashed border-[#E5E5EA] flex items-center justify-center text-[12px] text-[#9E9EA7]">No QR Code</div>
+                    <div className="w-36 h-36 rounded-[12px] border border-dashed border-[#E5E5EA] flex items-center justify-center text-[12px] text-[#9E9EA7]">No QR Code</div>
                   )}
                 </div>
 
-                <div className="flex flex-col gap-4">
-                  <div>
-                    <label className="block text-[13px] font-semibold text-[#111111] mb-1.5">Payment Screenshot <span className="text-red-500">*</span></label>
-                    {!paymentProofPreview ? (
-                      <label className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl border-2 border-dashed border-[#E5E5EA] bg-[#F5F5F7] hover:bg-[#EBEBEF] transition-all cursor-pointer">
-                        <Upload size={16} className="text-[#6E6E73]" />
-                        <span className="text-[13px] font-medium text-[#111111]">Upload Screenshot</span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              setPaymentProofFile(file);
-                              setPaymentProofPreview(URL.createObjectURL(file));
-                            }
-                          }}
-                        />
-                      </label>
-                    ) : (
-                      <div className="flex items-center justify-between p-2.5 rounded-xl border border-[#E5E5EA] bg-white h-[50px]">
-                        <div className="flex items-center gap-2.5 overflow-hidden">
-                          <img src={paymentProofPreview} alt="Preview" className="w-8 h-8 rounded object-cover border border-[#E5E5EA]" />
-                          <span className="text-[13px] font-medium text-[#111111] truncate">{paymentProofFile?.name}</span>
-                        </div>
-                        <button type="button" onClick={() => { setPaymentProofFile(null); setPaymentProofPreview(null); }} className="p-1.5 text-[#6E6E73] hover:text-red-500 transition-colors">
-                          <X size={14} />
-                        </button>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[11px] font-semibold text-[#9E9EA7] uppercase tracking-wider">
+                    Payment Screenshot<span className="text-red-400 ml-0.5">*</span>
+                  </label>
+                  {!paymentProofPreview ? (
+                    <label className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-[12px] border border-dashed border-[#E5E5EA] bg-[#F7F7F8] hover:bg-[#F0F0F2] transition-colors cursor-pointer">
+                      <Upload size={15} className="text-[#9E9EA7]" />
+                      <span className="text-[13px] font-medium text-[#111111]">Upload Screenshot</span>
+                      <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) { setPaymentProofFile(file); setPaymentProofPreview(URL.createObjectURL(file)); }
+                      }} />
+                    </label>
+                  ) : (
+                    <div className="flex items-center justify-between p-3 rounded-[12px] border border-[#E5E5EA] bg-white">
+                      <div className="flex items-center gap-2.5 overflow-hidden">
+                        <img src={paymentProofPreview} alt="Preview" className="w-8 h-8 rounded-[8px] object-cover border border-[#E5E5EA]" />
+                        <span className="text-[13px] font-medium text-[#111111] truncate">{paymentProofFile?.name}</span>
                       </div>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-[13px] font-semibold text-[#111111] mb-1.5">Transaction ID <span className="text-red-500">*</span></label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Enter UPI / Transaction ID"
-                      value={transactionId}
-                      onChange={e => setTransactionId(e.target.value.replace(/[^0-9]/g, ''))}
-                      className={inputCls}
-                    />
-                  </div>
+                      <button type="button" onClick={() => { setPaymentProofFile(null); setPaymentProofPreview(null); }} className="w-7 h-7 flex items-center justify-center rounded-full bg-[#F5F5F7] text-[#9E9EA7] hover:text-red-500 transition-colors shrink-0">
+                        <X size={13} />
+                      </button>
+                    </div>
+                  )}
                 </div>
 
-                <label className="flex items-start gap-3 cursor-pointer bg-[#F5F5F7] p-3 rounded-[12px]">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[11px] font-semibold text-[#9E9EA7] uppercase tracking-wider">
+                    Transaction ID<span className="text-red-400 ml-0.5">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Enter UPI / Transaction ID"
+                    value={transactionId}
+                    onChange={e => setTransactionId(e.target.value.replace(/[^0-9]/g, ''))}
+                    className={inputCls}
+                  />
+                </div>
+
+                <label className="flex items-start gap-3 cursor-pointer">
                   <input
                     type="checkbox"
                     required
                     checked={declarationChecked}
                     onChange={e => setDeclarationChecked(e.target.checked)}
-                    className="w-4 h-4 accent-[#cfe467] rounded mt-0.5"
+                    className="w-4 h-4 accent-[#111111] rounded mt-0.5 shrink-0"
                   />
-                  <span className="text-[12px] text-[#6E6E73] leading-relaxed">
-                    I acknowledge that I have paid the required amount. I have read and agree to the event's cancellation and refund policies.
+                  <span className="text-[12px] text-[#6E6E73] leading-relaxed font-medium">
+                    I confirm payment of the required amount and agree to the event's cancellation and refund policies.
                   </span>
                 </label>
               </div>
             )}
+
+            {/* Confirmation */}
+            {currentStep === "confirmation" && (
+              <div className="flex flex-col gap-4">
+                <h3 className="text-[20px] font-bold text-[#111111] tracking-tight">Join the Adventure!</h3>
+                <p className="text-[14px] text-[#6E6E73] leading-relaxed">
+                  Confirm your spot and connect with others at <span className="font-semibold text-[#111111]">{event.title}</span>
+                </p>
+                <div className="flex flex-col gap-3 mt-2">
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      required
+                      className="w-4 h-4 accent-[#111111] rounded mt-0.5 shrink-0"
+                    />
+                    <span className="text-[13px] text-[#6E6E73] leading-relaxed font-medium">
+                      I acknowledge that I have read and understood the event details and agree to participate in the event in accordance with the guidelines and instructions provided.
+                    </span>
+                  </label>
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      required
+                      className="w-4 h-4 accent-[#111111] rounded mt-0.5 shrink-0"
+                    />
+                    <span className="text-[13px] text-[#6E6E73] leading-relaxed font-medium">
+                      I agree to the <a href="#" className="underline decoration-[#9E9EA7] hover:text-[#111111] transition-colors">community guidelines</a>.
+                    </span>
+                  </label>
+                </div>
+              </div>
+            )}
           </div>
 
-          <div className="px-6 pb-6 pt-4 border-t border-[#E5E5EA] shrink-0">
+          {/* Footer */}
+          <div className="px-5 pb-4 pt-2 border-t border-[#E5E5EA] shrink-0">
             {isLastStep ? (
               <SlideButtonBase
                 label="Slide to Register"
                 loading={loading}
                 disabled={isSlideDisabled}
                 onSlideComplete={() => {
-                  // Validate form first
                   const form = document.getElementById("reg-modal-form") as HTMLFormElement;
-                  if (form && !form.checkValidity()) {
-                    form.reportValidity();
-                    return;
-                  }
+                  if (form && !form.checkValidity()) { form.reportValidity(); return; }
                   onSubmit(values, transactionId, selectedTicketId, paymentProofFile);
                 }}
               />
             ) : (
               <button
-                type="submit"
-                className="w-full py-4 rounded-2xl text-[16px] font-bold text-[#111111] transition-all hover:opacity-90 shadow-sm bg-[#cfe467] cursor-pointer"
+                type="button"
+                onClick={handleNextStep}
+                className="w-full py-3 rounded-[14px] text-[14px] font-bold text-[#111111] bg-[#cfe467] hover:bg-[#c0d955] transition-colors cursor-pointer"
               >
                 Next Step
               </button>
@@ -497,10 +531,11 @@ function RegistrationModal({
   );
 }
 
+
 // ----------------------------------------------------------------------
 // Main Controller Component
 // ----------------------------------------------------------------------
-export const SlideButton = ({ onComplete, event, isFull = false, userRegistration }: SlideButtonProps) => {
+export const SlideButton = ({ onComplete, event, isFull = false, userRegistration, label }: SlideButtonProps) => {
   const [isCompleted, setIsCompleted] = useState(!!userRegistration);
   const [showModal, setShowModal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -519,6 +554,14 @@ export const SlideButton = ({ onComplete, event, isFull = false, userRegistratio
     return () => subscription.unsubscribe();
   }, []);
 
+  const isRegistrationClosed = (() => {
+    if (!event?.registration_deadline) return false;
+    const now = new Date();
+    const deadlineStr = event.registration_deadline +
+      (event.registration_end_time ? `T${event.registration_end_time}` : 'T23:59:59');
+    return now > new Date(deadlineStr);
+  })();
+
   const customFields: CustomField[] = event?.custom_fields || [];
   const ticketTypes: any[] = event?.ticket_types || [];
   const isPaid = event?.price === "paid";
@@ -527,13 +570,14 @@ export const SlideButton = ({ onComplete, event, isFull = false, userRegistratio
   if (customFields.length > 0) steps.push("custom_fields");
   if (isPaid && ticketTypes.length > 1) steps.push("ticket_select");
   if (isPaid) steps.push("payment");
+  steps.push("confirmation");
 
-  const requiresModal = steps.length > 0;
+  const requiresModal = true;
 
   const approvalRequired = event?.approval_required || event?.price === "paid";
   const pendingStatus = isFull || approvalRequired;
   const successMessage = userRegistration
-    ? (userRegistration.attended || userRegistration.status === 'attended' ? "Thank you for attending" : userRegistration.status === 'pending' ? "Pending Approval" : "Registered")
+    ? ((userRegistration.attended === true || userRegistration.attended === 'true' || userRegistration.status === 'attended') ? "Thank you for attending" : userRegistration.status === 'pending' ? "Pending Approval" : "Registered")
     : (isFull ? "Pending (Waitlist)" : (approvalRequired ? "Pending Approval" : "Registered"));
 
   const generateTicketId = (userId: string, eventId: string): string => {
@@ -613,7 +657,7 @@ export const SlideButton = ({ onComplete, event, isFull = false, userRegistratio
 
   return (
     <>
-      {showLoginModal && (
+      {showLoginModal && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowLoginModal(false)} />
           <div className="relative z-10 w-full max-w-md bg-white rounded-[28px] shadow-2xl overflow-hidden p-8">
@@ -622,31 +666,41 @@ export const SlideButton = ({ onComplete, event, isFull = false, userRegistratio
             </button>
             <LoginForm redirectTo={pathname} />
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {showModal && (
+      {showModal && typeof document !== 'undefined' && createPortal(
         <RegistrationModal
           event={event}
           onClose={() => setShowModal(false)}
           onSubmit={doRegister}
           loading={loading}
-        />
+        />,
+        document.body
       )}
 
-      {requiresModal && !isCompleted ? (
+      {isRegistrationClosed && !isCompleted ? (
+        <button
+          disabled
+          className="w-full py-4 rounded-2xl text-[16px] font-bold text-[#9E9EA7] bg-[#F5F5F7] border border-[#E5E5EA] cursor-not-allowed"
+        >
+          Registration Closed
+        </button>
+      ) : requiresModal && !isCompleted ? (
         <button
           onClick={handleStart}
           className="w-full py-4 rounded-2xl text-[16px] font-bold text-[#111111] transition-all hover:opacity-90 bg-[#cfe467]"
         >
-          Register for Event
+          {label || "Register for Event"}
         </button>
       ) : (
         <SlideButtonBase
-          label="Slide to Register"
+          label={label || "Slide to Register"}
           isCompleted={isCompleted}
           loading={loading}
           successMessage={successMessage}
+          disabled={isRegistrationClosed && !isCompleted}
           onSlideComplete={() => {
             if (!user) {
               setShowLoginModal(true);

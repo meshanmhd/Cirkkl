@@ -63,14 +63,16 @@ export function ProfileMenu({ initialUser = null, initialRole = "user", initialQ
     try {
       const { data } = await supabase
         .from("registrations")
-        .select("ticket_code, event_id, events(title)")
-        .eq("user_id", userId);
+        .select("ticket_code, event_id, status, events(title)")
+        .eq("user_id", userId)
+        .eq("status", "approved");
       if (data) {
         setMyEvents(
           data.map((r: any) => ({
             ticket_code: r.ticket_code,
             event_id: r.event_id,
             event_title: r.events?.title ?? "Untitled Event",
+            status: r.status,
           }))
         );
       }
