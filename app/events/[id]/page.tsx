@@ -403,7 +403,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                         <div className="flex flex-col justify-center w-full">
                           <span className="text-[13px] font-medium text-[#6E6E73] mb-1">Registration Type</span>
                           <span className="text-[15px] font-semibold text-[#111111]">
-                            {event.price === 'paid' ? 'Paid' : 'Free'}
+                            {event.price === 'paid' ? 'Paid' : 'Free'}{event.is_team_event ? ' | Team Event' : ' | Individual'}
                           </span>
                         </div>
                       </div>

@@ -310,6 +310,7 @@ export default function EditEventPage() {
     price: "free", capacity: "", approvalRequired: "false", registrationDeadline: "", registrationEndTime: "",
     cancellationPolicy: "", refundPolicy: "", photographyPolicy: "",
     visibility: "public",
+    isTeamEvent: "false", teamMinSize: "1", teamMaxSize: "1"
   });
   const set = (key: string, val: any) => setForm(f => ({ ...f, [key]: val }));
 
@@ -376,6 +377,9 @@ export default function EditEventPage() {
         registrationDeadline: data.registration_deadline || "", registrationEndTime: data.registration_end_time || "",
         cancellationPolicy: data.cancellation_policy || "", refundPolicy: data.refund_policy || "", photographyPolicy: data.photography_policy || "",
         visibility: data.visibility || "public",
+        isTeamEvent: data.is_team_event ? "true" : "false",
+        teamMinSize: data.team_min_size ? data.team_min_size.toString() : "1",
+        teamMaxSize: data.team_max_size ? data.team_max_size.toString() : "1",
       });
       setIsUnlimitedCapacity(data.seats === null);
       if (data.image) setBanner({ file: null, preview: data.image });
@@ -492,6 +496,9 @@ export default function EditEventPage() {
         visibility: form.visibility,
         custom_fields: validFields,
         ticket_types: uploadedTickets,
+        is_team_event: form.isTeamEvent === "true",
+        team_min_size: parseInt(form.teamMinSize) || 1,
+        team_max_size: parseInt(form.teamMaxSize) || 1,
         status: isDraft ? "draft" : "published",
       }).eq("id", eventId);
 
@@ -660,13 +667,34 @@ export default function EditEventPage() {
         {/* 5. Registration */}
         <div ref={el => { sectionRefs.current["registration"] = el; }} id="registration" className="scroll-mt-24">
           <SectionCard id="registration" title="Registration & Tickets">
-            <FormInput label="Ticket Type">
-              <TabSwitcher
-                options={[{ value: "free", label: "Free Event" }, { value: "paid", label: "Paid Event" }]}
-                value={form.price}
-                onChange={v => set("price", v)}
-              />
-            </FormInput>
+            <div className="grid grid-cols-2 gap-4">
+              <FormInput label="Ticket Type">
+                <TabSwitcher
+                  options={[{ value: "free", label: "Free Event" }, { value: "paid", label: "Paid Event" }]}
+                  value={form.price}
+                  onChange={v => set("price", v)}
+                />
+              </FormInput>
+
+              <FormInput label="Event Format">
+                <TabSwitcher
+                  options={[{ value: "false", label: "Individual Event" }, { value: "true", label: "Team Event" }]}
+                  value={form.isTeamEvent}
+                  onChange={v => set("isTeamEvent", v)}
+                />
+              </FormInput>
+            </div>
+            
+            {form.isTeamEvent === "true" && (
+              <div className="grid grid-cols-2 gap-4">
+                <FormInput label="Min Team Size" required>
+                  <input type="number" min="1" className={inputCls} value={form.teamMinSize} onChange={e => set("teamMinSize", e.target.value)} />
+                </FormInput>
+                <FormInput label="Max Team Size" required>
+                  <input type="number" min="1" className={inputCls} value={form.teamMaxSize} onChange={e => set("teamMaxSize", e.target.value)} />
+                </FormInput>
+              </div>
+            )}
 
             {form.price === "paid" && (
               <div className="rounded-[20px] bg-transparent border-2 border-dotted border-[#E5E5EA] p-5 flex flex-col gap-5 mt-2">

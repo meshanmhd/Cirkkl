@@ -26,7 +26,31 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
     .eq("event_id", id)
     .order("created_at", { ascending: false });
 
-  const userIds = (registrations ?? []).map((r: any) => r.user_id).filter(Boolean);
+  let teams: any[] = [];
+  let teamMembers: any[] = [];
+
+  if (event.is_team_event) {
+    const { data: tData } = await supabase
+      .from("teams")
+      .select("*")
+      .eq("event_id", id);
+    teams = tData ?? [];
+
+    if (teams.length > 0) {
+      const { data: tmData } = await supabase
+        .from("team_members")
+        .select("*")
+        .in("team_id", teams.map((t: any) => t.id));
+      teamMembers = tmData ?? [];
+    }
+  }
+
+  const allUserIds = new Set((registrations ?? []).map((r: any) => r.user_id).filter(Boolean));
+  teamMembers.forEach((tm: any) => {
+    if (tm.user_id) allUserIds.add(tm.user_id);
+  });
+  const userIds = Array.from(allUserIds);
+
   let profiles: any[] = [];
   if (userIds.length > 0) {
     const adminSupabase = createAdminClient(
@@ -58,6 +82,8 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
       orgMembers={orgMembers ?? []}
       eventRoles={eventRoles ?? []}
       eventId={id}
+      teams={teams}
+      teamMembers={teamMembers}
     />
   );
 }

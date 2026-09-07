@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { ArrowRight, X, CheckCircle2, ChevronDown, Upload, ArrowLeft, Clock, Check, PartyPopper } from 'lucide-react';
+import { ArrowRight, X, CheckCircle2, ChevronDown, Upload, ArrowLeft, Clock, Check, PartyPopper, Plus, Trash2 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { usePathname } from 'next/navigation';
@@ -210,23 +210,25 @@ function RegistrationModal({
 }: {
   event: any;
   onClose: () => void;
-  onSubmit: (values: Record<string, string>, transactionId: string, ticketTierId: string, paymentProofFile: File | null) => void;
+  onSubmit: (values: Record<string, string>, transactionId: string, ticketTierId: string, paymentProofFile: File | null, teamName: string, teamMates: any[]) => void;
   loading: boolean;
 }) {
   const customFields: CustomField[] = event.custom_fields || [];
   const ticketTypes: any[] = event.ticket_types || [];
   const isPaid = event.price === "paid";
+  const isTeamEvent = event.is_team_event === true;
+  const teamMinSize = event.team_min_size || 1;
+  const teamMaxSize = event.team_max_size || 1;
 
   const steps: string[] = [];
   if (customFields.length > 0) steps.push("custom_fields");
+  if (isTeamEvent) steps.push("team_creation");
   if (isPaid && ticketTypes.length > 1) steps.push("ticket_select");
   if (isPaid) steps.push("payment");
-  steps.push("confirmation");
 
   const [currentStepIdx, setCurrentStepIdx] = useState(0);
   const currentStep = steps[currentStepIdx] || "done";
   const isLastStep = currentStepIdx === steps.length - 1 || steps.length === 0;
-  const isOnlyConfirmation = steps.length === 1 && steps[0] === "confirmation";
 
   const [values, setValues] = useState<Record<string, string>>({});
   const [selectedTicketId, setSelectedTicketId] = useState<string>(ticketTypes[0]?.id || "");
@@ -235,6 +237,15 @@ function RegistrationModal({
   const [paymentProofFile, setPaymentProofFile] = useState<File | null>(null);
   const [paymentProofPreview, setPaymentProofPreview] = useState<string | null>(null);
   const [declarationChecked, setDeclarationChecked] = useState(false);
+
+  const [teamName, setTeamName] = useState("");
+  const [teamMates, setTeamMates] = useState<{ id: string, name: string, ckl_id: string }[]>([]);
+  const [teammateSearch, setTeammateSearch] = useState("");
+  const [teammateSearchLoading, setTeammateSearchLoading] = useState(false);
+  const [teammateSearchError, setTeammateSearchError] = useState("");
+  const [stepError, setStepError] = useState("");
+
+  const supabase = createClient();
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -250,25 +261,48 @@ function RegistrationModal({
     setValues(prev => ({ ...prev, [label]: val }));
   };
 
-  const handleNext = (e: React.FormEvent) => {
-    e.preventDefault();
-  };
-
-  const handleNextStep = () => {
+  const validateCurrentStep = () => {
+    setStepError("");
     if (currentStep === "custom_fields") {
       for (const field of customFields) {
         if (field.required) {
           const val = values[field.label];
           if (!val || val.trim() === '' || val === 'false') {
-            const el = document.querySelector(`[data-field="${field.label}"]`) as HTMLElement;
-            if (el) el.focus();
-            return;
+            setStepError(`Please fill out the required field: ${field.label}`);
+            return false;
           }
         }
       }
     }
-    if (currentStep === "ticket_select" && !selectedTicketId) return;
-    setCurrentStepIdx(idx => idx + 1);
+
+    if (currentStep === "team_creation") {
+      const totalMembers = teamMates.length + 1;
+      if (totalMembers < teamMinSize) {
+        setStepError(`You need at least ${teamMinSize} members in your team (including yourself). Add more teammates.`);
+        return false;
+      }
+    }
+
+    const form = document.getElementById("reg-modal-form") as HTMLFormElement;
+    if (form && !form.checkValidity()) {
+      form.reportValidity();
+      return false;
+    }
+
+    if (currentStep === "payment" && isPaid && !paymentProofFile) {
+      setStepError("Please upload a payment screenshot.");
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleNextStep = () => {
+    setStepError("");
+    if (!validateCurrentStep()) return;
+    if (currentStepIdx < steps.length - 1) {
+      setCurrentStepIdx(idx => idx + 1);
+    }
   };
 
   const isSlideDisabled =
@@ -280,11 +314,11 @@ function RegistrationModal({
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className={`relative z-10 w-full max-w-sm bg-white rounded-[24px] border border-[#E5E5EA] overflow-hidden flex flex-col ${isOnlyConfirmation ? 'h-auto max-h-[85vh]' : 'h-[560px]'}`}>
+      <div className="relative z-10 w-full max-w-sm bg-white rounded-[24px] border border-[#E5E5EA] overflow-hidden flex flex-col h-[560px]">
 
         {/* Stepper */}
         {steps.length > 1 && (
-          <div className="flex items-center gap-1.5 px-5 pt-5 pb-0">
+          <div className="flex items-center gap-1.5 px-5 pt-5 pb-0 shrink-0">
             {steps.map((step, idx) => (
               <div key={step} className={`h-[3px] flex-1 rounded-full transition-colors ${idx <= currentStepIdx ? 'bg-[#cfe467]' : 'bg-[#F0F0F2]'}`} />
             ))}
@@ -292,83 +326,163 @@ function RegistrationModal({
         )}
 
         {/* Header */}
-        {!isOnlyConfirmation && (
-          <div className="flex items-center gap-3 px-5 pt-5 pb-4 border-b border-[#E5E5EA] shrink-0">
-            <button
-              onClick={currentStepIdx > 0 ? () => setCurrentStepIdx(idx => idx - 1) : onClose}
-              className="w-8 h-8 rounded-full flex items-center justify-center bg-[#F5F5F7] text-[#6E6E73] hover:bg-[#E5E5EA] transition-colors shrink-0"
-            >
-              <ArrowLeft size={15} strokeWidth={2} />
-            </button>
-            <div>
-              <h2 className="text-[15px] font-bold text-[#111111] tracking-tight">Registration</h2>
-              <p className="text-[12px] text-[#9E9EA7] font-medium mt-0.5">
-                {currentStep === "custom_fields" ? "Fill in your details below." :
+        <div className="flex items-center gap-3 px-5 pt-5 pb-4 border-b border-[#E5E5EA] shrink-0">
+          <button
+            onClick={currentStepIdx > 0 ? () => setCurrentStepIdx(idx => idx - 1) : onClose}
+            className="w-8 h-8 rounded-full flex items-center justify-center bg-[#F5F5F7] text-[#6E6E73] hover:bg-[#E5E5EA] transition-colors shrink-0"
+          >
+            <ArrowLeft size={15} strokeWidth={2} />
+          </button>
+          <div>
+            <h2 className="text-[15px] font-bold text-[#111111] tracking-tight">Registration</h2>
+            <p className="text-[12px] text-[#9E9EA7] font-medium mt-0.5">
+              {currentStep === "team_creation" ? "Create your team." :
+                currentStep === "custom_fields" ? "Fill in your details below." :
                   currentStep === "ticket_select" ? "Choose your ticket type." :
                     currentStep === "payment" ? "Complete your payment to confirm." :
                       currentStep === "confirmation" ? "Final confirmation." : ""}
-              </p>
-            </div>
+            </p>
           </div>
-        )}
+        </div>
 
-        <form id="reg-modal-form" onSubmit={handleNext} className="flex flex-col flex-1 overflow-hidden min-h-0">
-          <div className="px-5 pt-5 pb-2 flex flex-col gap-5 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-[#E5E5EA] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent">
+        <form id="reg-modal-form" className="flex flex-col flex-1 overflow-hidden min-h-0">
+          <div className="px-5 pt-5 pb-2 flex flex-col gap-5 overflow-y-auto flex-1 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-[#E5E5EA] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent">
+
+            {/* Team Creation */}
+            {currentStep === "team_creation" && (
+              <div className="flex flex-col gap-5">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[11px] font-semibold text-[#9E9EA7] uppercase tracking-wider">
+                    Team Name<span className="text-red-400 ml-0.5">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Enter team name"
+                    value={teamName}
+                    onChange={(e) => setTeamName(e.target.value)}
+                    className={inputCls}
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[11px] font-semibold text-[#9E9EA7] uppercase tracking-wider flex justify-between">
+                    <span>Add Teammates<span className="text-red-400 ml-0.5">*</span></span>
+                    <span className="lowercase text-[#6E6E73] font-medium">Min {Math.max(0, teamMinSize - 1)}, Max {Math.max(0, teamMaxSize - 1)}</span>
+                  </label>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#111111] font text-[14px]">CKL -</span>
+                      <input
+                        type="text"
+                        placeholder="Enter ID number"
+                        value={teammateSearch}
+                        onChange={(e) => setTeammateSearch(e.target.value.replace(/[^0-9]/g, ''))}
+                        className={`${inputCls} pl-[68px]`}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            document.getElementById('add-teammate-btn')?.click();
+                          }
+                        }}
+                      />
+                    </div>
+                    <button
+                      id="add-teammate-btn"
+                      type="button"
+                      disabled={teammateSearchLoading || !teammateSearch}
+                      onClick={async () => {
+                        setTeammateSearchError("");
+                        setTeammateSearchLoading(true);
+                        const { data, error } = await supabase
+                          .from('users')
+                          .select('id, full_name, qr_code')
+                          .ilike('qr_code', `%-${teammateSearch}`)
+                          .limit(1)
+                          .maybeSingle();
+
+                        setTeammateSearchLoading(false);
+
+                        if (error || !data) {
+                          setTeammateSearchError("User not found with this ID.");
+                          return;
+                        }
+
+                        if (teamMates.find(m => m.id === data.id)) {
+                          setTeammateSearchError("User already added to team.");
+                          return;
+                        }
+
+                        if (teamMates.length + 1 >= teamMaxSize) {
+                          setTeammateSearchError(`Max team size is ${teamMaxSize}.`);
+                          return;
+                        }
+
+                        setTeamMates([...teamMates, { id: data.id, name: data.full_name, ckl_id: data.qr_code }]);
+                        setTeammateSearch("");
+                      }}
+                      className="px-6 h-[46px] flex items-center justify-center border border-[#E5E5EA] bg-white text-[#111111] rounded-xl transition-colors hover:bg-[#F5F5F7] disabled:opacity-50 shrink-0"
+                    >
+                      <Plus size={20} strokeWidth={2} />
+                    </button>
+                  </div>
+                  {teammateSearchError && <p className="text-red-500 text-[12px]">{teammateSearchError}</p>}
+
+                  {teamMates.length > 0 && (
+                    <div className="mt-3 flex flex-col gap-2">
+                      {teamMates.map(mate => (
+                        <div key={mate.id} className="flex items-center justify-between p-3 rounded-xl border border-[#E5E5EA] bg-[#F9F9F9]">
+                          <div className="flex flex-col">
+                            <span className="font-semibold text-[#111111] text-[13px]">{mate.name}</span>
+                            <span className="text-[#6E6E73] text-[11px]">{mate.ckl_id}</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setTeamMates(teamMates.filter(m => m.id !== mate.id))}
+                            className="text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      ))}
+                      <p className="text-[12px] text-[#6E6E73] text-right mt-1">
+                        {teamMates.length + 1} / {teamMaxSize} members
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Custom Fields */}
             {currentStep === "custom_fields" && (
-              <>
-                {customFields.map((field, i) => (
-                  <div key={i} className="flex flex-col gap-1.5">
+              <div className="flex flex-col gap-5">
+                {customFields.map((field, idx) => (
+                  <div key={idx} className="flex flex-col gap-1.5">
                     <label className="text-[11px] font-semibold text-[#9E9EA7] uppercase tracking-wider">
-                      {field.label}{field.required && <span className="text-red-400 ml-0.5">*</span>}
+                      {field.label}
+                      {field.required && <span className="text-red-400 ml-0.5">*</span>}
                     </label>
-                    {field.type === "select" ? (
+                    {field.type === "select" && field.options ? (
                       <CustomSelect
-                        required={field.required}
+                        options={field.options.split(",").map(s => s.trim())}
                         value={values[field.label] || ""}
-                        onChange={v => handleChange(field.label, v)}
-                        placeholder="Select an option"
-                        options={(field.options || "").split(",").map(o => o.trim()).filter(Boolean)}
-                      />
-                    ) : field.type === "textarea" ? (
-                      <textarea
+                        onChange={(v) => setValues(prev => ({ ...prev, [field.label]: v }))}
                         required={field.required}
-                        rows={3}
-                        placeholder={`Enter ${field.label.toLowerCase()}`}
-                        value={values[field.label] || ""}
-                        onChange={e => handleChange(field.label, e.target.value)}
-                        className={`${inputCls} resize-none`}
                       />
-                    ) : field.type === "checkbox" ? (
-                      <label className="flex items-center gap-3 cursor-pointer py-1">
-                        <input
-                          type="checkbox"
-                          checked={values[field.label] === "true"}
-                          onChange={e => handleChange(field.label, e.target.checked ? "true" : "false")}
-                          className="w-4 h-4 accent-[#111111] rounded"
-                        />
-                        <span className="text-[13px] text-[#111111] font-medium">{field.label}</span>
-                      </label>
                     ) : (
                       <input
-                        data-field={field.label}
-                        type={field.type === "number" ? "text" : field.type}
-                        inputMode={field.type === "number" ? "numeric" : undefined}
+                        type={field.type === "number" ? "number" : "text"}
                         required={field.required}
-                        placeholder={`Enter ${field.label.toLowerCase()}`}
                         value={values[field.label] || ""}
-                        onChange={e => {
-                          let val = e.target.value;
-                          if (field.type === "number") val = val.replace(/[^0-9]/g, '');
-                          handleChange(field.label, val);
-                        }}
+                        onChange={e => setValues(prev => ({ ...prev, [field.label]: e.target.value }))}
                         className={inputCls}
+                        placeholder={`Enter ${field.label.toLowerCase()}`}
                       />
                     )}
                   </div>
                 ))}
-              </>
+              </div>
             )}
 
             {/* Ticket Select */}
@@ -393,7 +507,7 @@ function RegistrationModal({
                         Details <ChevronDown size={13} className={`transition-transform ${expandedTicketId === t.id ? "rotate-180" : ""}`} />
                       </button>
                       {expandedTicketId === t.id && (
-                        <p className="mt-1.5 text-[12px] text-[#6E6E73] leading-relaxed">Full access to the {t.name} tier. Please arrive on time with your ticket code.</p>
+                        <p className="mt-1.5 text-[12px] text-[#6E6E73] leading-relaxed">{t.description || `Full access to the ${t.name} tier. Please arrive on time with your ticket code.`}</p>
                       )}
                     </div>
                   </label>
@@ -468,53 +582,22 @@ function RegistrationModal({
                 </label>
               </div>
             )}
-
-            {/* Confirmation */}
-            {currentStep === "confirmation" && (
-              <div className="flex flex-col gap-4">
-                <h3 className="text-[20px] font-bold text-[#111111] tracking-tight">Join the Adventure!</h3>
-                <p className="text-[14px] text-[#6E6E73] leading-relaxed">
-                  Confirm your spot and connect with others at <span className="font-semibold text-[#111111]">{event.title}</span>
-                </p>
-                <div className="flex flex-col gap-3 mt-2">
-                  <label className="flex items-start gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      required
-                      className="w-4 h-4 accent-[#111111] rounded mt-0.5 shrink-0"
-                    />
-                    <span className="text-[13px] text-[#6E6E73] leading-relaxed font-medium">
-                      I acknowledge that I have read and understood the event details and agree to participate in the event in accordance with the guidelines and instructions provided.
-                    </span>
-                  </label>
-                  <label className="flex items-start gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      required
-                      className="w-4 h-4 accent-[#111111] rounded mt-0.5 shrink-0"
-                    />
-                    <span className="text-[13px] text-[#6E6E73] leading-relaxed font-medium">
-                      I agree to the <a href="#" className="underline decoration-[#9E9EA7] hover:text-[#111111] transition-colors">community guidelines</a>.
-                    </span>
-                  </label>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Footer */}
-          <div className="px-5 pb-4 pt-2 border-t border-[#E5E5EA] shrink-0">
+          <div className="px-5 pb-5 pt-4 bg-white border-t border-[#E5E5EA] shrink-0">
+            {stepError && <p className="text-red-500 text-[12px] font-medium mb-3 text-center">{stepError}</p>}
             {isLastStep ? (
-              <SlideButtonBase
-                label="Slide to Register"
-                loading={loading}
-                disabled={isSlideDisabled}
-                onSlideComplete={() => {
-                  const form = document.getElementById("reg-modal-form") as HTMLFormElement;
-                  if (form && !form.checkValidity()) { form.reportValidity(); return; }
-                  onSubmit(values, transactionId, selectedTicketId, paymentProofFile);
+              <button
+                type="button"
+                onClick={() => {
+                  if (!validateCurrentStep()) return;
+                  onSubmit(values, transactionId, selectedTicketId, paymentProofFile, teamName, teamMates);
                 }}
-              />
+                className="w-full py-3 rounded-[14px] text-[14px] font-bold text-[#111111] bg-[#cfe467] hover:bg-[#c0d955] transition-colors cursor-pointer"
+              >
+                Register Now
+              </button>
             ) : (
               <button
                 type="button"
@@ -538,6 +621,8 @@ function RegistrationModal({
 export const SlideButton = ({ onComplete, event, isFull = false, userRegistration, label }: SlideButtonProps) => {
   const [isCompleted, setIsCompleted] = useState(!!userRegistration);
   const [showModal, setShowModal] = useState(false);
+  const [showAckModal, setShowAckModal] = useState(false);
+  const [regData, setRegData] = useState<any>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
@@ -565,14 +650,15 @@ export const SlideButton = ({ onComplete, event, isFull = false, userRegistratio
   const customFields: CustomField[] = event?.custom_fields || [];
   const ticketTypes: any[] = event?.ticket_types || [];
   const isPaid = event?.price === "paid";
+  const isTeamEvent = event?.is_team_event === true;
 
   const steps: string[] = [];
+  if (isTeamEvent) steps.push("team_creation");
   if (customFields.length > 0) steps.push("custom_fields");
   if (isPaid && ticketTypes.length > 1) steps.push("ticket_select");
   if (isPaid) steps.push("payment");
-  steps.push("confirmation");
 
-  const requiresModal = true;
+  const requiresModal = steps.length > 0;
 
   const approvalRequired = event?.approval_required || event?.price === "paid";
   const pendingStatus = isFull || approvalRequired;
@@ -594,7 +680,7 @@ export const SlideButton = ({ onComplete, event, isFull = false, userRegistratio
     return `CKL-${part1}${part2}`;
   };
 
-  const doRegister = async (fieldValues: Record<string, string> = {}, transactionId: string = "", ticketTierId: string = "", paymentProofFile: File | null = null) => {
+  const doRegister = async (fieldValues: Record<string, string> = {}, transactionId: string = "", ticketTierId: string = "", paymentProofFile: File | null = null, teamName: string = "", teamMates: any[] = []) => {
     setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -620,7 +706,7 @@ export const SlideButton = ({ onComplete, event, isFull = false, userRegistratio
           }
         }
 
-        const { error: insertError } = await supabase.from('registrations').insert({
+        const { data: reg, error: insertError } = await supabase.from('registrations').insert({
           event_id: event.id,
           user_id: user.id,
           custom_field_values: fieldValues,
@@ -629,12 +715,51 @@ export const SlideButton = ({ onComplete, event, isFull = false, userRegistratio
           transaction_id: transactionId || null,
           ticket_tier_id: ticketTierId || (ticketTypes.length === 1 ? ticketTypes[0].id : null),
           payment_proof_url: paymentProofUrl,
-        });
+        }).select().single();
 
         if (insertError) {
           console.error("Insert failed:", insertError);
           alert(`Registration failed: ${insertError.message}`);
           throw new Error(insertError.message);
+        }
+
+        if (!pendingStatus) {
+          await supabase.from('notifications').insert({
+            user_id: user.id,
+            sender_id: user.id,
+            event_id: event.id,
+            type: 'registration_approved'
+          });
+        }
+
+
+        if (event.is_team_event && teamName) {
+          const { data: team, error: teamError } = await supabase.from('teams').insert({
+            event_id: event.id,
+            leader_id: user.id,
+            name: teamName
+          }).select().single();
+
+          if (team) {
+            const memberInserts = teamMates.map(m => ({
+              team_id: team.id,
+              user_id: m.id,
+              status: 'pending'
+            }));
+
+            if (memberInserts.length > 0) {
+              await supabase.from('team_members').insert(memberInserts);
+
+              const notificationInserts = teamMates.map(m => ({
+                user_id: m.id,
+                sender_id: user.id,
+                event_id: event.id,
+                team_id: team.id,
+                type: 'team_invite'
+              }));
+              await supabase.from('notifications').insert(notificationInserts);
+            }
+          }
         }
       }
       setIsCompleted(true);
@@ -652,7 +777,17 @@ export const SlideButton = ({ onComplete, event, isFull = false, userRegistratio
       setShowLoginModal(true);
       return;
     }
-    setShowModal(true);
+    if (requiresModal) {
+      setShowModal(true);
+    } else {
+      setShowAckModal(true);
+    }
+  };
+
+  const handleModalSubmit = (values: Record<string, string>, transactionId: string, selectedTicketId: string, paymentProofFile: File | null, teamName: string, teamMates: any[]) => {
+    setRegData({ values, transactionId, selectedTicketId, paymentProofFile, teamName, teamMates });
+    setShowModal(false);
+    setShowAckModal(true);
   };
 
   return (
@@ -674,9 +809,60 @@ export const SlideButton = ({ onComplete, event, isFull = false, userRegistratio
         <RegistrationModal
           event={event}
           onClose={() => setShowModal(false)}
-          onSubmit={doRegister}
+          onSubmit={handleModalSubmit}
           loading={loading}
         />,
+        document.body
+      )}
+
+      {showAckModal && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowAckModal(false)} />
+          <div className="relative z-10 w-full max-w-md bg-white rounded-[28px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-[#E5E5EA] shrink-0">
+              <h2 className="text-xl font-bold text-[#111111]">Join the Adventure!</h2>
+              <button onClick={() => setShowAckModal(false)} className="w-8 h-8 rounded-full flex items-center justify-center bg-[#F5F5F7] text-[#6E6E73] hover:bg-[#E5E5EA] transition-colors">
+                <X size={16} />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto">
+              <p className="text-[14px] text-[#6E6E73] leading-relaxed mb-6">
+                Confirm your spot and connect with others at <span className="font-semibold text-[#111111]">{event.title}</span>
+              </p>
+              <div className="flex flex-col gap-3 mb-8">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input type="checkbox" id="ack-check-1" className="w-4 h-4 accent-[#111111] rounded mt-0.5 shrink-0" />
+                  <span className="text-[13px] text-[#6E6E73] leading-relaxed font-medium">
+                    I acknowledge that I have read and understood the event details and agree to participate in the event in accordance with the guidelines and instructions provided.
+                  </span>
+                </label>
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input type="checkbox" id="ack-check-2" className="w-4 h-4 accent-[#111111] rounded mt-0.5 shrink-0" />
+                  <span className="text-[13px] text-[#6E6E73] leading-relaxed font-medium">
+                    I agree to the <a href="#" className="underline decoration-[#9E9EA7] hover:text-[#111111] transition-colors">community guidelines</a>.
+                  </span>
+                </label>
+              </div>
+              <SlideButtonBase
+                label="Slide to Confirm"
+                loading={loading}
+                onSlideComplete={() => {
+                  const chk1 = document.getElementById("ack-check-1") as HTMLInputElement;
+                  const chk2 = document.getElementById("ack-check-2") as HTMLInputElement;
+                  if ((chk1 && !chk1.checked) || (chk2 && !chk2.checked)) {
+                    alert("Please acknowledge the terms and conditions before proceeding.");
+                    return;
+                  }
+                  if (regData) {
+                    doRegister(regData.values, regData.transactionId, regData.selectedTicketId, regData.paymentProofFile, regData.teamName, regData.teamMates).then(() => setShowAckModal(false));
+                  } else {
+                    doRegister().then(() => setShowAckModal(false));
+                  }
+                }}
+              />
+            </div>
+          </div>
+        </div>,
         document.body
       )}
 
@@ -687,7 +873,7 @@ export const SlideButton = ({ onComplete, event, isFull = false, userRegistratio
         >
           Registration Closed
         </button>
-      ) : requiresModal && !isCompleted ? (
+      ) : !isCompleted ? (
         <button
           onClick={handleStart}
           className="w-full py-4 rounded-2xl text-[16px] font-bold text-[#111111] transition-all hover:opacity-90 bg-[#cfe467]"
@@ -701,13 +887,7 @@ export const SlideButton = ({ onComplete, event, isFull = false, userRegistratio
           loading={loading}
           successMessage={successMessage}
           disabled={isRegistrationClosed && !isCompleted}
-          onSlideComplete={() => {
-            if (!user) {
-              setShowLoginModal(true);
-              return;
-            }
-            doRegister();
-          }}
+          onSlideComplete={() => { }}
         />
       )}
     </>

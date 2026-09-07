@@ -16,7 +16,7 @@ import { DotQRCode } from "@/components/ui/DotQRCode";
 import { createClient } from "@/utils/supabase/client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronRight, Ticket, ChevronLeft } from "lucide-react";
+import { ChevronRight, Ticket, ChevronLeft, Bell } from "lucide-react";
 
 interface EventRegistration {
   ticket_code: string;
@@ -39,6 +39,7 @@ export function ProfileMenu({ initialUser = null, initialRole = "user", initialQ
   const [eventsView, setEventsView] = useState(false);
   
   const [myEvents, setMyEvents] = useState<EventRegistration[]>([]);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
   
   const supabase = createClient();
   const router = useRouter();
@@ -90,7 +91,14 @@ export function ProfileMenu({ initialUser = null, initialRole = "user", initialQ
         if (error) throw error;
         if (mounted && session?.user) {
           setUser(session.user);
-          await Promise.all([fetchRole(session.user.id), fetchMyEvents(session.user.id)]);
+          await Promise.all([
+            fetchRole(session.user.id), 
+            fetchMyEvents(session.user.id),
+            (async () => {
+              const { count } = await supabase.from('notifications').select('*', { count: 'exact', head: true }).eq('user_id', session.user.id).eq('read', false);
+              if (count !== null) setUnreadNotifications(count);
+            })()
+          ]);
         }
       } catch (err) {
         console.error("Error fetching session:", err);
@@ -162,7 +170,14 @@ export function ProfileMenu({ initialUser = null, initialRole = "user", initialQ
   const fullName = user.user_metadata?.full_name || user.email?.split("@")[0] || "User";
 
   return (
-    <>
+    <div className="flex items-center gap-2.5">
+      <Link href="/notifications" className="relative w-9 h-9 rounded-[10px] flex items-center justify-center text-[#6E6E73] hover:text-[#111111] hover:bg-[#F5F5F7] transition-all duration-200 shrink-0">
+        <Bell style={{ width: "18px", height: "18px" }} strokeWidth={1.8} />
+        {unreadNotifications > 0 && (
+          <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-[#cfe467]" />
+        )}
+      </Link>
+      
       <div className="relative shrink-0">
         <DropdownMenu 
           open={menuOpen} 
@@ -368,6 +383,6 @@ export function ProfileMenu({ initialUser = null, initialRole = "user", initialQ
           </div>
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   );
 }
