@@ -6,6 +6,8 @@ import { createClient } from '@/utils/supabase/client';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { usePathname } from 'next/navigation';
 import { createPortal } from 'react-dom';
+import { DotQRCode } from "./DotQRCode";
+import { registerForEvent } from '@/app/actions/registration';
 
 type CustomField = {
   id?: string;
@@ -368,17 +370,17 @@ function RegistrationModal({
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[11px] font-semibold text-[#9E9EA7] uppercase tracking-wider flex justify-between">
                     <span>Add Teammates<span className="text-red-400 ml-0.5">*</span></span>
-                    <span className="lowercase text-[#6E6E73] font-medium">Min {Math.max(0, teamMinSize - 1)}, Max {Math.max(0, teamMaxSize - 1)}</span>
+                    <span className="lowercase text-[#6E6E73] font-medium">Min {teamMinSize} members</span>
                   </label>
                   <div className="flex gap-2">
                     <div className="relative flex-1">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#111111] font text-[14px]">CKL -</span>
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#111111] font-medium text-[14px]">CKL-</span>
                       <input
                         type="text"
                         placeholder="Enter ID number"
                         value={teammateSearch}
                         onChange={(e) => setTeammateSearch(e.target.value.replace(/[^0-9]/g, ''))}
-                        className={`${inputCls} pl-[68px]`}
+                        className={`${inputCls} pl-[54px]`}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') {
                             e.preventDefault();
@@ -401,12 +403,21 @@ function RegistrationModal({
                           .limit(1)
                           .maybeSingle();
 
-                        setTeammateSearchLoading(false);
-
                         if (error || !data) {
+                          setTeammateSearchLoading(false);
                           setTeammateSearchError("User not found with this ID.");
                           return;
                         }
+
+                        // Prevent adding self
+                        const { data: { user: currentUser } } = await supabase.auth.getUser();
+                        if (currentUser && data.id === currentUser.id) {
+                          setTeammateSearchLoading(false);
+                          setTeammateSearchError("You are already the team leader.");
+                          return;
+                        }
+
+                        setTeammateSearchLoading(false);
 
                         if (teamMates.find(m => m.id === data.id)) {
                           setTeammateSearchError("User already added to team.");
@@ -428,28 +439,39 @@ function RegistrationModal({
                   </div>
                   {teammateSearchError && <p className="text-red-500 text-[12px]">{teammateSearchError}</p>}
 
-                  {teamMates.length > 0 && (
-                    <div className="mt-3 flex flex-col gap-2">
-                      {teamMates.map(mate => (
-                        <div key={mate.id} className="flex items-center justify-between p-3 rounded-xl border border-[#E5E5EA] bg-[#F9F9F9]">
-                          <div className="flex flex-col">
-                            <span className="font-semibold text-[#111111] text-[13px]">{mate.name}</span>
-                            <span className="text-[#6E6E73] text-[11px]">{mate.ckl_id}</span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => setTeamMates(teamMates.filter(m => m.id !== mate.id))}
-                            className="text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      ))}
-                      <p className="text-[12px] text-[#6E6E73] text-right mt-1">
-                        {teamMates.length + 1} / {teamMaxSize} members
-                      </p>
+                  <div className="mt-3 flex flex-col gap-2">
+                    {/* Fixed Team Leader Card */}
+                    <div className="flex items-center justify-between p-3 rounded-xl border border-[#cfe467] bg-[#cfe467]/10">
+                      <div className="flex flex-col">
+                        <span className="font-semibold text-[#111111] text-[13px]">You (Team Leader)</span>
+                        <span className="text-[#6E6E73] text-[11px]">Required</span>
+                      </div>
+                      <div className="p-2">
+                        <CheckCircle2 size={16} className="text-[#4a6000]" />
+                      </div>
                     </div>
-                  )}
+                    
+                    {/* Added Teammates */}
+                    {teamMates.map(mate => (
+                      <div key={mate.id} className="flex items-center justify-between p-3 rounded-xl border border-[#E5E5EA] bg-[#F9F9F9]">
+                        <div className="flex flex-col">
+                          <span className="font-semibold text-[#111111] text-[13px]">{mate.name}</span>
+                          <span className="text-[#6E6E73] text-[11px]">{mate.ckl_id}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setTeamMates(teamMates.filter(m => m.id !== mate.id))}
+                          className="text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  <p className="text-[12px] text-[#6E6E73] text-right mt-1">
+                    {teamMates.length + 1} / {teamMaxSize} members
+                  </p>
                 </div>
               </div>
             )}
@@ -666,102 +688,56 @@ export const SlideButton = ({ onComplete, event, isFull = false, userRegistratio
     ? ((userRegistration.attended === true || userRegistration.attended === 'true' || userRegistration.status === 'attended') ? "Thank you for attending" : userRegistration.status === 'pending' ? "Pending Approval" : "Registered")
     : (isFull ? "Pending (Waitlist)" : (approvalRequired ? "Pending Approval" : "Registered"));
 
-  const generateTicketId = (userId: string, eventId: string): string => {
-    const raw = userId + eventId;
-    let h = 0x811c9dc5;
-    for (let i = 0; i < raw.length; i++) {
-      h ^= raw.charCodeAt(i);
-      h = (h * 0x01000193) >>> 0;
-    }
-    const part1 = h.toString(36).toUpperCase().padStart(7, '0').slice(0, 7);
-    let h2 = h ^ 0xdeadbeef;
-    h2 = (h2 * 0x45d9f3b) >>> 0;
-    const part2 = h2.toString(36).toUpperCase().padStart(4, '0').slice(0, 4);
-    return `CKL-${part1}${part2}`;
-  };
-
-  const doRegister = async (fieldValues: Record<string, string> = {}, transactionId: string = "", ticketTierId: string = "", paymentProofFile: File | null = null, teamName: string = "", teamMates: any[] = []) => {
+  const doRegister = async (
+    fieldValues: Record<string, string> = {},
+    transactionId: string = '',
+    ticketTierId: string = '',
+    paymentProofFile: File | null = null,
+    teamName: string = '',
+    teamMates: any[] = []
+  ) => {
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (!currentUser) {
         setShowLoginModal(true);
         return;
       }
-      if (event?.id) {
-        const finalTicketCode = generateTicketId(user.id, event.id);
 
-        let paymentProofUrl = null;
-        if (paymentProofFile) {
-          const fileExt = paymentProofFile.name.split('.').pop();
-          const fileName = `${user.id}_${event.id}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-
-          const { error: uploadError, data } = await supabase.storage
+      let paymentProofUrl: string | null = null;
+      if (paymentProofFile) {
+        const fileExt = paymentProofFile.name.split('.').pop();
+        const fileName = `${currentUser.id}_${event.id}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const { error: uploadError, data: uploadData } = await supabase.storage
+          .from('payment_proofs')
+          .upload(fileName, paymentProofFile);
+        if (!uploadError && uploadData) {
+          const { data: publicUrlData } = supabase.storage
             .from('payment_proofs')
-            .upload(fileName, paymentProofFile);
-
-          if (!uploadError && data) {
-            const { data: publicUrlData } = supabase.storage.from('payment_proofs').getPublicUrl(fileName);
-            paymentProofUrl = publicUrlData.publicUrl;
-          }
-        }
-
-        const { data: reg, error: insertError } = await supabase.from('registrations').insert({
-          event_id: event.id,
-          user_id: user.id,
-          custom_field_values: fieldValues,
-          status: pendingStatus ? 'pending' : 'approved',
-          ticket_code: finalTicketCode,
-          transaction_id: transactionId || null,
-          ticket_tier_id: ticketTierId || (ticketTypes.length === 1 ? ticketTypes[0].id : null),
-          payment_proof_url: paymentProofUrl,
-        }).select().single();
-
-        if (insertError) {
-          console.error("Insert failed:", insertError);
-          alert(`Registration failed: ${insertError.message}`);
-          throw new Error(insertError.message);
-        }
-
-        if (!pendingStatus) {
-          await supabase.from('notifications').insert({
-            user_id: user.id,
-            sender_id: user.id,
-            event_id: event.id,
-            type: 'registration_approved'
-          });
-        }
-
-
-        if (event.is_team_event && teamName) {
-          const { data: team, error: teamError } = await supabase.from('teams').insert({
-            event_id: event.id,
-            leader_id: user.id,
-            name: teamName
-          }).select().single();
-
-          if (team) {
-            const memberInserts = teamMates.map(m => ({
-              team_id: team.id,
-              user_id: m.id,
-              status: 'pending'
-            }));
-
-            if (memberInserts.length > 0) {
-              await supabase.from('team_members').insert(memberInserts);
-
-              const notificationInserts = teamMates.map(m => ({
-                user_id: m.id,
-                sender_id: user.id,
-                event_id: event.id,
-                team_id: team.id,
-                type: 'team_invite'
-              }));
-              await supabase.from('notifications').insert(notificationInserts);
-            }
-          }
+            .getPublicUrl(fileName);
+          paymentProofUrl = publicUrlData.publicUrl;
         }
       }
+
+      const result = await registerForEvent({
+        eventId: event.id,
+        fieldValues,
+        transactionId,
+        ticketTierId,
+        paymentProofUrl,
+        pendingStatus,
+        isTeamEvent: event.is_team_event === true,
+        teamName,
+        teamMates,
+        ticketTypeCount: ticketTypes.length,
+        firstTicketTypeId: ticketTypes[0]?.id ?? null,
+      });
+
+      if (!result.success) {
+        alert(result.error);
+        return;
+      }
+
       setIsCompleted(true);
       setShowModal(false);
       if (onComplete) onComplete();

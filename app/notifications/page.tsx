@@ -54,7 +54,6 @@ export default function NotificationsPage() {
       .from('notifications')
       .select(`
         id, type, read, created_at, sender_id, event_id, team_id,
-        sender:profiles!sender_id(full_name),
         event:events!event_id(title),
         team:teams!team_id(name)
       `)
@@ -62,7 +61,23 @@ export default function NotificationsPage() {
       .order('created_at', { ascending: false });
 
     if (data && !error) {
-      setNotifications(data as unknown as Notification[]);
+      // Fetch sender details separately since there's no FK constraint for the join
+      const senderIds = Array.from(new Set(data.map((n: any) => n.sender_id).filter(Boolean)));
+      const { data: usersData } = await supabase
+        .from('users')
+        .select('id, full_name')
+        .in('id', senderIds);
+        
+      const userMap = new Map(usersData?.map((u: any) => [u.id, u.full_name]) || []);
+      
+      const enrichedData = data.map((n: any) => ({
+        ...n,
+        sender: { full_name: userMap.get(n.sender_id) || 'Someone' }
+      }));
+      
+      setNotifications(enrichedData as unknown as Notification[]);
+    } else if (error) {
+      console.error('[Notifications] fetch error:', error);
     }
     setLoading(false);
   };
@@ -95,35 +110,11 @@ export default function NotificationsPage() {
         .update({ status: 'approved' })
         .eq('team_id', notif.team_id)
         .eq('user_id', user.id);
-      
+
       if (tmError) throw tmError;
 
-      const raw = user.id + notif.event_id;
-      let h = 0x811c9dc5;
-      for (let i = 0; i < raw.length; i++) {
-        h ^= raw.charCodeAt(i);
-        h = (h * 0x01000193) >>> 0;
-      }
-      const part1 = h.toString(36).toUpperCase().padStart(7, '0').slice(0, 7);
-      let h2 = h ^ 0xdeadbeef;
-      h2 = (h2 * 0x45d9f3b) >>> 0;
-      const part2 = h2.toString(36).toUpperCase().padStart(4, '0').slice(0, 4);
-      const finalTicketCode = `CKL-${part1}${part2}`;
-
-      const { error: regError } = await supabase
-        .from('registrations')
-        .insert({
-          event_id: notif.event_id,
-          user_id: user.id,
-          status: 'approved',
-          ticket_code: finalTicketCode,
-          team_id: notif.team_id
-        });
-
-      if (regError) throw regError;
-
       await markSingleAsRead(notif.id);
-      alert("Invite accepted and registration completed!");
+      alert("You have joined the team! The team leader's registration covers your spot.");
     } catch (err: any) {
       alert("Failed to accept invite: " + err.message);
     } finally {

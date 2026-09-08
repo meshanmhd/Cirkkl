@@ -26,18 +26,23 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
     .eq("event_id", id)
     .order("created_at", { ascending: false });
 
+  const adminSupabase = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
   let teams: any[] = [];
   let teamMembers: any[] = [];
 
   if (event.is_team_event) {
-    const { data: tData } = await supabase
+    const { data: tData } = await adminSupabase
       .from("teams")
       .select("*")
       .eq("event_id", id);
     teams = tData ?? [];
 
     if (teams.length > 0) {
-      const { data: tmData } = await supabase
+      const { data: tmData } = await adminSupabase
         .from("team_members")
         .select("*")
         .in("team_id", teams.map((t: any) => t.id));
@@ -53,10 +58,6 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
 
   let profiles: any[] = [];
   if (userIds.length > 0) {
-    const adminSupabase = createAdminClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
     const { data } = await adminSupabase
       .from("users")
       .select("id, full_name, email")
