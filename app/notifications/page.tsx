@@ -4,19 +4,18 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { 
   Loader2, Check, X, Users, Search, ChevronDown, MoreHorizontal, 
-  AlertCircle, Ticket, Trash2, Calendar, Bell
+  AlertCircle, Ticket, Trash2, Calendar, Bell, RefreshCw
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { formatDistanceToNow } from "date-fns";
 import Navbar from "@/components/layout/Navbar";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator
-} from "@/components/ui/dropdown-menu";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle
+} from "@/components/ui/dialog";
 
 type Notification = {
   id: string;
@@ -38,6 +37,9 @@ export default function NotificationsPage() {
   
   const [activeTab, setActiveTab] = useState<"all" | "invites" | "general">("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [successDialogOpen, setSuccessDialogOpen] = useState(false);
+  const [successDialogMessage, setSuccessDialogMessage] = useState("");
+  const [notLoggedIn, setNotLoggedIn] = useState(false);
   
   const supabase = createClient();
 
@@ -48,32 +50,70 @@ export default function NotificationsPage() {
   const fetchNotifications = async () => {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      setNotLoggedIn(true);
+      setLoading(false);
+      return;
+    }
+
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    await supabase.from('notifications')
+      .delete()
+      .eq('user_id', user.id)
+      .lt('created_at', thirtyDaysAgo.toISOString());
 
     const { data, error } = await supabase
       .from('notifications')
       .select(`
         id, type, read, created_at, sender_id, event_id, team_id,
-        event:events!event_id(title),
-        team:teams!team_id(name)
+        event:events(title),
+        team:teams(name)
       `)
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
     if (data && !error) {
-      // Fetch sender details separately since there's no FK constraint for the join
       const senderIds = Array.from(new Set(data.map((n: any) => n.sender_id).filter(Boolean)));
-      const { data: usersData } = await supabase
-        .from('users')
-        .select('id, full_name')
-        .in('id', senderIds);
-        
-      const userMap = new Map(usersData?.map((u: any) => [u.id, u.full_name]) || []);
+      let userMap = new Map();
+      if (senderIds.length > 0) {
+        const { data: usersData } = await supabase
+          .from('users')
+          .select('id, full_name')
+          .in('id', senderIds);
+        userMap = new Map(usersData?.map((u: any) => [u.id, u.full_name]) || []);
+      }
       
-      const enrichedData = data.map((n: any) => ({
-        ...n,
-        sender: { full_name: userMap.get(n.sender_id) || 'Someone' }
-      }));
+      const teamIds = Array.from(new Set(data.map((n: any) => n.team_id).filter(Boolean)));
+      let teamStatusMap = new Map();
+      if (teamIds.length > 0) {
+        const { data: teamMembersData } = await supabase
+          .from('team_members')
+          .select('team_id, status')
+          .eq('user_id', user.id)
+          .in('team_id', teamIds);
+        teamStatusMap = new Map(teamMembersData?.map((tm: any) => [tm.team_id, tm.status]) || []);
+      }
+      
+      const enrichedData = data.map((n: any) => {
+        let isRead = n.read;
+        let finalStatus = null;
+        if (n.type === 'team_invite') {
+          const status = teamStatusMap.get(n.team_id);
+          finalStatus = status;
+          if (status === 'pending') {
+            isRead = false;
+          } else if (status === 'approved' || status === 'rejected') {
+            isRead = true;
+          }
+        }
+        return {
+          ...n,
+          read: isRead,
+          team_status: finalStatus,
+          sender: { full_name: userMap.get(n.sender_id) || 'Someone' }
+        };
+      });
       
       setNotifications(enrichedData as unknown as Notification[]);
     } else if (error) {
@@ -85,8 +125,15 @@ export default function NotificationsPage() {
   const markAllAsRead = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    await supabase.from('notifications').update({ read: true }).eq('user_id', user.id).eq('read', false);
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    await supabase.from('notifications')
+      .update({ read: true })
+      .eq('user_id', user.id)
+      .eq('read', false)
+      .neq('type', 'team_invite');
+      
+    setNotifications(prev => prev.map(n => 
+      (n.type === 'team_invite' && !n.read) ? n : { ...n, read: true }
+    ));
   };
 
   const markSingleAsRead = async (id: string) => {
@@ -114,7 +161,8 @@ export default function NotificationsPage() {
       if (tmError) throw tmError;
 
       await markSingleAsRead(notif.id);
-      alert("You have joined the team! The team leader's registration covers your spot.");
+      setSuccessDialogMessage(`You have joined the team ${notif.team?.name}, for any query contact the team leader.`);
+      setSuccessDialogOpen(true);
     } catch (err: any) {
       alert("Failed to accept invite: " + err.message);
     } finally {
@@ -127,8 +175,9 @@ export default function NotificationsPage() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      await supabase.from('team_members').delete().eq('team_id', notif.team_id).eq('user_id', user.id);
-      await deleteNotif(notif.id);
+      await supabase.from('team_members').update({ status: 'rejected' }).eq('team_id', notif.team_id).eq('user_id', user.id);
+      await markSingleAsRead(notif.id);
+      setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, team_status: 'rejected' } : n));
     } catch (err: any) {
       alert("Failed to decline invite: " + err.message);
     } finally {
@@ -136,11 +185,24 @@ export default function NotificationsPage() {
     }
   };
 
-  const getTitleDesc = (n: Notification) => {
+  const getTitleDesc = (n: Notification & { team_status?: string }) => {
     if (n.type === 'team_invite') {
+      const teamName = n.team?.name || 'the team';
+      if (n.team_status === 'approved') {
+        return {
+          title: `Team Invite Accepted`,
+          desc: `You joined ${teamName} for the event ${n.event?.title}.`
+        };
+      }
+      if (n.team_status === 'rejected') {
+        return {
+          title: `Team Invite Rejected`,
+          desc: `You declined the invite to join ${teamName} for the event ${n.event?.title}.`
+        };
+      }
       return {
-        title: `Team Invite: ${n.team?.name}`,
-        desc: `${n.sender?.full_name || 'Someone'} invited you to join for ${n.event?.title}.`
+        title: `Team Invite received`,
+        desc: `${n.sender?.full_name || 'Someone'} invited you to join ${teamName} for the event ${n.event?.title}.`
       };
     }
     if (n.type === 'registration_approved') {
@@ -214,13 +276,29 @@ export default function NotificationsPage() {
             />
           </div>
           <div className="flex items-center gap-2">
+            <button onClick={fetchNotifications} className="p-2 bg-white border border-[#E5E5EA] rounded-lg text-[#111111] hover:bg-[#F5F5F7] transition-all" title="Refresh">
+              <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+            </button>
             <button onClick={markAllAsRead} className="px-4 py-2 bg-white border border-[#E5E5EA] rounded-lg text-[13px] font-medium text-[#111111] hover:bg-[#cfe467]/20 hover:border-[#cfe467] hover:text-[#111111] transition-all whitespace-nowrap">
               Mark all as read
             </button>
           </div>
         </div>
 
-        {loading ? (
+        {notLoggedIn ? (
+          <div className="py-20 flex flex-col items-center justify-center text-center">
+            <div className="w-16 h-16 rounded-full bg-[#F5F5F7] flex items-center justify-center mb-4">
+              <Users size={28} className="text-[#9E9EA7]" />
+            </div>
+            <h2 className="text-lg font-bold text-[#111111]">Login Required</h2>
+            <p className="text-[14px] text-[#6E6E73] mt-2 max-w-sm leading-relaxed mb-6">
+              You need to be logged in to view your notifications and invites.
+            </p>
+            <Link href="/login" className="px-6 py-2.5 bg-[#cfe467] hover:bg-[#b8cc58] text-[#111111] text-[13px] font-bold rounded-[10px] transition-colors">
+              Log in to continue
+            </Link>
+          </div>
+        ) : loading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 size={32} className="animate-spin text-[#cfe467]" />
           </div>
@@ -241,7 +319,7 @@ export default function NotificationsPage() {
               return (
                 <div 
                   key={notif.id} 
-                  onClick={() => { if (!notif.read) markSingleAsRead(notif.id); }}
+                  onClick={() => { if (!notif.read && notif.type !== 'team_invite') markSingleAsRead(notif.id); }}
                   className={`flex items-center justify-between py-4 border-b border-[#E5E5EA] group -mx-4 px-4 transition-colors rounded-xl cursor-pointer ${
                     !notif.read ? 'bg-[#cfe467]/10 hover:bg-[#cfe467]/20' : 'hover:bg-[#F9F9F9]'
                   }`}
@@ -260,48 +338,59 @@ export default function NotificationsPage() {
 
                   <div className="flex items-center gap-6 justify-end shrink-0">
                     <div className="hidden md:flex items-center gap-1.5 shrink-0 w-32">
-                      <Icon size={14} className={badge.color} />
-                      <span className={`text-[13px] font-semibold ${badge.color}`}>{badge.text}</span>
+                      <span className={`text-[13px] ${badge.color}`}>{badge.text}</span>
                     </div>
                     
-                    <span className="text-[13px] text-[#6E6E73] w-24 text-right shrink-0">
+                    <span className="text-[13px] text-[#6E6E73] min-w-[120px] text-right shrink-0">
                       {formatDistanceToNow(new Date(notif.created_at), { addSuffix: true })}
                     </span>
-                    
-                    <DropdownMenu>
-                      <DropdownMenuTrigger className="p-1.5 rounded-md text-[#9E9EA7] hover:text-[#111111] hover:bg-[#E5E5EA] transition-colors focus:outline-none">
-                        <MoreHorizontal size={18} />
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-48 rounded-xl shadow-lg border border-[#E5E5EA] p-1">
-                        {notif.type === 'team_invite' && !notif.read && (
-                          <>
-                            <DropdownMenuItem onClick={() => handleAccept(notif)} disabled={processingId === notif.id} className="font-medium text-[#111111] cursor-pointer rounded-lg hover:bg-[#F5F5F7] p-2">
-                              {processingId === notif.id ? <Loader2 size={14} className="mr-2 animate-spin" /> : <Check size={14} className="mr-2" />} 
-                              Accept Invite
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleDecline(notif)} disabled={processingId === notif.id} className="text-red-600 cursor-pointer rounded-lg hover:bg-red-50 p-2">
-                              {processingId === notif.id ? <Loader2 size={14} className="mr-2 animate-spin" /> : <X size={14} className="mr-2" />} 
-                              Decline
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator className="bg-[#E5E5EA]" />
-                          </>
-                        )}
-                        {!notif.read && (
-                          <DropdownMenuItem onClick={() => markSingleAsRead(notif.id)} className="cursor-pointer rounded-lg hover:bg-[#F5F5F7] p-2 text-sm">
-                            <Check size={14} className="mr-2 text-[#6E6E73]" /> Mark as read
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuItem onClick={() => deleteNotif(notif.id)} className="text-red-600 cursor-pointer rounded-lg hover:bg-red-50 p-2 text-sm">
-                          <Trash2 size={14} className="mr-2" /> Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+
+                    {notif.type === 'team_invite' && !notif.read && (
+                      <div className="hidden sm:flex items-center gap-2">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleDecline(notif); }}
+                          disabled={processingId === notif.id}
+                          className="px-4 py-1.5 text-[13px] font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-[#E5E5EA] rounded-md transition-colors flex items-center disabled:opacity-50"
+                        >
+                          <X size={12} className="mr-1.5" />
+                          Reject
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleAccept(notif); }}
+                          disabled={processingId === notif.id}
+                          className="px-4 py-1.5 text-[13px] font-medium text-[#111111] bg-[#cfe467] hover:bg-[#b8cc58] border border-[#E5E5EA] rounded-md transition-colors flex items-center disabled:opacity-50"
+                        >
+                          <Check size={12} className="mr-1.5" />
+                          Accept
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               );
             })}
           </div>
         )}
+
+        <Dialog open={successDialogOpen} onOpenChange={setSuccessDialogOpen}>
+          <DialogContent className="max-w-sm rounded-[20px] p-6">
+            <DialogHeader>
+              <div className="w-12 h-12 rounded-full bg-[#cfe467] flex items-center justify-center mx-auto mb-1">
+                <Check className="text-[#111111]" size={22} />
+              </div>
+              <DialogTitle className="text-center text-[16px] font-bold text-[#111111]">Success</DialogTitle>
+            </DialogHeader>
+            <p className="text-[13px] text-[#6E6E73] text-center mt-1">{successDialogMessage}</p>
+            <div className="flex justify-center mt-5">
+              <button 
+                onClick={() => setSuccessDialogOpen(false)} 
+                className="w-full py-2.5 rounded-[10px] bg-[#cfe467] text-[#111111] text-[13px] font-semibold hover:bg-[#b8cc58] transition-all"
+              >
+                Close
+              </button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

@@ -758,12 +758,14 @@ export function EventManagePage({ event: initialEvent, registrations: initialReg
                                 viewingReg.attended ? "text-emerald-600"
                                 : viewingReg.status === "approved" ? "text-[#4a6000]"
                                 : viewingReg.status === "pending" ? "text-amber-600"
+                                : viewingReg.status === "rejected" ? "text-red-600"
                                 : "text-[#6E6E73]"
                               }`}>
                                 <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
                                   viewingReg.attended ? "bg-emerald-500"
                                   : viewingReg.status === "approved" ? "bg-[#cfe467]"
                                   : viewingReg.status === "pending" ? "bg-amber-400"
+                                  : viewingReg.status === "rejected" ? "bg-red-500"
                                   : "bg-[#D1D1D6]"
                                 }`} />
                                 {viewingReg.attended ? "Attended" : (viewingReg.status ?? "—")}
@@ -790,7 +792,7 @@ export function EventManagePage({ event: initialEvent, registrations: initialReg
                                  return (
                                    <div key={m.id} className="flex justify-between items-center p-3 rounded-[12px] border border-[#E5E5EA]">
                                       <span className="text-[13px] font-medium text-[#111111]">{mp?.full_name ?? mp?.email ?? "Unknown"}</span>
-                                      <span className={`text-[11px] font-bold uppercase tracking-wider ${m.status === 'approved' ? 'text-emerald-600' : 'text-amber-500'}`}>{m.status}</span>
+                                      <span className={`text-[11px] font-bold uppercase tracking-wider ${m.status === 'approved' ? 'text-emerald-600' : m.status === 'rejected' ? 'text-red-600' : 'text-amber-500'}`}>{m.status}</span>
                                    </div>
                                  )
                                })}
@@ -836,12 +838,14 @@ export function EventManagePage({ event: initialEvent, registrations: initialReg
                               viewingReg.attended ? "text-emerald-600"
                               : viewingReg.status === "approved" ? "text-[#4a6000]"
                               : viewingReg.status === "pending" ? "text-amber-600"
+                              : viewingReg.status === "rejected" ? "text-red-600"
                               : "text-[#6E6E73]"
                             }`}>
                               <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
                                 viewingReg.attended ? "bg-emerald-500"
                                 : viewingReg.status === "approved" ? "bg-[#cfe467]"
                                 : viewingReg.status === "pending" ? "bg-amber-400"
+                                : viewingReg.status === "rejected" ? "bg-red-500"
                                 : "bg-[#D1D1D6]"
                               }`} />
                               {viewingReg.attended ? "Attended" : (viewingReg.status ?? "—")}
