@@ -7,7 +7,7 @@ import { createClient } from "@/utils/supabase/client";
 import {
   ArrowLeft, LayoutDashboard, Users, CheckSquare, Shield,
   Calendar, MapPin, Globe, Tag, Eye, EyeOff,
-  Edit, Trash2, Search, Check, X, AlertTriangle, UserPlus, Download, ScanLine, Image as ImageIcon, MoreHorizontal
+  Edit, Trash2, Search, Check, X, AlertTriangle, UserPlus, Download, ScanLine, Image as ImageIcon, MoreHorizontal, RefreshCw, ChevronDown, Plus, FileText, CheckCircle2, Clock
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -15,6 +15,7 @@ import {
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DotQRCode } from "@/components/ui/DotQRCode";
 
 const SECTIONS = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
@@ -77,8 +78,10 @@ interface Props {
   orgMembers: any[];
   eventRoles: any[];
   eventId: string;
+  teams?: any[];
+  teamMembers?: any[];
 }
-export function EventManagePage({ event: initialEvent, registrations: initialRegs, profiles, orgMembers, eventRoles: initialRoles, eventId }: Props) {
+export function EventManagePage({ event: initialEvent, registrations: initialRegs, profiles, orgMembers, eventRoles: initialRoles, eventId, teams = [], teamMembers = [] }: Props) {
   const router = useRouter();
   const supabase = createClient();
   const [activeSection, setActiveSection] = useState("overview");
@@ -98,6 +101,7 @@ export function EventManagePage({ event: initialEvent, registrations: initialReg
   const [savingRole, setSavingRole] = useState(false);
   const [viewingReg, setViewingReg] = useState<any>(null);
   const [regToDelete, setRegToDelete] = useState<any>(null);
+  const [refreshing, setRefreshing] = useState(false);
   const sectionIds = SECTIONS.map(s => s.id);
 
 
@@ -113,6 +117,21 @@ export function EventManagePage({ event: initialEvent, registrations: initialReg
     (orgMembers || []).forEach(mObj => { m[mObj.id] = mObj; });
     return m;
   }, [orgMembers]);
+
+  const teamMap = useMemo(() => {
+    const m: Record<string, any> = {};
+    teams.forEach(t => { m[t.id] = t; });
+    return m;
+  }, [teams]);
+
+  const teamMembersByTeam = useMemo(() => {
+    const m: Record<string, any[]> = {};
+    teamMembers.forEach(tm => {
+      if (!m[tm.team_id]) m[tm.team_id] = [];
+      m[tm.team_id].push(tm);
+    });
+    return m;
+  }, [teamMembers]);
 
   const filteredRegs = useMemo(() => regs.filter(r => {
     if (regFilterStatus !== "all" && r.status !== regFilterStatus) return false;
@@ -172,6 +191,17 @@ export function EventManagePage({ event: initialEvent, registrations: initialReg
     setRegs((prev: any[]) => prev.map(r => r.id === regId ? { ...r, attended: !current } : r));
   }
 
+  async function refreshData() {
+    setRefreshing(true);
+    const { data } = await supabase
+      .from("registrations")
+      .select("*")
+      .eq("event_id", eventId)
+      .order("created_at", { ascending: false });
+    if (data) setRegs(data);
+    setRefreshing(false);
+  }
+
   async function addRole() {
     if (!addRoleMember) return;
     setSavingRole(true);
@@ -214,6 +244,9 @@ export function EventManagePage({ event: initialEvent, registrations: initialReg
           <div className="w-px h-4 bg-[#E5E5EA]" />
           <p className="text-[14px] font-semibold text-[#111111] truncate flex-1">{event.title}</p>
           <div className="flex items-center gap-2 shrink-0">
+            <button onClick={refreshData} disabled={refreshing} className="w-8 h-8 rounded-[8px] flex items-center justify-center border border-[#E5E5EA] text-[#6E6E73] hover:bg-[#F5F5F7] transition-all disabled:opacity-50">
+              <RefreshCw size={13} className={refreshing ? 'animate-spin' : ''} />
+            </button>
             <Link href={`/dashboard/events/${eventId}/attendance`} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] border border-[#E5E5EA] text-[13px] font-medium text-[#111111] hover:bg-[#F5F5F7] transition-all">
               <ScanLine size={13} />
               Mark Attendance
@@ -528,15 +561,31 @@ export function EventManagePage({ event: initialEvent, registrations: initialReg
               </div>
               <div className="overflow-x-auto rounded-[12px] border border-[#E5E5EA]">
                 <table className="w-full">
-                  <thead><tr className="border-b border-[#E5E5EA]">{["PARTICIPANT", "TICKET CODE", "STATUS", "REGISTERED", ""].map(col => (<th key={col} className={`px-5 py-3 text-[11px] font-medium text-[#9E9EA7] tracking-[0.05em] uppercase whitespace-nowrap ${col === "PARTICIPANT" ? "text-left" : "text-center"}`}>{col}</th>))}</tr></thead>
+                  <thead><tr className="border-b border-[#E5E5EA]">{[event.is_team_event ? "TEAM" : "PARTICIPANT", "TICKET CODE", "STATUS", "REGISTERED", ""].map(col => (<th key={col} className={`px-5 py-3 text-[11px] font-medium text-[#9E9EA7] tracking-[0.05em] uppercase whitespace-nowrap ${col === "TEAM" || col === "PARTICIPANT" ? "text-left" : "text-center"}`}>{col}</th>))}</tr></thead>
                   <tbody>
                     {filteredRegs.length === 0 ? (
                       <tr><td colSpan={5} className="py-12 text-center text-[13px] text-[#9E9EA7]">No registrations yet</td></tr>
                     ) : filteredRegs.map((r: any, idx: number) => {
                       const p = profileMap[r.user_id];
+                      const team = r.team_id ? teamMap[r.team_id] : (event.is_team_event ? teams.find((t: any) => t.leader_id === r.user_id) : null);
+                      let displayName = p?.full_name ?? "-";
+                      let subtitle = p?.email ?? "-";
+                      if (event.is_team_event && team) {
+                        displayName = team.name;
+                        subtitle = `Leader: ${p?.full_name ?? p?.email ?? "-"}`;
+                      }
                       return (
                         <tr key={r.id} onClick={() => setViewingReg(r)} className={`cursor-pointer border-b border-[#F5F5F7] hover:bg-[#FAFAFA] transition-colors ${idx === filteredRegs.length - 1 ? "border-b-0" : ""}`}>
-                          <td className="px-5 py-3"><div className="flex items-center gap-2.5"><Avatar className="h-7 w-7 border border-[#E5E5EA] shrink-0"><AvatarImage src={p?.avatar_url ?? `https://api.dicebear.com/7.x/notionists/svg?seed=${r.user_id}`} /><AvatarFallback className="text-[10px] font-medium bg-[#F5F5F7]">{getInitials(p?.full_name)}</AvatarFallback></Avatar><div className="min-w-0"><p className="text-[13px] font-medium text-[#111111] truncate">{p?.full_name ?? "-"}</p><p className="text-[11px] text-[#9E9EA7] truncate">{p?.email ?? "-"}</p></div></div></td>
+                          <td className="px-5 py-3"><div className="flex items-center gap-2.5"><Avatar className="h-7 w-7 border border-[#E5E5EA] shrink-0">
+                            {event.is_team_event && team ? (
+                              <AvatarFallback className="text-[10px] font-medium bg-[#cfe467] text-[#4a6000]"><Users size={12} /></AvatarFallback>
+                            ) : (
+                              <>
+                                <AvatarImage src={p?.avatar_url ?? `https://api.dicebear.com/7.x/notionists/svg?seed=${r.user_id}`} />
+                                <AvatarFallback className="text-[10px] font-medium bg-[#F5F5F7]">{getInitials(displayName)}</AvatarFallback>
+                              </>
+                            )}
+                          </Avatar><div className="min-w-0"><p className="text-[13px] font-medium text-[#111111] truncate">{displayName}</p><p className="text-[11px] text-[#9E9EA7] truncate">{subtitle}</p></div></div></td>
                           <td className="px-5 py-3 text-center"><span className="text-[13px] text-[#6E6E73]">{r.ticket_code ?? "-"}</span></td>
                           <td className="px-5 py-3 text-center"><span className="text-[13px] text-[#6E6E73] capitalize">{r.attended ? "attended" : (r.status ?? "-")}</span></td>
                           <td className="px-5 py-3 text-center"><span className="text-[13px] text-[#6E6E73] whitespace-nowrap">{formatDateTime(r.created_at)}</span></td>
@@ -668,92 +717,210 @@ export function EventManagePage({ event: initialEvent, registrations: initialReg
 
       {/* Registration Details Modal */}
       <Dialog open={!!viewingReg} onOpenChange={(open) => !open && setViewingReg(null)}>
-        <DialogContent className="max-w-md rounded-[24px] p-0 overflow-hidden shadow-xl border border-[#E5E5EA] bg-white [&>button]:hidden">
+        <DialogContent className="max-w-sm rounded-[24px] p-0 overflow-hidden border border-[#E5E5EA] bg-white [&>button]:hidden">
           {viewingReg && (
             <div className="flex flex-col max-h-[85vh] bg-white">
-              <div className="px-6 py-5 shrink-0 border-b border-[#E5E5EA] flex items-center justify-between">
-                <DialogTitle className="text-[16px] font-bold text-[#111111]">Registration Details</DialogTitle>
-                <button onClick={() => setViewingReg(null)} className="w-8 h-8 flex items-center justify-center rounded-full bg-[#F5F5F7] text-[#6E6E73] hover:bg-[#E5E5EA] hover:text-[#111111] transition-colors outline-none">
-                  <X size={16} />
+
+              {/* Header */}
+              <div className="px-5 py-4 shrink-0 flex items-center justify-between border-b border-[#E5E5EA]">
+                <DialogTitle className="text-[15px] font-bold text-[#111111] tracking-tight">Registration Details</DialogTitle>
+                <button onClick={() => setViewingReg(null)} className="w-8 h-8 flex items-center justify-center rounded-full bg-[#F5F5F7] text-[#6E6E73] hover:bg-[#E5E5EA] transition-colors outline-none">
+                  <X size={15} />
                 </button>
               </div>
-              <div className="p-6 overflow-y-auto flex flex-col gap-8 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-[#E5E5EA] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent">
-                <div className="flex flex-col items-center gap-2 text-center">
-                  <Avatar className="h-16 w-16 border border-[#E5E5EA]">
-                    <AvatarImage src={profileMap[viewingReg.user_id]?.avatar_url ?? `https://api.dicebear.com/7.x/notionists/svg?seed=${viewingReg.user_id}`} />
-                    <AvatarFallback className="text-[16px] font-medium bg-[#F5F5F7]">{getInitials(profileMap[viewingReg.user_id]?.full_name)}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="text-[16px] font-bold text-[#111111]">{profileMap[viewingReg.user_id]?.full_name ?? "-"}</p>
-                    <p className="text-[13px] font-medium text-[#6E6E73] mt-0.5">{profileMap[viewingReg.user_id]?.email ?? "-"}</p>
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-[#F5F5F7] p-3.5 rounded-[12px] border border-dotted border-[#E5E5EA] flex flex-col items-center justify-center text-center">
-                    <p className="text-[11px] font-semibold text-[#6E6E73] uppercase tracking-wider mb-1">Ticket Code</p>
-                    <p className="text-[14px] font-mono font-bold text-[#111111]">{viewingReg.ticket_code ?? "-"}</p>
-                  </div>
-                  <div className="bg-[#F5F5F7] p-3.5 rounded-[12px] border border-dotted border-[#E5E5EA] flex flex-col items-center justify-center text-center">
-                    <p className="text-[11px] font-semibold text-[#6E6E73] uppercase tracking-wider mb-1">Status</p>
-                    <span className={`text-[13px] font-semibold capitalize ${viewingReg.attended ? "text-[#111111]" :
-                        viewingReg.status === "approved" ? "text-[#111111]" :
-                          viewingReg.status === "pending" ? "text-[#FF9500]" :
-                            "text-[#6E6E73]"
-                      }`}>
-                      {viewingReg.attended ? "Attended" : (viewingReg.status ?? "-")}
-                    </span>
-                  </div>
-                </div>
+              <div className="overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-[#E5E5EA] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent">
 
-                {viewingReg.transaction_id && (
-                  <div>
-                    <h4 className="text-[12px] font-bold text-[#111111] mb-2 uppercase tracking-wider">Payment Details</h4>
-                    <div className="bg-[#F5F5F7] p-4 rounded-[12px] border border-dotted border-[#E5E5EA] flex flex-col gap-4">
-                      <div>
-                        <p className="text-[11px] font-semibold text-[#6E6E73] uppercase tracking-wider">Transaction ID</p>
-                        <p className="text-[14px] font-mono font-bold text-[#111111] mt-0.5">{viewingReg.transaction_id}</p>
+                {/* User Info */}
+                {(() => {
+                  const p = profileMap[viewingReg.user_id];
+                  const team = viewingReg.team_id ? teamMap[viewingReg.team_id] : (event.is_team_event ? teams.find((t: any) => t.leader_id === viewingReg.user_id) : null);
+                  
+                  if (event.is_team_event && team) {
+                    const members = teamMembersByTeam[team.id] || [];
+                    const acceptedCount = members.filter((m: any) => m.status === 'approved').length + 1;
+                    
+                    return (
+                      <div className="flex flex-col">
+                        <div className="px-5 py-5 flex flex-col gap-4">
+                          <div>
+                            <p className="text-[18px] font-bold text-[#111111] leading-tight truncate">{team.name}</p>
+                            <div className="flex items-center gap-2 mt-2">
+                              <p className="text-[11px] font-semibold text-[#9E9EA7] uppercase tracking-wider">Ticket Code</p>
+                              <p className="text-[13px] font-mono font-bold text-[#111111] bg-[#F5F5F7] px-2 py-0.5 rounded-md">{viewingReg.ticket_code ?? "—"}</p>
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-3 p-4 rounded-xl border border-[#E5E5EA] bg-[#FAFAFA]">
+                            <div className="flex flex-col gap-1">
+                              <p className="text-[11px] font-semibold text-[#9E9EA7] uppercase tracking-wider">Status</p>
+                              <span className={`text-[13px] font-semibold capitalize inline-flex items-center gap-1.5 ${
+                                viewingReg.attended ? "text-emerald-600"
+                                : viewingReg.status === "approved" ? "text-[#4a6000]"
+                                : viewingReg.status === "pending" ? "text-amber-600"
+                                : viewingReg.status === "rejected" ? "text-red-600"
+                                : "text-[#6E6E73]"
+                              }`}>
+                                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                                  viewingReg.attended ? "bg-emerald-500"
+                                  : viewingReg.status === "approved" ? "bg-[#cfe467]"
+                                  : viewingReg.status === "pending" ? "bg-amber-400"
+                                  : viewingReg.status === "rejected" ? "bg-red-500"
+                                  : "bg-[#D1D1D6]"
+                                }`} />
+                                {viewingReg.attended ? "Attended" : (viewingReg.status ?? "—")}
+                              </span>
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              <p className="text-[11px] font-semibold text-[#9E9EA7] uppercase tracking-wider">Registered</p>
+                              <p className="text-[13px] font-medium text-[#111111]">{formatDateTime(viewingReg.created_at)}</p>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col gap-3 mt-1">
+                             <div className="flex justify-between items-center">
+                                <p className="text-[11px] font-semibold text-[#9E9EA7] uppercase tracking-wider">Team Members</p>
+                                <p className="text-[11px] text-[#6E6E73] font-medium">{acceptedCount} / {event.team_min_size} approved</p>
+                             </div>
+                            <div className="flex flex-col gap-2">
+                               <div className="flex justify-between items-center p-3 rounded-[12px] bg-[#F5F5F7]">
+                                  <span className="text-[13px] font-medium text-[#111111]">{p?.full_name ?? p?.email}</span>
+                                  <span className="text-[11px] text-emerald-600 font-bold uppercase tracking-wider">Leader</span>
+                               </div>
+                               {members.map(m => {
+                                 const mp = profileMap[m.user_id];
+                                 return (
+                                   <div key={m.id} className="flex justify-between items-center p-3 rounded-[12px] border border-[#E5E5EA]">
+                                      <span className="text-[13px] font-medium text-[#111111]">{mp?.full_name ?? mp?.email ?? "Unknown"}</span>
+                                      <span className={`text-[11px] font-bold uppercase tracking-wider ${m.status === 'approved' ? 'text-emerald-600' : m.status === 'rejected' ? 'text-red-600' : 'text-amber-500'}`}>{m.status}</span>
+                                   </div>
+                                 )
+                               })}
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      {viewingReg.payment_proof_url && (
-                        <div>
-                          <p className="text-[11px] font-semibold text-[#6E6E73] uppercase tracking-wider mb-2">Payment Screenshot</p>
-                          <a href={viewingReg.payment_proof_url} target="_blank" rel="noreferrer" className="flex items-center justify-between p-2.5 bg-white border border-[#E5E5EA] rounded-[10px] hover:bg-[#F9F9FB] transition-all group">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-[6px] bg-[#F5F5F7] flex items-center justify-center shrink-0">
+                    );
+                  }
+                  
+                  return (
+                    <>
+                      <div className="px-5 py-5 flex items-center gap-4">
+                        <Avatar className="h-12 w-12 shrink-0 border border-[#E5E5EA]">
+                          <AvatarImage src={p?.avatar_url ?? `https://api.dicebear.com/7.x/notionists/svg?seed=${viewingReg.user_id}`} />
+                          <AvatarFallback className="text-[14px] font-semibold bg-[#F5F5F7] text-[#111111]">{getInitials(p?.full_name)}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[15px] font-bold text-[#111111] leading-tight truncate">{p?.full_name ?? "—"}</p>
+                          <p className="text-[13px] text-[#6E6E73] font-medium mt-0.5 truncate">{p?.email ?? "—"}</p>
+                        </div>
+                      </div>
+
+                      <div className="h-px bg-[#E5E5EA] mx-5" />
+
+                      {/* Ticket & Status */}
+                      <div className="px-5 py-4 grid grid-cols-2 gap-3">
+                        <div className="flex flex-col gap-3">
+                          <div className="flex flex-col gap-1">
+                            <p className="text-[11px] font-semibold text-[#9E9EA7] uppercase tracking-wider">Ticket Code</p>
+                            <p className="text-[13px] font-mono font-bold text-[#111111]">{viewingReg.ticket_code ?? "—"}</p>
+                          </div>
+                          {viewingReg.ticket_code && (
+                            <div className="w-[120px] h-[120px] bg-[#F5F5F7] rounded-[12px] flex items-center justify-center border border-[#E5E5EA] mt-1 shrink-0">
+                              <DotQRCode value={viewingReg.ticket_code.toUpperCase()} size={100} />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex flex-col gap-4">
+                          <div className="flex flex-col gap-1">
+                            <p className="text-[11px] font-semibold text-[#9E9EA7] uppercase tracking-wider">Status</p>
+                            <span className={`text-[13px] font-semibold capitalize inline-flex items-center gap-1.5 ${
+                              viewingReg.attended ? "text-emerald-600"
+                              : viewingReg.status === "approved" ? "text-[#4a6000]"
+                              : viewingReg.status === "pending" ? "text-amber-600"
+                              : viewingReg.status === "rejected" ? "text-red-600"
+                              : "text-[#6E6E73]"
+                            }`}>
+                              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                                viewingReg.attended ? "bg-emerald-500"
+                                : viewingReg.status === "approved" ? "bg-[#cfe467]"
+                                : viewingReg.status === "pending" ? "bg-amber-400"
+                                : viewingReg.status === "rejected" ? "bg-red-500"
+                                : "bg-[#D1D1D6]"
+                              }`} />
+                              {viewingReg.attended ? "Attended" : (viewingReg.status ?? "—")}
+                            </span>
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <p className="text-[11px] font-semibold text-[#9E9EA7] uppercase tracking-wider">Registered</p>
+                            <p className="text-[13px] font-medium text-[#111111]">{formatDateTime(viewingReg.created_at)}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
+
+                {/* Payment Details */}
+                {viewingReg.transaction_id && (
+                  <>
+                    <div className="h-px bg-[#E5E5EA] mx-5" />
+                    <div className="px-5 py-4 flex flex-col gap-3">
+                      <p className="text-[11px] font-semibold text-[#9E9EA7] uppercase tracking-wider">Payment</p>
+                      <div className="flex flex-col gap-2">
+                        <div className="flex flex-col gap-1">
+                          <p className="text-[11px] text-[#9E9EA7] font-medium">Transaction ID</p>
+                          <p className="text-[13px] font-mono font-bold text-[#111111]">{viewingReg.transaction_id}</p>
+                        </div>
+                        {viewingReg.payment_proof_url && (
+                          <a href={viewingReg.payment_proof_url} target="_blank" rel="noreferrer"
+                            className="flex items-center justify-between p-3 bg-[#F7F7F8] border border-[#E5E5EA] rounded-[12px] hover:bg-[#F0F0F2] transition-colors group mt-1">
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-8 h-8 rounded-[8px] bg-white border border-[#E5E5EA] flex items-center justify-center shrink-0">
                                 <ImageIcon size={14} className="text-[#9E9EA7]" />
                               </div>
                               <span className="text-[13px] font-medium text-[#111111]">Payment Receipt</span>
                             </div>
-                            <div className="w-8 h-8 rounded-[6px] flex items-center justify-center text-[#6E6E73] group-hover:bg-[#E5E5EA] group-hover:text-[#111111] transition-colors">
-                              <Eye size={16} />
-                            </div>
+                            <Eye size={15} className="text-[#9E9EA7] group-hover:text-[#111111] transition-colors" />
                           </a>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  </>
                 )}
 
+                {/* Custom Answers */}
                 {viewingReg.custom_field_values && Object.keys(viewingReg.custom_field_values).length > 0 && (
-                  <div>
-                    <h4 className="text-[12px] font-bold text-[#111111] mb-2 uppercase tracking-wider">Custom Answers</h4>
-                    <div className="flex flex-col gap-2">
-                      {Object.entries(viewingReg.custom_field_values).map(([q, a]: any) => (
-                        <div key={q} className="bg-[#F5F5F7] border border-dotted border-[#E5E5EA] rounded-[12px] p-3.5">
-                          <p className="text-[11px] font-semibold text-[#6E6E73] uppercase tracking-wider mb-1">{q}</p>
-                          <p className="text-[13px] font-medium text-[#111111]">{a || "-"}</p>
-                        </div>
-                      ))}
+                  <>
+                    <div className="h-px bg-[#E5E5EA] mx-5" />
+                    <div className="px-5 py-4 flex flex-col gap-3">
+                      <p className="text-[11px] font-semibold text-[#9E9EA7] uppercase tracking-wider">Responses</p>
+                      <div className="flex flex-col gap-2.5">
+                        {Object.entries(viewingReg.custom_field_values).map(([q, a]: any) => (
+                          <div key={q} className="flex flex-col gap-0.5">
+                            <p className="text-[11px] text-[#9E9EA7] font-medium">{q}</p>
+                            <p className="text-[13px] font-medium text-[#111111]">{a || "—"}</p>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  </>
                 )}
               </div>
+
+              {/* Approve / Reject Footer */}
               {event.approval_required && viewingReg.status === "pending" && (
-                <div className="p-5 border-t border-[#E5E5EA] bg-white flex items-center gap-3 shrink-0 w-full">
-                  <button onClick={() => { rejectReg(viewingReg.id); setViewingReg({...viewingReg, status: "rejected"}); }} className="flex-1 py-3 bg-[#F5F5F7] text-[#111111] border border-[#E5E5EA] rounded-2xl text-[14px] font-bold hover:bg-[#E5E5EA] hover:border-[#D1D1D6] transition-all outline-none">
+                <div className="px-5 py-4 border-t border-[#E5E5EA] bg-white flex items-center gap-3 shrink-0">
+                  <button
+                    onClick={() => { rejectReg(viewingReg.id); setViewingReg({...viewingReg, status: "rejected"}); }}
+                    className="flex-1 py-2.5 bg-white text-[#111111] border border-[#E5E5EA] rounded-[12px] text-[13px] font-semibold hover:bg-[#F5F5F7] transition-colors outline-none"
+                  >
                     Reject
                   </button>
-                  <button onClick={() => { approveReg(viewingReg.id); setViewingReg({...viewingReg, status: "approved"}); }} className="flex-1 py-3 bg-[#cfe467] text-[#111111] rounded-2xl text-[14px] font-bold hover:bg-[#c0d955] transition-all outline-none shadow-sm">
+                  <button
+                    onClick={() => { approveReg(viewingReg.id); setViewingReg({...viewingReg, status: "approved"}); }}
+                    className="flex-1 py-2.5 bg-[#111111] text-white rounded-[12px] text-[13px] font-semibold hover:bg-[#222222] transition-colors outline-none"
+                  >
                     Approve
                   </button>
                 </div>

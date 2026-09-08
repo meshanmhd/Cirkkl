@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, Calendar, Clock, MapPin, Ticket, User, Users, Globe, ExternalLink, Info, ShieldCheck, Banknote, Camera } from "lucide-react";
 import { Metadata } from "next";
 import { SlideButton } from "@/components/ui/SlideButton";
+import { StickyRegisterBar } from "@/components/ui/StickyRegisterBar";
 import CursorGrid from "@/components/CursorGrid";
 import { format, parse } from "date-fns";
 import {
@@ -311,8 +312,8 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
               </div>
 
               {/* Right Card */}
-              <div className="w-full lg:w-[400px] shrink-0">
-                <div className="bg-white rounded-[2rem] p-6 lg:p-8 border border-[#E5E5EA] shadow-sm shadow-black/5 flex flex-col gap-8 relative overflow-hidden">
+              <div id="register-card" className="w-full lg:w-[400px] shrink-0">
+                <div className="bg-white rounded-[2rem] p-6 lg:p-8 border border-[#E5E5EA] shadow-sm shadow-black/5 flex flex-col gap-6 relative overflow-hidden">
                   {/* Subtle inner gradient for the card */}
                   <div className="absolute inset-0 bg-gradient-to-br from-white/80 to-transparent pointer-events-none" />
 
@@ -402,7 +403,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                         <div className="flex flex-col justify-center w-full">
                           <span className="text-[13px] font-medium text-[#6E6E73] mb-1">Registration Type</span>
                           <span className="text-[15px] font-semibold text-[#111111]">
-                            {event.price === 'paid' ? 'Paid' : 'Free'}
+                            {event.price === 'paid' ? 'Paid' : 'Free'}{event.is_team_event ? ' | Team Event' : ' | Individual'}
                           </span>
                         </div>
                       </div>
@@ -411,14 +412,14 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                   </div>
 
                   {(!isEnded || userRegistration?.attended || userRegistration?.status === 'attended') && (
-                    <div className="pt-4 relative z-10">
+                    <div className="relative z-10">
                       <SlideButton
                         event={event}
                         isFull={isFull}
                         userRegistration={userRegistration}
                       />
                       {event.registration_deadline && (
-                        <p className="text-center text-xs text-[#6E6E73] mt-4 font-medium">
+                        <p className="text-center text-xs text-[#6E6E73] mt-2 font-medium">
                           Registration closes on {formattedRegDate} {formattedRegTime ? `at ${formattedRegTime}` : ''}
                         </p>
                       )}
@@ -431,6 +432,15 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
           </div>
         </div>
       </div>
+
+      <StickyRegisterBar
+        event={event}
+        isFull={isFull}
+        userRegistration={userRegistration}
+        formattedDate={formattedDate}
+        formattedTime={formattedTime}
+        isEnded={isEnded}
+      />
     </div>
   );
 }
