@@ -33,6 +33,14 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
     notFound();
   }
 
+  // Fetch tickets
+  if (event.price === 'paid') {
+    const { data: tickets } = await supabase.from('tickets').select('*').eq('event_id', id);
+    if (tickets) {
+      event.ticket_types = tickets;
+    }
+  }
+
   // Fetch registration count to determine if full
   const { count } = await supabase
     .from('registrations')
@@ -50,7 +58,9 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
       .select('status, attended')
       .eq('event_id', id)
       .eq('user_id', user.id)
-      .single();
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
     if (reg) userRegistration = reg;
   }
 

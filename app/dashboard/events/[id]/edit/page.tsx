@@ -38,7 +38,7 @@ const SECTIONS = [
 ];
 
 type CustomField = { id: string; label: string; type: string; required: boolean; options: string };
-type TicketType = { id: string; name: string; price: string; quantity: string; unlimited: boolean; qrCodeFile: File | null; qrCodePreview: string | null };
+type TicketType = { id: string; name: string; price: string; quantity: string; unlimited: boolean };
 type ImageState = { file: File | null; preview: string | null };
 type Speaker = { id: string; name: string; subtext: string; imageFile: File | null; imageUrl: string };
 type Member = { id: string; name: string; avatar_url?: string };
@@ -315,7 +315,7 @@ export default function EditEventPage() {
   const set = (key: string, val: any) => setForm(f => ({ ...f, [key]: val }));
 
   const [tickets, setTickets] = useState<TicketType[]>([]);
-  const addTicket = () => setTickets(t => [...t, { id: Date.now().toString(), name: "", price: "", quantity: "", unlimited: false, qrCodeFile: null, qrCodePreview: null }]);
+  const addTicket = () => setTickets(t => [...t, { id: Date.now().toString(), name: "", price: "", quantity: "", unlimited: false }]);
   const updateTicket = (id: string, key: keyof TicketType, val: string | boolean) =>
     setTickets(t => t.map(tt => tt.id === id ? { ...tt, [key]: val } : tt));
   const removeTicket = (id: string) => setTickets(t => t.filter(tt => tt.id !== id));
@@ -389,8 +389,7 @@ export default function EditEventPage() {
       if (data.ticket_types) {
         setTickets(data.ticket_types.map((t: any) => ({
           id: t.id || Date.now().toString(), name: t.name || "", price: t.price?.toString() || "0",
-          quantity: t.quantity ? t.quantity.toString() : "", unlimited: t.quantity === null || t.unlimited,
-          qrCodeFile: null, qrCodePreview: t.qr_code_url || null
+          quantity: t.quantity ? t.quantity.toString() : "", unlimited: t.quantity === null || t.unlimited
         })));
       }
       if (data.custom_fields) setCustomFields(data.custom_fields);
@@ -434,10 +433,6 @@ export default function EditEventPage() {
         if (!form.cancellationPolicy.trim() || !form.refundPolicy.trim()) {
           throw new Error("Cancellation and Refund policies are required for paid events.");
         }
-        const missingQrCodes = tickets.filter(t => t.name.trim()).some(t => !t.qrCodeFile && !t.qrCodePreview);
-        if (missingQrCodes) {
-          throw new Error("Payment QR codes are required for all paid ticket types.");
-        }
       }
 
       const uploadedSpeakers = await Promise.all(speakers.map(async (s) => {
@@ -446,21 +441,6 @@ export default function EditEventPage() {
           return { id: s.id, name: s.name, subtext: s.subtext, imageUrl: url };
         }
         return { id: s.id, name: s.name, subtext: s.subtext, imageUrl: s.imageUrl };
-      }));
-
-      const uploadedTickets = await Promise.all(tickets.filter(t => t.name.trim()).map(async (t) => {
-        let qrUrl = t.qrCodePreview;
-        if (t.qrCodeFile) {
-          qrUrl = await uploadImage({ file: t.qrCodeFile, preview: null }, `${user.id}/${uid}/tickets/${t.id}`);
-        }
-        return {
-          id: t.id,
-          name: t.name,
-          price: parseFloat(t.price) || 0,
-          quantity: t.unlimited ? null : (parseInt(t.quantity) || null),
-          unlimited: t.unlimited,
-          qr_code_url: qrUrl,
-        };
       }));
 
       const { error: updateError } = await supabase.from("events").update({
@@ -495,7 +475,6 @@ export default function EditEventPage() {
         photography_policy: form.photographyPolicy,
         visibility: form.visibility,
         custom_fields: validFields,
-        ticket_types: uploadedTickets,
         is_team_event: form.isTeamEvent === "true",
         team_min_size: parseInt(form.teamMinSize) || 1,
         team_max_size: parseInt(form.teamMaxSize) || 1,
@@ -503,6 +482,28 @@ export default function EditEventPage() {
       }).eq("id", eventId);
 
       if (updateError) throw updateError;
+      
+      // Update tickets
+      if (form.price === "paid") {
+        const validTickets = tickets.filter(t => t.name.trim());
+        
+        // Delete all old tickets
+        await supabase.from('tickets').delete().eq('event_id', eventId);
+        
+        // Insert new tickets
+        if (validTickets.length > 0) {
+          const ticketsToInsert = validTickets.map(t => ({
+            event_id: eventId,
+            name: t.name,
+            price: parseFloat(t.price) || 0,
+            quantity: t.unlimited ? null : (parseInt(t.quantity) || null),
+            unlimited: t.unlimited,
+          }));
+          
+          const { error: ticketError } = await supabase.from('tickets').insert(ticketsToInsert);
+          if (ticketError) throw ticketError;
+        }
+      }
       router.push(`/dashboard/events/${eventId}`);
       router.refresh();
     } catch (err: any) {
@@ -722,81 +723,6 @@ export default function EditEventPage() {
                       </FormInput>
                     </div>
                     <div className="flex gap-4 items-start">
-                      {form.price === "paid" && (
-                        <div className="w-1/2">
-                          <FormInput label="Payment QR Code" required>
-                            {!t.qrCodePreview ? (
-                              <label className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl border border-dashed border-[#E5E5EA] bg-white hover:bg-[#F5F5F7] hover:border-[#D1D1D6] transition-all cursor-pointer h-[46px]">
-                                <Upload size={16} className="text-[#6E6E73]" />
-                                <span className="text-[14px] font-medium text-[#111111]">Upload Payment QR</span>
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  className="hidden"
-                                  onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (file) {
-                                      const preview = URL.createObjectURL(file);
-                                      const newTickets = tickets.map(ticket => ticket.id === t.id ? { ...ticket, qrCodeFile: file, qrCodePreview: preview } : ticket);
-                                      setTickets(newTickets);
-                                    }
-                                  }}
-                                />
-                              </label>
-                            ) : (
-                              <div className="flex items-center justify-between w-full p-2.5 rounded-xl border border-[#E5E5EA] bg-white h-[46px]">
-                                <div className="flex items-center gap-2.5 overflow-hidden">
-                                  <img src={t.qrCodePreview} alt="QR" className="w-6 h-6 rounded object-cover shrink-0 border border-[#E5E5EA]" />
-                                  <span className="text-[13px] font-medium text-[#111111] truncate max-w-[120px]" title={t.qrCodeFile?.name}>
-                                    {t.qrCodeFile?.name || "QR Code"}
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-1 shrink-0">
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-7 w-7 p-0 text-[#6E6E73] hover:text-[#111111]"
-                                    onClick={() => window.open(t.qrCodePreview || "", "_blank")}
-                                    title="Preview"
-                                  >
-                                    <Eye size={14} />
-                                  </Button>
-                                  <label className="flex items-center justify-center h-7 w-7 rounded-md text-[#6E6E73] hover:text-[#111111] hover:bg-accent cursor-pointer transition-colors" title="Replace">
-                                    <RefreshCw size={14} />
-                                    <input
-                                      type="file"
-                                      accept="image/*"
-                                      className="hidden"
-                                      onChange={(e) => {
-                                        const file = e.target.files?.[0];
-                                        if (file) {
-                                          const preview = URL.createObjectURL(file);
-                                          const newTickets = tickets.map(ticket => ticket.id === t.id ? { ...ticket, qrCodeFile: file, qrCodePreview: preview } : ticket);
-                                          setTickets(newTickets);
-                                        }
-                                      }}
-                                    />
-                                  </label>
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-7 w-7 p-0 text-[#6E6E73] hover:text-red-500"
-                                    onClick={() => {
-                                      const newTickets = tickets.map(ticket => ticket.id === t.id ? { ...ticket, qrCodeFile: null, qrCodePreview: null } : ticket);
-                                      setTickets(newTickets);
-                                    }}
-                                    title="Delete"
-                                  >
-                                    <Trash2 size={14} />
-                                  </Button>
-                                </div>
-                              </div>
-                            )}
-                          </FormInput>
-                        </div>
-                      )}
                       <div className="flex-1">
                         <FormInput label="Quantity">
                           <div className={`flex items-center px-4 py-2.5 rounded-xl border transition-all ${t.unlimited ? 'bg-[#F5F5F7] border-[#E5E5EA]' : 'bg-white border-[#E5E5EA] focus-within:border-[#cfe467] focus-within:ring-2 focus-within:ring-[#cfe467]/20'}`}>

@@ -81,14 +81,20 @@ interface Props {
   teams?: any[];
   teamMembers?: any[];
 }
-export function EventManagePage({ event: initialEvent, registrations: initialRegs, profiles, orgMembers, eventRoles: initialRoles, eventId, teams = [], teamMembers = [] }: Props) {
+export function EventManagePage({ event: initialEvent, registrations: initialRegs, profiles, orgMembers, eventRoles: initialRoles, eventId, teams: initialTeams = [], teamMembers = [] }: Props) {
   const router = useRouter();
   const supabase = createClient();
   const [activeSection, setActiveSection] = useState("overview");
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [event, setEvent] = useState(initialEvent);
   const [regs, setRegs] = useState(initialRegs);
+  const [localTeams, setLocalTeams] = useState(initialTeams);
   const [eventRoles, setEventRoles] = useState(initialRoles);
+
+  useEffect(() => { setEvent(initialEvent); }, [initialEvent]);
+  useEffect(() => { setRegs(initialRegs); }, [initialRegs]);
+  useEffect(() => { setLocalTeams(initialTeams); }, [initialTeams]);
+  useEffect(() => { setEventRoles(initialRoles); }, [initialRoles]);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [toggling, setToggling] = useState(false);
@@ -120,9 +126,9 @@ export function EventManagePage({ event: initialEvent, registrations: initialReg
 
   const teamMap = useMemo(() => {
     const m: Record<string, any> = {};
-    teams.forEach(t => { m[t.id] = t; });
+    localTeams.forEach(t => { m[t.id] = t; });
     return m;
-  }, [teams]);
+  }, [localTeams]);
 
   const teamMembersByTeam = useMemo(() => {
     const m: Record<string, any[]> = {};
@@ -166,23 +172,48 @@ export function EventManagePage({ event: initialEvent, registrations: initialReg
   }
 
   async function approveReg(id: string) {
-    await supabase.from("registrations").update({ status: "approved" }).eq("id", id);
-    setRegs((prev: any[]) => prev.map(r => r.id === id ? { ...r, status: "approved" } : r));
+    const reg = regs.find((r: any) => r.id === id);
+    if (reg?.team_id) {
+      await supabase.from("registrations").update({ status: "approved" }).eq("team_id", reg.team_id);
+      setRegs((prev: any[]) => prev.map(r => r.team_id === reg.team_id ? { ...r, status: "approved" } : r));
+    } else {
+      await supabase.from("registrations").update({ status: "approved" }).eq("id", id);
+      setRegs((prev: any[]) => prev.map(r => r.id === id ? { ...r, status: "approved" } : r));
+    }
   }
 
   async function rejectReg(id: string) {
-    await supabase.from("registrations").update({ status: "rejected" }).eq("id", id);
-    setRegs((prev: any[]) => prev.map(r => r.id === id ? { ...r, status: "rejected" } : r));
+    const reg = regs.find((r: any) => r.id === id);
+    if (reg?.team_id) {
+      await supabase.from("registrations").update({ status: "rejected" }).eq("team_id", reg.team_id);
+      setRegs((prev: any[]) => prev.map(r => r.team_id === reg.team_id ? { ...r, status: "rejected" } : r));
+    } else {
+      await supabase.from("registrations").update({ status: "rejected" }).eq("id", id);
+      setRegs((prev: any[]) => prev.map(r => r.id === id ? { ...r, status: "rejected" } : r));
+    }
   }
 
   async function deleteReg(id: string) {
-    const { error } = await supabase.from("registrations").delete().eq("id", id);
-    if (error) {
-      console.error("Error deleting registration:", error);
-      alert("Failed to delete registration. Make sure you have the necessary permissions (RLS).");
-      return;
+    const reg = regs.find((r: any) => r.id === id);
+    if (reg?.team_id) {
+      const newCancelCount = (reg.cancel_count || 0) + 1;
+      const { error } = await supabase.from("registrations").update({ status: "cancelled", cancel_count: newCancelCount }).eq("team_id", reg.team_id);
+      
+      if (error) {
+        console.error("Error cancelling registrations:", error);
+        alert("Failed to cancel team registrations.");
+        return;
+      }
+      setRegs((prev: any[]) => prev.map(r => r.team_id === reg.team_id ? { ...r, status: "cancelled", cancel_count: newCancelCount } : r));
+    } else {
+      const { error } = await supabase.from("registrations").update({ status: "cancelled", cancel_count: (reg.cancel_count || 0) + 1 }).eq("id", id);
+      if (error) {
+        console.error("Error cancelling registration:", error);
+        alert("Failed to cancel registration. Make sure you have the necessary permissions (RLS).");
+        return;
+      }
+      setRegs((prev: any[]) => prev.map(r => r.id === id ? { ...r, status: "cancelled", cancel_count: (r.cancel_count || 0) + 1 } : r));
     }
-    setRegs((prev: any[]) => prev.filter(r => r.id !== id));
     setViewingReg(null);
   }
 
@@ -193,13 +224,8 @@ export function EventManagePage({ event: initialEvent, registrations: initialReg
 
   async function refreshData() {
     setRefreshing(true);
-    const { data } = await supabase
-      .from("registrations")
-      .select("*")
-      .eq("event_id", eventId)
-      .order("created_at", { ascending: false });
-    if (data) setRegs(data);
-    setRefreshing(false);
+    router.refresh();
+    setTimeout(() => setRefreshing(false), 1000);
   }
 
   async function addRole() {
@@ -547,8 +573,8 @@ export function EventManagePage({ event: initialEvent, registrations: initialReg
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9E9EA7] pointer-events-none" style={{ width: "14px", height: "14px" }} />
                   <input placeholder="Search by name, email or ticket code..." value={regSearch} onChange={e => setRegSearch(e.target.value)} className="w-full pl-9 pr-4 py-2 rounded-[10px] border border-[#E5E5EA] bg-white text-[13px] text-[#111111] placeholder:text-[#9E9EA7] outline-none focus:border-[#cfe467] focus:ring-1 focus:ring-[#cfe467] transition-all" />
                 </div>
-                <div className="flex bg-[#F5F5F7] p-1 rounded-[10px] w-full sm:w-[280px]">
-                  {["all", "approved", "pending"].map(tab => (
+                <div className="flex bg-[#F5F5F7] p-1 rounded-[10px] w-full sm:w-[350px]">
+                  {["all", "approved", "pending", "cancelled"].map(tab => (
                     <button
                       key={tab}
                       onClick={() => setRegFilterStatus(tab)}
@@ -567,15 +593,16 @@ export function EventManagePage({ event: initialEvent, registrations: initialReg
                       <tr><td colSpan={5} className="py-12 text-center text-[13px] text-[#9E9EA7]">No registrations yet</td></tr>
                     ) : filteredRegs.map((r: any, idx: number) => {
                       const p = profileMap[r.user_id];
-                      const team = r.team_id ? teamMap[r.team_id] : (event.is_team_event ? teams.find((t: any) => t.leader_id === r.user_id) : null);
+                      const team = r.team_id ? teamMap[r.team_id] : (event.is_team_event ? localTeams.find((t: any) => t.leader_id === r.user_id) : null);
                       let displayName = p?.full_name ?? "-";
                       let subtitle = p?.email ?? "-";
                       if (event.is_team_event && team) {
                         displayName = team.name;
                         subtitle = `Leader: ${p?.full_name ?? p?.email ?? "-"}`;
                       }
+                      const isCancelled = r.status === "cancelled";
                       return (
-                        <tr key={r.id} onClick={() => setViewingReg(r)} className={`cursor-pointer border-b border-[#F5F5F7] hover:bg-[#FAFAFA] transition-colors ${idx === filteredRegs.length - 1 ? "border-b-0" : ""}`}>
+                        <tr key={r.id} onClick={() => setViewingReg(r)} className={`cursor-pointer border-b border-[#F5F5F7] hover:bg-[#FAFAFA] transition-colors ${idx === filteredRegs.length - 1 ? "border-b-0" : ""} ${isCancelled ? "opacity-60" : ""}`}>
                           <td className="px-5 py-3"><div className="flex items-center gap-2.5"><Avatar className="h-7 w-7 border border-[#E5E5EA] shrink-0">
                             {event.is_team_event && team ? (
                               <AvatarFallback className="text-[10px] font-medium bg-[#cfe467] text-[#4a6000]"><Users size={12} /></AvatarFallback>
@@ -587,7 +614,7 @@ export function EventManagePage({ event: initialEvent, registrations: initialReg
                             )}
                           </Avatar><div className="min-w-0"><p className="text-[13px] font-medium text-[#111111] truncate">{displayName}</p><p className="text-[11px] text-[#9E9EA7] truncate">{subtitle}</p></div></div></td>
                           <td className="px-5 py-3 text-center"><span className="text-[13px] text-[#6E6E73]">{r.ticket_code ?? "-"}</span></td>
-                          <td className="px-5 py-3 text-center"><span className="text-[13px] text-[#6E6E73] capitalize">{r.attended ? "attended" : (r.status ?? "-")}</span></td>
+                          <td className="px-5 py-3 text-center"><span className={`text-[13px] capitalize font-medium ${isCancelled ? 'text-red-500' : 'text-[#6E6E73]'}`}>{r.attended ? "attended" : (r.status ?? "-")}</span></td>
                           <td className="px-5 py-3 text-center"><span className="text-[13px] text-[#6E6E73] whitespace-nowrap">{formatDateTime(r.created_at)}</span></td>
                           <td className="px-5 py-3 text-right">
                             <div className="flex items-center justify-end" onClick={e => e.stopPropagation()}>
@@ -734,7 +761,7 @@ export function EventManagePage({ event: initialEvent, registrations: initialReg
                 {/* User Info */}
                 {(() => {
                   const p = profileMap[viewingReg.user_id];
-                  const team = viewingReg.team_id ? teamMap[viewingReg.team_id] : (event.is_team_event ? teams.find((t: any) => t.leader_id === viewingReg.user_id) : null);
+                  const team = viewingReg.team_id ? teamMap[viewingReg.team_id] : (event.is_team_event ? localTeams.find((t: any) => t.leader_id === viewingReg.user_id) : null);
                   
                   if (event.is_team_event && team) {
                     const members = teamMembersByTeam[team.id] || [];
@@ -745,6 +772,9 @@ export function EventManagePage({ event: initialEvent, registrations: initialReg
                         <div className="px-5 py-5 flex flex-col gap-4">
                           <div>
                             <p className="text-[18px] font-bold text-[#111111] leading-tight truncate">{team.name}</p>
+                            {(viewingReg.cancel_count || 0) > 0 && (
+                               <span className="text-[10px] font-bold bg-red-100 text-red-600 px-1.5 py-0.5 rounded uppercase tracking-wider inline-block mt-1.5 w-max">Cancelled {viewingReg.cancel_count} {viewingReg.cancel_count === 1 ? 'time' : 'times'} previously</span>
+                            )}
                             <div className="flex items-center gap-2 mt-2">
                               <p className="text-[11px] font-semibold text-[#9E9EA7] uppercase tracking-wider">Ticket Code</p>
                               <p className="text-[13px] font-mono font-bold text-[#111111] bg-[#F5F5F7] px-2 py-0.5 rounded-md">{viewingReg.ticket_code ?? "—"}</p>
@@ -811,7 +841,12 @@ export function EventManagePage({ event: initialEvent, registrations: initialReg
                           <AvatarFallback className="text-[14px] font-semibold bg-[#F5F5F7] text-[#111111]">{getInitials(p?.full_name)}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
-                          <p className="text-[15px] font-bold text-[#111111] leading-tight truncate">{p?.full_name ?? "—"}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-[15px] font-bold text-[#111111] leading-tight truncate">{p?.full_name ?? "—"}</p>
+                            {(viewingReg.cancel_count || 0) > 0 && (
+                               <span className="text-[10px] font-bold bg-red-100 text-red-600 px-1.5 py-0.5 rounded uppercase tracking-wider">Cancelled {viewingReg.cancel_count} {viewingReg.cancel_count === 1 ? 'time' : 'times'}</span>
+                            )}
+                          </div>
                           <p className="text-[13px] text-[#6E6E73] font-medium mt-0.5 truncate">{p?.email ?? "—"}</p>
                         </div>
                       </div>
@@ -838,14 +873,14 @@ export function EventManagePage({ event: initialEvent, registrations: initialReg
                               viewingReg.attended ? "text-emerald-600"
                               : viewingReg.status === "approved" ? "text-[#4a6000]"
                               : viewingReg.status === "pending" ? "text-amber-600"
-                              : viewingReg.status === "rejected" ? "text-red-600"
+                              : (viewingReg.status === "rejected" || viewingReg.status === "cancelled") ? "text-red-600"
                               : "text-[#6E6E73]"
                             }`}>
                               <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
                                 viewingReg.attended ? "bg-emerald-500"
                                 : viewingReg.status === "approved" ? "bg-[#cfe467]"
                                 : viewingReg.status === "pending" ? "bg-amber-400"
-                                : viewingReg.status === "rejected" ? "bg-red-500"
+                                : (viewingReg.status === "rejected" || viewingReg.status === "cancelled") ? "bg-red-500"
                                 : "bg-[#D1D1D6]"
                               }`} />
                               {viewingReg.attended ? "Attended" : (viewingReg.status ?? "—")}

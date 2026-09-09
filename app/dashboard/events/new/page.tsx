@@ -38,7 +38,7 @@ const SECTIONS = [
 ];
 
 type CustomField = { id: string; label: string; type: string; required: boolean; options: string };
-type TicketType = { id: string; name: string; price: string; quantity: string; unlimited: boolean; qrCodeFile: File | null; qrCodePreview: string | null };
+type TicketType = { id: string; name: string; price: string; quantity: string; unlimited: boolean };
 type ImageState = { file: File | null; preview: string | null };
 type Speaker = { id: string; name: string; subtext: string; imageFile: File | null; imageUrl: string };
 type Member = { id: string; name: string; avatar_url?: string };
@@ -307,11 +307,12 @@ export default function NewEventPage() {
     price: "free", capacity: "", approvalRequired: "false", registrationDeadline: "", registrationEndTime: "",
     cancellationPolicy: "", refundPolicy: "", photographyPolicy: "",
     visibility: "public",
+    isTeamEvent: "false", teamMinSize: "1", teamMaxSize: "1",
   });
   const set = (key: string, val: any) => setForm(f => ({ ...f, [key]: val }));
 
   const [tickets, setTickets] = useState<TicketType[]>([]);
-  const addTicket = () => setTickets(t => [...t, { id: Date.now().toString(), name: "", price: "", quantity: "", unlimited: false, qrCodeFile: null, qrCodePreview: null }]);
+  const addTicket = () => setTickets(t => [...t, { id: Date.now().toString(), name: "", price: "", quantity: "", unlimited: false }]);
   const updateTicket = (id: string, key: keyof TicketType, val: string | boolean) =>
     setTickets(t => t.map(tt => tt.id === id ? { ...tt, [key]: val } : tt));
   const removeTicket = (id: string) => setTickets(t => t.filter(tt => tt.id !== id));
@@ -385,10 +386,6 @@ export default function NewEventPage() {
         if (!form.cancellationPolicy.trim() || !form.refundPolicy.trim()) {
           throw new Error("Cancellation and Refund policies are required for paid events.");
         }
-        const missingQrCodes = tickets.filter(t => t.name.trim()).some(t => !t.qrCodeFile && !t.qrCodePreview);
-        if (missingQrCodes) {
-          throw new Error("Payment QR codes are required for all paid ticket types.");
-        }
       }
 
       const uploadedSpeakers = await Promise.all(speakers.map(async (s) => {
@@ -399,22 +396,7 @@ export default function NewEventPage() {
         return { id: s.id, name: s.name, subtext: s.subtext, imageUrl: s.imageUrl };
       }));
 
-      const uploadedTickets = await Promise.all(tickets.filter(t => t.name.trim()).map(async (t) => {
-        let qrUrl = t.qrCodePreview;
-        if (t.qrCodeFile) {
-          qrUrl = await uploadImage({ file: t.qrCodeFile, preview: null }, `${user.id}/${uid}/tickets/${t.id}`);
-        }
-        return {
-          id: t.id,
-          name: t.name,
-          price: parseFloat(t.price) || 0,
-          quantity: t.unlimited ? null : (parseInt(t.quantity) || null),
-          unlimited: t.unlimited,
-          qr_code_url: qrUrl,
-        };
-      }));
-
-      const { error: insertError } = await supabase.from("events").insert({
+      const { data: eventData, error: insertError } = await supabase.from("events").insert({
         title: form.title,
         tagline: form.tagline,
         description: form.description,
@@ -447,13 +429,30 @@ export default function NewEventPage() {
         photography_policy: form.photographyPolicy,
         visibility: form.visibility,
         custom_fields: validFields,
-        ticket_types: uploadedTickets,
+        is_team_event: form.isTeamEvent === "true",
+        team_min_size: parseInt(form.teamMinSize) || 1,
+        team_max_size: parseInt(form.teamMaxSize) || 1,
         org_id: user.id,
         status: isDraft ? "draft" : "published",
         organizer: user.user_metadata?.full_name || user.email,
-      });
+      }).select('id').single();
 
       if (insertError) throw insertError;
+      
+      const newEventId = eventData.id;
+
+      if (form.price === "paid" && tickets.filter(t => t.name.trim()).length > 0) {
+        const ticketsToInsert = tickets.filter(t => t.name.trim()).map(t => ({
+          event_id: newEventId,
+          name: t.name,
+          price: parseFloat(t.price) || 0,
+          quantity: t.unlimited ? null : (parseInt(t.quantity) || null),
+          unlimited: t.unlimited,
+        }));
+        
+        const { error: ticketError } = await supabase.from('tickets').insert(ticketsToInsert);
+        if (ticketError) throw ticketError;
+      }
       router.push("/dashboard/events");
       router.refresh();
     } catch (err: any) {
@@ -610,13 +609,34 @@ export default function NewEventPage() {
         {/* 5. Registration */}
         <div ref={el => { sectionRefs.current["registration"] = el; }} id="registration" className="scroll-mt-24">
           <SectionCard id="registration" title="Registration & Tickets">
-            <FormInput label="Ticket Type">
-              <TabSwitcher
-                options={[{ value: "free", label: "Free Event" }, { value: "paid", label: "Paid Event" }]}
-                value={form.price}
-                onChange={v => set("price", v)}
-              />
-            </FormInput>
+            <div className="grid grid-cols-2 gap-4">
+              <FormInput label="Ticket Type">
+                <TabSwitcher
+                  options={[{ value: "free", label: "Free Event" }, { value: "paid", label: "Paid Event" }]}
+                  value={form.price}
+                  onChange={v => set("price", v)}
+                />
+              </FormInput>
+
+              <FormInput label="Event Format">
+                <TabSwitcher
+                  options={[{ value: "false", label: "Individual Event" }, { value: "true", label: "Team Event" }]}
+                  value={form.isTeamEvent}
+                  onChange={v => set("isTeamEvent", v)}
+                />
+              </FormInput>
+            </div>
+            
+            {form.isTeamEvent === "true" && (
+              <div className="grid grid-cols-2 gap-4 mt-2">
+                <FormInput label="Min Team Size" required>
+                  <input type="number" min="1" className={inputCls} value={form.teamMinSize} onChange={e => set("teamMinSize", e.target.value)} />
+                </FormInput>
+                <FormInput label="Max Team Size" required>
+                  <input type="number" min="1" className={inputCls} value={form.teamMaxSize} onChange={e => set("teamMaxSize", e.target.value)} />
+                </FormInput>
+              </div>
+            )}
 
             {form.price === "paid" && (
               <div className="rounded-[20px] bg-transparent border-2 border-dotted border-[#E5E5EA] p-5 flex flex-col gap-5 mt-2">
@@ -644,81 +664,6 @@ export default function NewEventPage() {
                       </FormInput>
                     </div>
                     <div className="flex gap-4 items-start">
-                      {form.price === "paid" && (
-                        <div className="w-1/2">
-                          <FormInput label="Payment QR Code" required>
-                            {!t.qrCodePreview ? (
-                              <label className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl border border-dashed border-[#E5E5EA] bg-white hover:bg-[#F5F5F7] hover:border-[#D1D1D6] transition-all cursor-pointer h-[46px]">
-                                <Upload size={16} className="text-[#6E6E73]" />
-                                <span className="text-[14px] font-medium text-[#111111]">Upload Payment QR</span>
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  className="hidden"
-                                  onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (file) {
-                                      const preview = URL.createObjectURL(file);
-                                      const newTickets = tickets.map(ticket => ticket.id === t.id ? { ...ticket, qrCodeFile: file, qrCodePreview: preview } : ticket);
-                                      setTickets(newTickets);
-                                    }
-                                  }}
-                                />
-                              </label>
-                            ) : (
-                              <div className="flex items-center justify-between w-full p-2.5 rounded-xl border border-[#E5E5EA] bg-white h-[46px]">
-                                <div className="flex items-center gap-2.5 overflow-hidden">
-                                  <img src={t.qrCodePreview} alt="QR" className="w-6 h-6 rounded object-cover shrink-0 border border-[#E5E5EA]" />
-                                  <span className="text-[13px] font-medium text-[#111111] truncate max-w-[120px]" title={t.qrCodeFile?.name}>
-                                    {t.qrCodeFile?.name || "QR Code"}
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-1 shrink-0">
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-7 w-7 p-0 text-[#6E6E73] hover:text-[#111111]"
-                                    onClick={() => window.open(t.qrCodePreview || "", "_blank")}
-                                    title="Preview"
-                                  >
-                                    <Eye size={14} />
-                                  </Button>
-                                  <label className="flex items-center justify-center h-7 w-7 rounded-md text-[#6E6E73] hover:text-[#111111] hover:bg-accent cursor-pointer transition-colors" title="Replace">
-                                    <RefreshCw size={14} />
-                                    <input
-                                      type="file"
-                                      accept="image/*"
-                                      className="hidden"
-                                      onChange={(e) => {
-                                        const file = e.target.files?.[0];
-                                        if (file) {
-                                          const preview = URL.createObjectURL(file);
-                                          const newTickets = tickets.map(ticket => ticket.id === t.id ? { ...ticket, qrCodeFile: file, qrCodePreview: preview } : ticket);
-                                          setTickets(newTickets);
-                                        }
-                                      }}
-                                    />
-                                  </label>
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-7 w-7 p-0 text-[#6E6E73] hover:text-red-500"
-                                    onClick={() => {
-                                      const newTickets = tickets.map(ticket => ticket.id === t.id ? { ...ticket, qrCodeFile: null, qrCodePreview: null } : ticket);
-                                      setTickets(newTickets);
-                                    }}
-                                    title="Delete"
-                                  >
-                                    <Trash2 size={14} />
-                                  </Button>
-                                </div>
-                              </div>
-                            )}
-                          </FormInput>
-                        </div>
-                      )}
                       <div className="flex-1">
                         <FormInput label="Quantity">
                           <div className={`flex items-center px-4 py-2.5 rounded-xl border transition-all ${t.unlimited ? 'bg-[#F5F5F7] border-[#E5E5EA]' : 'bg-white border-[#E5E5EA] focus-within:border-[#cfe467] focus-within:ring-2 focus-within:ring-[#cfe467]/20'}`}>
