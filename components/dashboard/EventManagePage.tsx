@@ -761,7 +761,7 @@ export function EventManagePage({ event: initialEvent, registrations: initialReg
                 {/* User Info */}
                 {(() => {
                   const p = profileMap[viewingReg.user_id];
-                  const team = viewingReg.team_id ? teamMap[viewingReg.team_id] : (event.is_team_event ? teams.find((t: any) => t.leader_id === viewingReg.user_id) : null);
+                  const team = viewingReg.team_id ? teamMap[viewingReg.team_id] : (event.is_team_event ? localTeams.find((t: any) => t.leader_id === viewingReg.user_id) : null);
                   
                   if (event.is_team_event && team) {
                     const members = teamMembersByTeam[team.id] || [];

@@ -307,6 +307,7 @@ export default function NewEventPage() {
     price: "free", capacity: "", approvalRequired: "false", registrationDeadline: "", registrationEndTime: "",
     cancellationPolicy: "", refundPolicy: "", photographyPolicy: "",
     visibility: "public",
+    isTeamEvent: "false", teamMinSize: "1", teamMaxSize: "1",
   });
   const set = (key: string, val: any) => setForm(f => ({ ...f, [key]: val }));
 
