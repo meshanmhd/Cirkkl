@@ -10,6 +10,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { formatDistanceToNow } from "date-fns";
 import Navbar from "@/components/layout/Navbar";
+import { acceptTeamInvite } from "@/app/actions/registration";
 import {
   Dialog,
   DialogContent,
@@ -40,6 +41,8 @@ export default function NotificationsPage() {
   const [successDialogOpen, setSuccessDialogOpen] = useState(false);
   const [successDialogMessage, setSuccessDialogMessage] = useState("");
   const [notLoggedIn, setNotLoggedIn] = useState(false);
+  const [inviteToAccept, setInviteToAccept] = useState<Notification | null>(null);
+  const [inviteToReject, setInviteToReject] = useState<Notification | null>(null);
   
   const supabase = createClient();
 
@@ -146,19 +149,16 @@ export default function NotificationsPage() {
     setNotifications(prev => prev.filter(n => n.id !== id));
   };
 
-  const handleAccept = async (notif: Notification) => {
+  const confirmAccept = async () => {
+    if (!inviteToAccept) return;
+    const notif = inviteToAccept;
     setProcessingId(notif.id);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not logged in");
-
-      const { error: tmError } = await supabase
-        .from('team_members')
-        .update({ status: 'approved' })
-        .eq('team_id', notif.team_id)
-        .eq('user_id', user.id);
-
-      if (tmError) throw tmError;
+      const result = await acceptTeamInvite(notif.team_id, notif.event_id);
+      
+      if (!result.success) {
+        throw new Error(result.error);
+      }
 
       await markSingleAsRead(notif.id);
       setSuccessDialogMessage(`You have joined the team ${notif.team?.name}, for any query contact the team leader.`);
@@ -167,10 +167,13 @@ export default function NotificationsPage() {
       alert("Failed to accept invite: " + err.message);
     } finally {
       setProcessingId(null);
+      setInviteToAccept(null);
     }
   };
 
-  const handleDecline = async (notif: Notification) => {
+  const confirmDecline = async () => {
+    if (!inviteToReject) return;
+    const notif = inviteToReject;
     setProcessingId(notif.id);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -182,6 +185,7 @@ export default function NotificationsPage() {
       alert("Failed to decline invite: " + err.message);
     } finally {
       setProcessingId(null);
+      setInviteToReject(null);
     }
   };
 
@@ -348,7 +352,7 @@ export default function NotificationsPage() {
                     {notif.type === 'team_invite' && !notif.read && (
                       <div className="hidden sm:flex items-center gap-2">
                         <button
-                          onClick={(e) => { e.stopPropagation(); handleDecline(notif); }}
+                          onClick={(e) => { e.stopPropagation(); setInviteToReject(notif); }}
                           disabled={processingId === notif.id}
                           className="px-4 py-1.5 text-[13px] font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-[#E5E5EA] rounded-md transition-colors flex items-center disabled:opacity-50"
                         >
@@ -356,7 +360,7 @@ export default function NotificationsPage() {
                           Reject
                         </button>
                         <button
-                          onClick={(e) => { e.stopPropagation(); handleAccept(notif); }}
+                          onClick={(e) => { e.stopPropagation(); setInviteToAccept(notif); }}
                           disabled={processingId === notif.id}
                           className="px-4 py-1.5 text-[13px] font-medium text-[#111111] bg-[#cfe467] hover:bg-[#b8cc58] border border-[#E5E5EA] rounded-md transition-colors flex items-center disabled:opacity-50"
                         >
@@ -387,6 +391,61 @@ export default function NotificationsPage() {
                 className="w-full py-2.5 rounded-[10px] bg-[#cfe467] text-[#111111] text-[13px] font-semibold hover:bg-[#b8cc58] transition-all"
               >
                 Close
+              </button>
+            </div>
+          </DialogContent>
+        </Dialog>
+        <Dialog open={!!inviteToReject} onOpenChange={(open) => !open && setInviteToReject(null)}>
+          <DialogContent showCloseButton={false} className="max-w-sm rounded-[24px] p-6 overflow-hidden shadow-xl border border-[#E5E5EA] bg-white text-center flex flex-col items-center gap-4">
+            <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center shrink-0">
+              <Trash2 size={20} className="text-red-500" />
+            </div>
+            <div>
+              <DialogTitle className="text-[17px] font-bold text-[#111111]">Reject Invite?</DialogTitle>
+              <p className="text-[13px] text-[#6E6E73] mt-2">
+                Are you sure you want to reject the invite to join the team <span className="font-semibold text-[#111111]">{inviteToReject?.team?.name}</span>?
+              </p>
+            </div>
+            <div className="flex gap-3 w-full mt-2">
+              <button
+                onClick={() => setInviteToReject(null)}
+                className="flex-1 px-4 py-2.5 bg-white border border-[#E5E5EA] rounded-[10px] text-[13px] font-semibold text-[#111111] hover:bg-[#F5F5F7] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDecline}
+                className="flex-1 px-4 py-2.5 bg-red-500 text-white rounded-[10px] text-[13px] font-semibold hover:bg-red-600 transition-colors"
+              >
+                Reject
+              </button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={!!inviteToAccept} onOpenChange={(open) => !open && setInviteToAccept(null)}>
+          <DialogContent showCloseButton={false} className="max-w-sm rounded-[24px] p-6 overflow-hidden shadow-xl border border-[#E5E5EA] bg-white text-center flex flex-col items-center gap-4">
+            <div className="w-12 h-12 rounded-full bg-[#cfe467]/30 flex items-center justify-center shrink-0">
+              <Check size={20} className="text-[#111111]" />
+            </div>
+            <div>
+              <DialogTitle className="text-[17px] font-bold text-[#111111]">Accept Invite?</DialogTitle>
+              <p className="text-[13px] text-[#6E6E73] mt-2">
+                Are you sure you want to join the team <span className="font-semibold text-[#111111]">{inviteToAccept?.team?.name}</span>?
+              </p>
+            </div>
+            <div className="flex gap-3 w-full mt-2">
+              <button
+                onClick={() => setInviteToAccept(null)}
+                className="flex-1 px-4 py-2.5 bg-white border border-[#E5E5EA] rounded-[10px] text-[13px] font-semibold text-[#111111] hover:bg-[#F5F5F7] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmAccept}
+                className="flex-1 px-4 py-2.5 bg-[#cfe467] text-[#111111] rounded-[10px] text-[13px] font-semibold hover:bg-[#b8cc58] transition-colors"
+              >
+                Accept
               </button>
             </div>
           </DialogContent>

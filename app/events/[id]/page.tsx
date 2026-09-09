@@ -50,7 +50,9 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
       .select('status, attended')
       .eq('event_id', id)
       .eq('user_id', user.id)
-      .single();
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
     if (reg) userRegistration = reg;
   }
 

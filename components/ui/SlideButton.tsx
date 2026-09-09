@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { ArrowRight, X, CheckCircle2, ChevronDown, Upload, ArrowLeft, Clock, Check, PartyPopper, Plus, Trash2 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { LoginForm } from '@/components/auth/LoginForm';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
 import { DotQRCode } from "./DotQRCode";
 import { registerForEvent } from '@/app/actions/registration';
@@ -417,7 +417,36 @@ function RegistrationModal({
                           return;
                         }
 
+                        // Check if already registered
+                        const { data: existingReg } = await supabase
+                          .from('registrations')
+                          .select('id')
+                          .eq('event_id', event.id)
+                          .eq('user_id', data.id)
+                          .maybeSingle();
+
+                        if (existingReg) {
+                          setTeammateSearchLoading(false);
+                          setTeammateSearchError("User is already registered for this event.");
+                          return;
+                        }
+
+                        // Check if in another team for this event (even pending)
+                        const { data: existingTeamMember, error: teamCheckErr } = await supabase
+                          .from('team_members')
+                          .select('id, teams!inner(event_id)')
+                          .eq('teams.event_id', event.id)
+                          .eq('user_id', data.id)
+                          .maybeSingle();
+
+                        if (existingTeamMember) {
+                          setTeammateSearchLoading(false);
+                          setTeammateSearchError("User is already invited or in a team for this event.");
+                          return;
+                        }
+
                         setTeammateSearchLoading(false);
+
 
                         if (teamMates.find(m => m.id === data.id)) {
                           setTeammateSearchError("User already added to team.");
@@ -641,7 +670,7 @@ function RegistrationModal({
 // Main Controller Component
 // ----------------------------------------------------------------------
 export const SlideButton = ({ onComplete, event, isFull = false, userRegistration, label }: SlideButtonProps) => {
-  const [isCompleted, setIsCompleted] = useState(!!userRegistration);
+  const [isCompleted, setIsCompleted] = useState(!!userRegistration && userRegistration.status !== 'cancelled');
   const [showModal, setShowModal] = useState(false);
   const [showAckModal, setShowAckModal] = useState(false);
   const [regData, setRegData] = useState<any>(null);
@@ -651,6 +680,7 @@ export const SlideButton = ({ onComplete, event, isFull = false, userRegistratio
 
   const supabase = createClient();
   const pathname = usePathname();
+  const router = useRouter();
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
@@ -660,6 +690,10 @@ export const SlideButton = ({ onComplete, event, isFull = false, userRegistratio
     });
     return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    setIsCompleted(!!userRegistration && userRegistration.status !== 'cancelled');
+  }, [userRegistration]);
 
   const isRegistrationClosed = (() => {
     if (!event?.registration_deadline) return false;
@@ -741,6 +775,7 @@ export const SlideButton = ({ onComplete, event, isFull = false, userRegistratio
       setIsCompleted(true);
       setShowModal(false);
       if (onComplete) onComplete();
+      router.refresh();
     } catch (err) {
       console.error(err);
     } finally {

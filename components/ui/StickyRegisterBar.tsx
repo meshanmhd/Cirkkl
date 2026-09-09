@@ -49,8 +49,8 @@ export function StickyRegisterBar({
     return () => observer.disconnect();
   }, [isEnded, userRegistration]);
 
-  // If the event has ended and user has no registration, don't render at all
-  if (isEnded && !userRegistration) return null;
+  // Only show if the user has NOT registered (or was cancelled) and the event has not ended
+  if ((userRegistration && userRegistration.status !== 'cancelled') || isEnded) return null;
 
   return (
     <div
