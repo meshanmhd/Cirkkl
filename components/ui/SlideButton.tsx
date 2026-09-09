@@ -1,7 +1,14 @@
 'use client';
 
+import {
+  ArrowLeft, Image as ImageIcon, Plus, X, Loader2,
+  Upload, Globe, MapPin, Wifi, Car, UtensilsCrossed,
+  Calendar, Clock, Users, FileText, Tag, Trash2, ChevronDown, Check,
+  Info, ListPlus, Mic, Search, PartyPopper, CheckCircle2, ChevronRight,
+  ExternalLink, ArrowRight
+} from "lucide-react";
+import QRCode from "react-qr-code";
 import { useState, useRef, useEffect } from 'react';
-import { ArrowRight, X, CheckCircle2, ChevronDown, Upload, ArrowLeft, Clock, Check, PartyPopper, Plus, Trash2 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { usePathname, useRouter } from 'next/navigation';
@@ -247,6 +254,11 @@ function RegistrationModal({
   const [teammateSearchError, setTeammateSearchError] = useState("");
   const [stepError, setStepError] = useState("");
 
+  const [upiUrl, setUpiUrl] = useState<string | null>(null);
+  const [orderReference, setOrderReference] = useState<string | null>(null);
+  const [paymentAmount, setPaymentAmount] = useState<number | null>(null);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+
   const supabase = createClient();
 
   useEffect(() => {
@@ -257,7 +269,6 @@ function RegistrationModal({
   }, []);
 
   const selectedTicket = ticketTypes.find(t => t.id === selectedTicketId) || ticketTypes[0];
-  const qrCodeUrl = selectedTicket?.qr_code_url || ticketTypes[0]?.qr_code_url;
 
   const handleChange = (label: string, val: string) => {
     setValues(prev => ({ ...prev, [label]: val }));
@@ -299,11 +310,37 @@ function RegistrationModal({
     return true;
   };
 
-  const handleNextStep = () => {
+  const handleNextStep = async () => {
     setStepError("");
     if (!validateCurrentStep()) return;
+    
     if (currentStepIdx < steps.length - 1) {
-      setCurrentStepIdx(idx => idx + 1);
+      const nextStepIdx = currentStepIdx + 1;
+      const nextStepName = steps[nextStepIdx];
+      
+      if (nextStepName === "payment" && isPaid) {
+        setPaymentLoading(true);
+        try {
+          const res = await fetch('/api/payments/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ticketId: selectedTicketId, eventId: event.id })
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Failed to initialize payment');
+          
+          setUpiUrl(data.upi_uri);
+          setOrderReference(data.order_reference);
+          setPaymentAmount(data.amount);
+          setCurrentStepIdx(nextStepIdx);
+        } catch (err: any) {
+          setStepError(err.message);
+        } finally {
+          setPaymentLoading(false);
+        }
+      } else {
+        setCurrentStepIdx(nextStepIdx);
+      }
     }
   };
 
@@ -569,13 +606,30 @@ function RegistrationModal({
             {/* Payment */}
             {currentStep === "payment" && (
               <div className="flex flex-col gap-5">
-                <div className="flex flex-col items-center gap-1.5 bg-[#F7F7F8] rounded-[16px] p-4 border border-[#E5E5EA]">
+                <div className="flex flex-col items-center gap-1 bg-[#F7F7F8] rounded-[16px] p-5 border border-[#E5E5EA]">
                   <p className="text-[11px] font-semibold text-[#9E9EA7] uppercase tracking-wider">Scan & Pay</p>
-                  <p className="text-[20px] font-bold text-[#111111] tracking-tight">₹{selectedTicket?.price || event.priceAmount || "0"}</p>
-                  {qrCodeUrl ? (
-                    <img src={qrCodeUrl} alt="Payment QR Code" className="w-36 h-36 rounded-[12px] border border-[#E5E5EA] object-cover" />
+                  <p className="text-[24px] font-bold text-[#111111] tracking-tight mb-2">₹{paymentAmount || selectedTicket?.price || event.priceAmount || "0"}</p>
+                  
+                  {upiUrl ? (
+                    <div className="bg-white p-2 rounded-xl shadow-sm border border-[#E5E5EA] transition-opacity">
+                      <QRCode value={upiUrl} size={130} className="w-32 h-32" />
+                    </div>
                   ) : (
-                    <div className="w-36 h-36 rounded-[12px] border border-dashed border-[#E5E5EA] flex items-center justify-center text-[12px] text-[#9E9EA7]">No QR Code</div>
+                    <div className="w-32 h-32 rounded-xl border border-dashed border-[#E5E5EA] bg-white flex items-center justify-center text-[12px] text-[#9E9EA7]">Loading...</div>
+                  )}
+
+                  {upiUrl && (
+                    <a
+                      href={upiUrl}
+                      className="w-full mt-4 py-2.5 rounded-xl text-[14px] font-medium text-[#111111] bg-white border border-[#E5E5EA] hover:bg-[#F5F5F7] transition-colors flex md:hidden items-center justify-center gap-1.5"
+                    >
+                      <img src="https://images.icon-icons.com/2699/PNG/96/upi_logo_icon_170312.png" alt="UPI" className="h-[18px] object-contain" />
+                      <span>Pay by UPI</span>
+                    </a>
+                  )}
+
+                  {orderReference && (
+                    <p className="text-[11px] text-[#9E9EA7] mt-3 font-mono">Ref: {orderReference}</p>
                   )}
                 </div>
 
@@ -653,8 +707,10 @@ function RegistrationModal({
               <button
                 type="button"
                 onClick={handleNextStep}
-                className="w-full py-3 rounded-[14px] text-[14px] font-bold text-[#111111] bg-[#cfe467] hover:bg-[#c0d955] transition-colors cursor-pointer"
+                disabled={paymentLoading}
+                className="w-full py-3 rounded-[14px] text-[14px] font-bold text-[#111111] bg-[#cfe467] hover:bg-[#c0d955] transition-colors cursor-pointer disabled:opacity-50 flex justify-center items-center gap-2"
               >
+                {paymentLoading && <Loader2 size={16} className="animate-spin" />}
                 Next Step
               </button>
             )}
