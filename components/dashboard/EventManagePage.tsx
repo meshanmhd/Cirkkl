@@ -216,6 +216,12 @@ export function EventManagePage({ event: initialEvent, registrations: initialReg
         type: 'registration_rejected',
       }));
       await supabase.from('notifications').insert(notificationInserts);
+      
+      await supabase.from('notifications')
+        .delete()
+        .eq('event_id', eventId)
+        .eq('team_id', reg.team_id)
+        .eq('type', 'team_invite');
     } else {
       await supabase.from("registrations").update({ status: "rejected" }).eq("id", id);
       setRegs((prev: any[]) => prev.map(r => r.id === id ? { ...r, status: "rejected" } : r));
@@ -241,6 +247,12 @@ export function EventManagePage({ event: initialEvent, registrations: initialReg
         return;
       }
       setRegs((prev: any[]) => prev.map(r => r.team_id === reg.team_id ? { ...r, status: "cancelled", cancel_count: newCancelCount } : r));
+      
+      await supabase.from('notifications')
+        .delete()
+        .eq('event_id', eventId)
+        .eq('team_id', reg.team_id)
+        .eq('type', 'team_invite');
     } else {
       const { error } = await supabase.from("registrations").update({ status: "cancelled", cancel_count: (reg.cancel_count || 0) + 1 }).eq("id", id);
       if (error) {

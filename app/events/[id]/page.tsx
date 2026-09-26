@@ -280,49 +280,49 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                         <h3 className="text-2xl font-semibold text-[#111111] mb-6 tracking-tight">Policies & Guidelines</h3>
                         {(() => {
                           const defaultPolicy = (event.cancellation_policy && event.cancellation_policy.trim() !== "") ? "cancellation" :
-                                                (event.refund_policy && event.refund_policy.trim() !== "") ? "refund" :
-                                                (event.photography_policy && event.photography_policy.trim() !== "") ? "photography" : undefined;
+                            (event.refund_policy && event.refund_policy.trim() !== "") ? "refund" :
+                              (event.photography_policy && event.photography_policy.trim() !== "") ? "photography" : undefined;
                           return (
                             <Accordion defaultValue={defaultPolicy} className="w-full space-y-4">
-                          {event.cancellation_policy && event.cancellation_policy.trim() !== "" && (
-                            <AccordionItem value="cancellation" className="border border-[#E5E5EA] bg-white rounded-2xl px-5 overflow-hidden">
-                              <AccordionTrigger className="hover:no-underline py-5 text-[#111111]">
-                                <div className="flex items-center gap-3">
-                                  <ShieldCheck size={20} className="text-[#111111]" />
-                                  <h4 className="font-semibold text-[15px] tracking-tight">Cancellation Policy</h4>
-                                </div>
-                              </AccordionTrigger>
-                              <AccordionContent className="text-sm text-[#6E6E73] whitespace-pre-wrap pb-5">
-                                {event.cancellation_policy}
-                              </AccordionContent>
-                            </AccordionItem>
-                          )}
-                          {event.refund_policy && event.refund_policy.trim() !== "" && (
-                            <AccordionItem value="refund" className="border border-[#E5E5EA] bg-white rounded-2xl px-5 overflow-hidden">
-                              <AccordionTrigger className="hover:no-underline py-5 text-[#111111]">
-                                <div className="flex items-center gap-3">
-                                  <Banknote size={20} className="text-[#111111]" />
-                                  <h4 className="font-semibold text-[15px] tracking-tight">Refund Policy</h4>
-                                </div>
-                              </AccordionTrigger>
-                              <AccordionContent className="text-sm text-[#6E6E73] whitespace-pre-wrap pb-5">
-                                {event.refund_policy}
-                              </AccordionContent>
-                            </AccordionItem>
-                          )}
-                          {event.photography_policy && event.photography_policy.trim() !== "" && (
-                            <AccordionItem value="photography" className="border border-[#E5E5EA] bg-white rounded-2xl px-5 overflow-hidden">
-                              <AccordionTrigger className="hover:no-underline py-5 text-[#111111]">
-                                <div className="flex items-center gap-3">
-                                  <Camera size={20} className="text-[#111111]" />
-                                  <h4 className="font-semibold text-[15px] tracking-tight">Photography Policy</h4>
-                                </div>
-                              </AccordionTrigger>
-                              <AccordionContent className="text-sm text-[#6E6E73] whitespace-pre-wrap pb-5">
-                                {event.photography_policy}
-                              </AccordionContent>
-                            </AccordionItem>
-                          )}
+                              {event.cancellation_policy && event.cancellation_policy.trim() !== "" && (
+                                <AccordionItem value="cancellation" className="border border-[#E5E5EA] bg-white rounded-2xl px-5 overflow-hidden">
+                                  <AccordionTrigger className="hover:no-underline py-5 text-[#111111]">
+                                    <div className="flex items-center gap-3">
+                                      <ShieldCheck size={20} className="text-[#111111]" />
+                                      <h4 className="font-semibold text-[15px] tracking-tight">Cancellation Policy</h4>
+                                    </div>
+                                  </AccordionTrigger>
+                                  <AccordionContent className="text-sm text-[#6E6E73] whitespace-pre-wrap pb-5">
+                                    {event.cancellation_policy}
+                                  </AccordionContent>
+                                </AccordionItem>
+                              )}
+                              {event.refund_policy && event.refund_policy.trim() !== "" && (
+                                <AccordionItem value="refund" className="border border-[#E5E5EA] bg-white rounded-2xl px-5 overflow-hidden">
+                                  <AccordionTrigger className="hover:no-underline py-5 text-[#111111]">
+                                    <div className="flex items-center gap-3">
+                                      <Banknote size={20} className="text-[#111111]" />
+                                      <h4 className="font-semibold text-[15px] tracking-tight">Refund Policy</h4>
+                                    </div>
+                                  </AccordionTrigger>
+                                  <AccordionContent className="text-sm text-[#6E6E73] whitespace-pre-wrap pb-5">
+                                    {event.refund_policy}
+                                  </AccordionContent>
+                                </AccordionItem>
+                              )}
+                              {event.photography_policy && event.photography_policy.trim() !== "" && (
+                                <AccordionItem value="photography" className="border border-[#E5E5EA] bg-white rounded-2xl px-5 overflow-hidden">
+                                  <AccordionTrigger className="hover:no-underline py-5 text-[#111111]">
+                                    <div className="flex items-center gap-3">
+                                      <Camera size={20} className="text-[#111111]" />
+                                      <h4 className="font-semibold text-[15px] tracking-tight">Photography Policy</h4>
+                                    </div>
+                                  </AccordionTrigger>
+                                  <AccordionContent className="text-sm text-[#6E6E73] whitespace-pre-wrap pb-5">
+                                    {event.photography_policy}
+                                  </AccordionContent>
+                                </AccordionItem>
+                              )}
                             </Accordion>
                           );
                         })()}
@@ -344,8 +344,8 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
 
                       {/* Date & Time */}
                       {(!formattedEndDate || formattedEndDate === formattedDate) ? (
-                        <div className="relative flex items-center min-h-[46px]">
-                          <div className="absolute left-0 top-1/2 -translate-y-1/2 flex flex-col items-center w-12 -ml-[14px]">
+                        <div className="flex items-center gap-4 min-h-[46px]">
+                          <div className="flex flex-col items-center shrink-0">
                             <span className="text-[12px] font-bold text-[#6E6E73] uppercase leading-none">
                               {event.date ? format(new Date(event.date + "T00:00:00"), "MMM") : format(new Date(), "MMM")}
                             </span>
@@ -353,7 +353,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                               {event.date ? format(new Date(event.date + "T00:00:00"), "dd") : format(new Date(), "dd")}
                             </span>
                           </div>
-                          <div className="ml-10 flex flex-col justify-center">
+                          <div className="flex flex-col justify-center mt-1">
                             <span className="text-[16px] font-bold text-[#111111] leading-none">
                               {event.date ? format(new Date(event.date + "T00:00:00"), "EEEE, yyyy") : formattedDate}
                             </span>
@@ -403,40 +403,40 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                       )}
 
                       {/* Location */}
-                      <div className="ml-10 flex flex-col justify-center">
-                          <span className="text-[13px] font-medium text-[#6E6E73] mb-1">Location</span>
-                          <span className="text-[15px] font-semibold text-[#111111]">
-                            {event.location_type === 'online' ? (event.platform || "Online Event") : (event.venue || event.location)}
-                          </span>
-                          {event.city && <span className="text-[14px] text-[#333333] mt-0.5">{event.city}</span>}
-                          {event.location_link && (
-                            <a href={event.location_link} target="_blank" rel="noreferrer" className="px-3 py-1.5 border border-[#E5E5EA] rounded-lg text-[#111111] font-semibold mt-3 hover:bg-[#F9F9FB] inline-flex items-center gap-1.5 w-fit text-[13px] transition-colors">
-                              View Map <ExternalLink size={14} />
-                            </a>
-                          )}
-                          {event.meeting_link && event.location_type !== 'physical' && (
-                            <a href={event.meeting_link} target="_blank" rel="noreferrer" className="px-3 py-1.5 border border-[#E5E5EA] rounded-lg text-[#111111] font-semibold mt-3 hover:bg-[#F9F9FB] inline-flex items-center gap-1.5 w-fit text-[13px] transition-colors">
-                              Meeting Link <ExternalLink size={14} />
-                            </a>
-                          )}
+                      <div className="flex flex-col justify-center">
+                        <span className="text-[13px] font-medium text-[#6E6E73] mb-1">Location</span>
+                        <span className="text-[15px] font-semibold text-[#111111]">
+                          {event.location_type === 'online' ? (event.platform || "Online Event") : (event.venue || event.location)}
+                        </span>
+                        {event.city && <span className="text-[14px] text-[#333333] mt-0.5">{event.city}</span>}
+                        {event.location_link && (
+                          <a href={event.location_link} target="_blank" rel="noreferrer" className="px-3 py-1.5 border border-[#E5E5EA] rounded-lg text-[#111111] font-semibold mt-3 hover:bg-[#F9F9FB] inline-flex items-center gap-1.5 w-fit text-[13px] transition-colors">
+                            View Map <ExternalLink size={14} />
+                          </a>
+                        )}
+                        {event.meeting_link && event.location_type !== 'physical' && (
+                          <a href={event.meeting_link} target="_blank" rel="noreferrer" className="px-3 py-1.5 border border-[#E5E5EA] rounded-lg text-[#111111] font-semibold mt-3 hover:bg-[#F9F9FB] inline-flex items-center gap-1.5 w-fit text-[13px] transition-colors">
+                            Meeting Link <ExternalLink size={14} />
+                          </a>
+                        )}
                       </div>
 
                       {/* Capacity */}
                       {event.seats !== null && (
-                        <div className="ml-10 flex flex-col justify-center">
-                            <span className="text-[13px] font-medium text-[#6E6E73] mb-1">Capacity</span>
-                            <span className="text-[15px] font-semibold text-[#111111]">
-                              {event.seatsAvailable !== null ? event.seatsAvailable : event.seats} / {event.seats} seats available
-                            </span>
+                        <div className="flex flex-col justify-center">
+                          <span className="text-[13px] font-medium text-[#6E6E73] mb-1">Capacity</span>
+                          <span className="text-[15px] font-semibold text-[#111111]">
+                            {event.seatsAvailable !== null ? event.seatsAvailable : event.seats} / {event.seats} seats available
+                          </span>
                         </div>
                       )}
 
                       {/* Tickets Summary */}
-                      <div className="ml-10 flex flex-col justify-center w-full">
-                          <span className="text-[13px] font-medium text-[#6E6E73] mb-1">Registration Type</span>
-                          <span className="text-[15px] font-semibold text-[#111111]">
-                            {event.price === 'paid' ? 'Paid' : 'Free'}{event.is_team_event ? ' | Team Event' : ' | Individual'}
-                          </span>
+                      <div className="flex flex-col justify-center w-full">
+                        <span className="text-[13px] font-medium text-[#6E6E73] mb-1">Registration Type</span>
+                        <span className="text-[15px] font-semibold text-[#111111]">
+                          {event.price === 'paid' ? 'Paid' : 'Free'}{event.is_team_event ? ' | Team Event' : ' | Individual'}
+                        </span>
                       </div>
 
                     </div>
