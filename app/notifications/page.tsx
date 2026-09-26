@@ -48,6 +48,26 @@ export default function NotificationsPage() {
 
   useEffect(() => {
     fetchNotifications();
+
+    let subscription: any = null;
+    
+    const setupRealtime = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      const channelName = `notifications-${user.id}-${Date.now()}`;
+      subscription = supabase.channel(channelName)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` }, (payload) => {
+          fetchNotifications();
+        })
+        .subscribe();
+    };
+    
+    setupRealtime();
+
+    return () => {
+      if (subscription) supabase.removeChannel(subscription);
+    };
   }, []);
 
   const fetchNotifications = async () => {
@@ -157,10 +177,16 @@ export default function NotificationsPage() {
       const result = await acceptTeamInvite(notif.team_id, notif.event_id);
       
       if (!result.success) {
+        if (result.error === 'Team not found.' || result.error === 'Team not found' || (result.error && result.error.includes('rejected'))) {
+          alert(`This invite is no longer valid or the team was rejected/deleted. (Error: ${result.error})`);
+          await deleteNotif(notif.id);
+          return;
+        }
         throw new Error(result.error);
       }
 
-      await deleteNotif(notif.id);
+      await supabase.from('notifications').update({ read: true }).eq('id', notif.id);
+      setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, team_status: 'approved', read: true } : n));
       setSuccessDialogMessage(`You have joined the team ${notif.team?.name}, for any query contact the team leader.`);
       setSuccessDialogOpen(true);
     } catch (err: any) {
@@ -179,7 +205,9 @@ export default function NotificationsPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       await supabase.from('team_members').update({ status: 'rejected' }).eq('team_id', notif.team_id).eq('user_id', user.id);
-      await deleteNotif(notif.id);
+      
+      await supabase.from('notifications').update({ read: true }).eq('id', notif.id);
+      setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, team_status: 'rejected', read: true } : n));
     } catch (err: any) {
       alert("Failed to decline invite: " + err.message);
     } finally {

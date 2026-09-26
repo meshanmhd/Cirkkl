@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/admin';
 
 function generateTicketId(userId: string, eventId: string): string {
   const raw = userId + eventId;
@@ -42,8 +43,9 @@ export async function acceptTeamInvite(teamId: string, eventId: string): Promise
     }
   }
 
-  // Get the team details to find the leader
-  const { data: team, error: teamError } = await supabase
+  // Get the team details to find the leader using admin client to bypass RLS for pending members
+  const adminSupabase = createAdminClient();
+  const { data: team, error: teamError } = await adminSupabase
     .from('teams')
     .select('leader_id')
     .eq('id', teamId)
@@ -54,7 +56,7 @@ export async function acceptTeamInvite(teamId: string, eventId: string): Promise
   }
 
   // Get the leader's registration status for this event
-  const { data: leaderReg, error: leaderError } = await supabase
+  const { data: leaderReg, error: leaderError } = await adminSupabase
     .from('registrations')
     .select('status, ticket_tier_id')
     .eq('event_id', eventId)
@@ -69,7 +71,7 @@ export async function acceptTeamInvite(teamId: string, eventId: string): Promise
 
   const finalTicketCode = generateTicketId(user.id, eventId);
 
-  // Start updating/inserting
+  // Update team_members status
   const { error: tmError } = await supabase
     .from('team_members')
     .update({ status: 'approved' })
@@ -78,37 +80,6 @@ export async function acceptTeamInvite(teamId: string, eventId: string): Promise
 
   if (tmError) {
     return { success: false, error: `Failed to update invite status: ${tmError.message}` };
-  }
-
-  let regError;
-  if (existingReg) {
-    const { error } = await supabase
-      .from('registrations')
-      .update({
-        team_id: teamId,
-        status: leaderReg.status, // Copy the leader's status
-        ticket_tier_id: leaderReg.ticket_tier_id,
-      })
-      .eq('id', existingReg.id);
-    regError = error;
-  } else {
-    const { error } = await supabase
-      .from('registrations')
-      .insert({
-        event_id: eventId,
-        user_id: user.id,
-        team_id: teamId,
-        status: leaderReg.status, // Copy the leader's status
-        ticket_code: finalTicketCode,
-        ticket_tier_id: leaderReg.ticket_tier_id,
-      });
-    regError = error;
-  }
-
-  if (regError) {
-    // Revert the team_members status if registration fails
-    await supabase.from('team_members').update({ status: 'pending' }).eq('team_id', teamId).eq('user_id', user.id);
-    return { success: false, error: `Failed to create registration: ${regError.message}` };
   }
 
   return { success: true };
@@ -304,4 +275,54 @@ export async function registerForEvent(payload: RegisterPayload): Promise<Regist
   }
 
   return { success: true, registrationId: insertedReg?.id || '' };
+}
+
+export async function getUserTickets() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) return [];
+  
+  const adminSupabase = createAdminClient();
+  
+  // 1. Fetch direct registrations
+  const { data: directRegs } = await adminSupabase
+    .from("registrations")
+    .select("ticket_code, event_id, status, events(title)")
+    .eq("user_id", user.id)
+    .eq("status", "approved");
+
+  // 2. Fetch team registrations where user is an approved team member
+  const { data: teamRegs } = await adminSupabase
+    .from("registrations")
+    .select("ticket_code, event_id, status, events(title), team:teams!inner(id, team_members!inner(user_id, status))")
+    .eq("team.team_members.user_id", user.id)
+    .eq("team.team_members.status", "approved")
+    .eq("status", "approved");
+
+  const allEvents = new Map();
+
+  if (directRegs) {
+    directRegs.forEach((r: any) => {
+      allEvents.set(r.event_id, {
+        ticket_code: r.ticket_code,
+        event_id: r.event_id,
+        event_title: r.events?.title ?? "Untitled Event",
+        status: r.status,
+      });
+    });
+  }
+
+  if (teamRegs) {
+    teamRegs.forEach((r: any) => {
+      allEvents.set(r.event_id, {
+        ticket_code: r.ticket_code,
+        event_id: r.event_id,
+        event_title: r.events?.title ?? "Untitled Event",
+        status: r.status,
+      });
+    });
+  }
+
+  return Array.from(allEvents.values());
 }

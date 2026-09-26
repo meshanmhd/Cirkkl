@@ -17,6 +17,7 @@ import { createClient } from "@/utils/supabase/client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronRight, Ticket, ChevronLeft, Bell } from "lucide-react";
+import { getUserTickets } from "@/app/actions/registration";
 
 interface EventRegistration {
   ticket_code: string;
@@ -62,21 +63,8 @@ export function ProfileMenu({ initialUser = null, initialRole = "user", initialQ
 
   const fetchMyEvents = async (userId: string) => {
     try {
-      const { data } = await supabase
-        .from("registrations")
-        .select("ticket_code, event_id, status, events(title)")
-        .eq("user_id", userId)
-        .eq("status", "approved");
-      if (data) {
-        setMyEvents(
-          data.map((r: any) => ({
-            ticket_code: r.ticket_code,
-            event_id: r.event_id,
-            event_title: r.events?.title ?? "Untitled Event",
-            status: r.status,
-          }))
-        );
-      }
+      const tickets = await getUserTickets();
+      setMyEvents(tickets);
     } catch (err) {
       console.error("Error fetching registrations:", err);
     }
