@@ -160,7 +160,7 @@ export default function NotificationsPage() {
         throw new Error(result.error);
       }
 
-      await markSingleAsRead(notif.id);
+      await deleteNotif(notif.id);
       setSuccessDialogMessage(`You have joined the team ${notif.team?.name}, for any query contact the team leader.`);
       setSuccessDialogOpen(true);
     } catch (err: any) {
@@ -179,8 +179,7 @@ export default function NotificationsPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       await supabase.from('team_members').update({ status: 'rejected' }).eq('team_id', notif.team_id).eq('user_id', user.id);
-      await markSingleAsRead(notif.id);
-      setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, team_status: 'rejected' } : n));
+      await deleteNotif(notif.id);
     } catch (err: any) {
       alert("Failed to decline invite: " + err.message);
     } finally {
@@ -215,6 +214,12 @@ export default function NotificationsPage() {
         desc: `Your registration for ${n.event?.title} has been approved.`
       };
     }
+    if (n.type === 'registration_rejected') {
+      return {
+        title: `Registration Rejected`,
+        desc: `Your registration for ${n.event?.title} has been rejected.`
+      };
+    }
     return {
       title: `Notification`,
       desc: `You have a new update for ${n.event?.title || 'an event'}.`
@@ -226,6 +231,7 @@ export default function NotificationsPage() {
       case 'team_invite':
         return { icon: Users, text: "Team Invite", color: "text-[#111111]" };
       case 'registration_approved':
+      case 'registration_rejected':
         return { icon: Ticket, text: "Registration", color: "text-[#111111]" };
       case 'event_update':
         return { icon: Calendar, text: "Event Update", color: "text-[#111111]" };

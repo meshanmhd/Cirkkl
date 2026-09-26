@@ -37,7 +37,11 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
   if (event.price === 'paid') {
     const { data: tickets } = await supabase.from('tickets').select('*').eq('event_id', id);
     if (tickets) {
-      event.ticket_types = tickets;
+      // Deduplicate tickets by name to fix any repeats
+      const uniqueTickets = Array.from(
+        new Map(tickets.map(t => [t.name?.toLowerCase().trim(), t])).values()
+      );
+      event.ticket_types = uniqueTickets;
     }
   }
 
@@ -156,23 +160,23 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                 <div className="mb-8">
                   <div className="flex flex-wrap items-center gap-3 mb-5">
                     {eventStatus === 'upcoming' && (
-                      <span className="inline-block px-3 py-1 bg-white border border-[#E5E5EA] text-[#111111] text-xs font-bold rounded-lg uppercase tracking-wider">
+                      <span className="inline-block px-3 py-1.5 bg-white border border-[#E5E5EA] text-[#111111] text-xs font-semibold rounded-lg uppercase tracking-wide">
                         Upcoming
                       </span>
                     )}
                     {eventStatus === 'live' && (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-50 border border-red-100 text-red-600 text-xs font-bold rounded-lg uppercase tracking-wider">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 border border-red-100 text-red-600 text-xs font-semibold rounded-lg uppercase tracking-wide">
                         <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
                         Live
                       </span>
                     )}
                     {eventStatus === 'ended' && (
-                      <span className="inline-block px-3 py-1 bg-gray-100 border border-gray-200 text-gray-500 text-xs font-bold rounded-lg uppercase tracking-wider">
+                      <span className="inline-block px-3 py-1.5 bg-gray-100 border border-gray-200 text-gray-500 text-xs font-semibold rounded-lg uppercase tracking-wide">
                         Ended
                       </span>
                     )}
                     {event.category && (
-                      <span className="inline-block px-3 py-1 bg-[#cfe467] text-[#111111] text-xs font-bold rounded-lg uppercase tracking-wider">
+                      <span className="inline-block px-3 py-1.5 bg-[#cfe467] text-[#111111] text-xs font-semibold rounded-lg uppercase tracking-wide">
                         {event.category}
                       </span>
                     )}
@@ -209,19 +213,19 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                       <h3 className="text-2xl font-semibold text-[#111111] mb-4 tracking-tight">
                         {event.speakers.length > 1 ? "Speakers" : "Speaker"}
                       </h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <div className="flex flex-wrap gap-6 items-center">
                         {event.speakers.map((speaker: any) => (
-                          <div key={speaker.id} className="flex items-center gap-4 p-4 rounded-2xl bg-white border border-[#E5E5EA] hover:bg-white transition-colors">
+                          <div key={speaker.id} className="flex items-center gap-4 p-2 pr-6 rounded-full bg-white border border-[#E5E5EA]">
                             {speaker.imageUrl ? (
-                              <img src={speaker.imageUrl} alt={speaker.name} className="w-14 h-14 rounded-full object-cover shrink-0 ring-2 ring-white" />
+                              <img src={speaker.imageUrl} alt={speaker.name} className="w-12 h-12 rounded-full object-cover shrink-0 ring-2 ring-white bg-white" />
                             ) : (
-                              <div className="w-14 h-14 rounded-full bg-[#F5F5F7] flex items-center justify-center shrink-0 ring-2 ring-white">
-                                <User className="text-[#9E9EA7]" size={24} />
+                              <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center shrink-0 border border-[#E5E5EA]/50">
+                                <User className="text-[#6E6E73]" size={20} />
                               </div>
                             )}
-                            <div>
-                              <p className="font-bold text-[#111111]">{speaker.name}</p>
-                              {speaker.subtext && <p className="text-sm text-[#6E6E73]">{speaker.subtext}</p>}
+                            <div className="flex flex-col">
+                              <span className="font-bold text-[15px] text-[#111111]">{speaker.name}</span>
+                              {speaker.subtext && <span className="text-[13px] font-medium text-[#6E6E73]">{speaker.subtext}</span>}
                             </div>
                           </div>
                         ))}
@@ -274,7 +278,12 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                       <div className="h-px w-full bg-gradient-to-r from-transparent via-[#E5E5EA] to-transparent my-8" />
                       <div className="mb-8">
                         <h3 className="text-2xl font-semibold text-[#111111] mb-6 tracking-tight">Policies & Guidelines</h3>
-                        <Accordion className="w-full space-y-4">
+                        {(() => {
+                          const defaultPolicy = (event.cancellation_policy && event.cancellation_policy.trim() !== "") ? "cancellation" :
+                                                (event.refund_policy && event.refund_policy.trim() !== "") ? "refund" :
+                                                (event.photography_policy && event.photography_policy.trim() !== "") ? "photography" : undefined;
+                          return (
+                            <Accordion defaultValue={defaultPolicy} className="w-full space-y-4">
                           {event.cancellation_policy && event.cancellation_policy.trim() !== "" && (
                             <AccordionItem value="cancellation" className="border border-[#E5E5EA] bg-white rounded-2xl px-5 overflow-hidden">
                               <AccordionTrigger className="hover:no-underline py-5 text-[#111111]">
@@ -314,7 +323,9 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                               </AccordionContent>
                             </AccordionItem>
                           )}
-                        </Accordion>
+                            </Accordion>
+                          );
+                        })()}
                       </div>
                     </>
                   )}
@@ -332,46 +343,67 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                     <div className="flex flex-col gap-6">
 
                       {/* Date & Time */}
-                      <div className="flex gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-[#cfe467]/30 flex items-center justify-center shrink-0">
-                          <Calendar size={22} className="text-[#111111]" strokeWidth={1.5} />
+                      {(!formattedEndDate || formattedEndDate === formattedDate) ? (
+                        <div className="relative flex items-center min-h-[46px]">
+                          <div className="absolute left-0 top-1/2 -translate-y-1/2 flex flex-col items-center w-12 -ml-[14px]">
+                            <span className="text-[12px] font-bold text-[#6E6E73] uppercase leading-none">
+                              {event.date ? format(new Date(event.date + "T00:00:00"), "MMM") : format(new Date(), "MMM")}
+                            </span>
+                            <span className="text-[34px] font-black text-[#111111] leading-none tracking-tighter mt-1">
+                              {event.date ? format(new Date(event.date + "T00:00:00"), "dd") : format(new Date(), "dd")}
+                            </span>
+                          </div>
+                          <div className="ml-10 flex flex-col justify-center">
+                            <span className="text-[16px] font-bold text-[#111111] leading-none">
+                              {event.date ? format(new Date(event.date + "T00:00:00"), "EEEE, yyyy") : formattedDate}
+                            </span>
+                            {(formattedTime || formattedEndTime) && (
+                              <span className="text-[14px] font-medium text-[#6E6E73] mt-1.5">
+                                {formattedTime} {formattedEndTime ? `to ${formattedEndTime}` : ''}
+                              </span>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex flex-col justify-center">
-                          <span className="text-[13px] font-medium text-[#6E6E73] mb-1">Date & Time</span>
-                          {(!formattedEndDate || formattedEndDate === formattedDate) ? (
-                            <>
-                              <span className="text-[15px] font-semibold text-[#111111]">
-                                {formattedDate}
+                      ) : (
+                        <div className="flex flex-col gap-6 py-1">
+                          {/* Starts */}
+                          <div className="flex gap-5 relative">
+                            {/* Timeline line */}
+                            <div className="absolute left-[9px] top-[24px] bottom-[-32px] w-[2px] bg-[#E5E5EA]" />
+                            <div className="relative mt-1">
+                              <div className="w-5 h-5 rounded-full border-[3px] border-[#111111] bg-white z-10" />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-[13px] font-medium text-[#6E6E73] mb-1">Starts</span>
+                              <span className="text-[16px] font-bold text-[#111111]">
+                                {event.date ? format(new Date(event.date + "T00:00:00"), "EEE, dd MMM yyyy") : formattedDate}
                               </span>
-                              {(formattedTime || formattedEndTime) && (
-                                <span className="text-[15px] font-semibold text-[#333333] mt-0.5">
-                                  {formattedTime} {formattedEndTime ? `to ${formattedEndTime}` : ''}
-                                </span>
-                              )}
-                            </>
-                          ) : (
-                            <>
-                              <span className="text-[15px] font-semibold text-[#111111]">
-                                {formattedDate} {formattedTime ? `| ${formattedTime}` : ''} to
+                              <span className="text-[15px] font-medium text-[#6E6E73] mt-0.5">
+                                {formattedTime || "TBD"}
                               </span>
-                              <span className="text-[15px] font-semibold text-[#333333] mt-0.5">
-                                {formattedEndDate} {formattedEndTime ? `| ${formattedEndTime}` : ''}
+                            </div>
+                          </div>
+
+                          {/* Ends */}
+                          <div className="flex gap-5 relative">
+                            <div className="relative mt-1">
+                              <div className="w-5 h-5 rounded-full bg-[#111111] border-[3px] border-[#111111] z-10" />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-[13px] font-medium text-[#6E6E73] mb-1">Ends</span>
+                              <span className="text-[16px] font-bold text-[#111111]">
+                                {event.end_date ? format(new Date(event.end_date + "T00:00:00"), "EEE, dd MMM yyyy") : formattedEndDate}
                               </span>
-                            </>
-                          )}
+                              <span className="text-[15px] font-medium text-[#6E6E73] mt-0.5">
+                                {formattedEndTime || "TBD"}
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                      </div>
+                      )}
 
                       {/* Location */}
-                      <div className="flex gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-[#cfe467]/30 flex items-center justify-center shrink-0">
-                          {event.location_type === 'online' ? (
-                            <Globe size={22} className="text-[#111111]" strokeWidth={1.5} />
-                          ) : (
-                            <MapPin size={22} className="text-[#111111]" strokeWidth={1.5} />
-                          )}
-                        </div>
-                        <div className="flex flex-col justify-center">
+                      <div className="ml-10 flex flex-col justify-center">
                           <span className="text-[13px] font-medium text-[#6E6E73] mb-1">Location</span>
                           <span className="text-[15px] font-semibold text-[#111111]">
                             {event.location_type === 'online' ? (event.platform || "Online Event") : (event.venue || event.location)}
@@ -387,35 +419,24 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                               Meeting Link <ExternalLink size={14} />
                             </a>
                           )}
-                        </div>
                       </div>
 
                       {/* Capacity */}
                       {event.seats !== null && (
-                        <div className="flex gap-4">
-                          <div className="w-12 h-12 rounded-2xl bg-[#cfe467]/30 flex items-center justify-center shrink-0">
-                            <Users size={22} className="text-[#111111]" strokeWidth={1.5} />
-                          </div>
-                          <div className="flex flex-col justify-center">
+                        <div className="ml-10 flex flex-col justify-center">
                             <span className="text-[13px] font-medium text-[#6E6E73] mb-1">Capacity</span>
                             <span className="text-[15px] font-semibold text-[#111111]">
                               {event.seatsAvailable !== null ? event.seatsAvailable : event.seats} / {event.seats} seats available
                             </span>
-                          </div>
                         </div>
                       )}
 
                       {/* Tickets Summary */}
-                      <div className="flex gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-[#cfe467]/30 flex items-center justify-center shrink-0">
-                          <Ticket size={22} className="text-[#111111]" strokeWidth={1.5} />
-                        </div>
-                        <div className="flex flex-col justify-center w-full">
+                      <div className="ml-10 flex flex-col justify-center w-full">
                           <span className="text-[13px] font-medium text-[#6E6E73] mb-1">Registration Type</span>
                           <span className="text-[15px] font-semibold text-[#111111]">
                             {event.price === 'paid' ? 'Paid' : 'Free'}{event.is_team_event ? ' | Team Event' : ' | Individual'}
                           </span>
-                        </div>
                       </div>
 
                     </div>

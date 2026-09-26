@@ -193,16 +193,16 @@ export async function registerForEvent(payload: RegisterPayload): Promise<Regist
   const existingReg = existingRegs && existingRegs.length > 0 ? existingRegs[0] : null;
 
   const newStatus = pendingStatus ? 'pending' : 'approved';
-  
+
   let insertedReg;
   let insertError;
 
   if (existingReg) {
     if (existingReg.status === 'rejected') {
-       if (createdTeamId) await supabase.from('teams').delete().eq('id', createdTeamId);
-       return { success: false, error: 'Your previous registration was rejected.' };
+      if (createdTeamId) await supabase.from('teams').delete().eq('id', createdTeamId);
+      return { success: false, error: 'Your previous registration was rejected.' };
     }
-    
+
     // Update existing registration
     const { error } = await supabase
       .from('registrations')
@@ -215,7 +215,7 @@ export async function registerForEvent(payload: RegisterPayload): Promise<Regist
         payment_proof_url: paymentProofUrl,
       })
       .eq('id', existingReg.id);
-      
+
     insertedReg = { id: existingReg.id };
     insertError = error;
   } else {
@@ -235,7 +235,7 @@ export async function registerForEvent(payload: RegisterPayload): Promise<Regist
       })
       .select('id')
       .single();
-      
+
     insertedReg = reg;
     insertError = error;
   }
@@ -251,13 +251,26 @@ export async function registerForEvent(payload: RegisterPayload): Promise<Regist
   }
 
   if (!pendingStatus) {
-    await supabase.from('notifications').insert({
-      user_id: user.id,
-      sender_id: user.id,
-      event_id: eventId,
-      type: 'registration_approved',
-    });
+    const shouldSend = !existingReg || existingReg.status !== 'approved';
+    if (shouldSend) {
+      await supabase.from('notifications').insert({
+        user_id: user.id,
+        sender_id: user.id,
+        event_id: eventId,
+        type: 'registration_approved',
+      });
+    }
   }
+
+  // Delete all previous team_invite notifications sent by this user for this event.
+  // This cleans up pending invites for users who might have been removed from the team 
+  // in this updated registration, and prevents duplicates for users who are still in the team.
+  await supabase
+    .from('notifications')
+    .delete()
+    .eq('event_id', eventId)
+    .eq('sender_id', user.id)
+    .eq('type', 'team_invite');
 
   if (createdTeamId && teamMates.length > 0) {
     const memberInserts = teamMates.map((m) => ({
