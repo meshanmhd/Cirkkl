@@ -173,23 +173,59 @@ export function EventManagePage({ event: initialEvent, registrations: initialReg
 
   async function approveReg(id: string) {
     const reg = regs.find((r: any) => r.id === id);
+    const { data: { user } } = await supabase.auth.getUser();
+    
     if (reg?.team_id) {
       await supabase.from("registrations").update({ status: "approved" }).eq("team_id", reg.team_id);
       setRegs((prev: any[]) => prev.map(r => r.team_id === reg.team_id ? { ...r, status: "approved" } : r));
+      
+      const teamRegs = regs.filter((r: any) => r.team_id === reg.team_id);
+      const notificationInserts = teamRegs.map((r: any) => ({
+        user_id: r.user_id,
+        sender_id: user?.id || r.user_id,
+        event_id: eventId,
+        type: 'registration_approved',
+      }));
+      await supabase.from('notifications').insert(notificationInserts);
     } else {
       await supabase.from("registrations").update({ status: "approved" }).eq("id", id);
       setRegs((prev: any[]) => prev.map(r => r.id === id ? { ...r, status: "approved" } : r));
+      
+      await supabase.from('notifications').insert({
+        user_id: reg.user_id,
+        sender_id: user?.id || reg.user_id,
+        event_id: eventId,
+        type: 'registration_approved',
+      });
     }
   }
 
   async function rejectReg(id: string) {
     const reg = regs.find((r: any) => r.id === id);
+    const { data: { user } } = await supabase.auth.getUser();
+
     if (reg?.team_id) {
       await supabase.from("registrations").update({ status: "rejected" }).eq("team_id", reg.team_id);
       setRegs((prev: any[]) => prev.map(r => r.team_id === reg.team_id ? { ...r, status: "rejected" } : r));
+      
+      const teamRegs = regs.filter((r: any) => r.team_id === reg.team_id);
+      const notificationInserts = teamRegs.map((r: any) => ({
+        user_id: r.user_id,
+        sender_id: user?.id || r.user_id,
+        event_id: eventId,
+        type: 'registration_rejected',
+      }));
+      await supabase.from('notifications').insert(notificationInserts);
     } else {
       await supabase.from("registrations").update({ status: "rejected" }).eq("id", id);
       setRegs((prev: any[]) => prev.map(r => r.id === id ? { ...r, status: "rejected" } : r));
+      
+      await supabase.from('notifications').insert({
+        user_id: reg.user_id,
+        sender_id: user?.id || reg.user_id,
+        event_id: eventId,
+        type: 'registration_rejected',
+      });
     }
   }
 
@@ -772,9 +808,6 @@ export function EventManagePage({ event: initialEvent, registrations: initialReg
                         <div className="px-5 py-5 flex flex-col gap-4">
                           <div>
                             <p className="text-[18px] font-bold text-[#111111] leading-tight truncate">{team.name}</p>
-                            {(viewingReg.cancel_count || 0) > 0 && (
-                               <span className="text-[10px] font-bold bg-red-100 text-red-600 px-1.5 py-0.5 rounded uppercase tracking-wider inline-block mt-1.5 w-max">Cancelled {viewingReg.cancel_count} {viewingReg.cancel_count === 1 ? 'time' : 'times'} previously</span>
-                            )}
                             <div className="flex items-center gap-2 mt-2">
                               <p className="text-[11px] font-semibold text-[#9E9EA7] uppercase tracking-wider">Ticket Code</p>
                               <p className="text-[13px] font-mono font-bold text-[#111111] bg-[#F5F5F7] px-2 py-0.5 rounded-md">{viewingReg.ticket_code ?? "—"}</p>
@@ -843,9 +876,6 @@ export function EventManagePage({ event: initialEvent, registrations: initialReg
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <p className="text-[15px] font-bold text-[#111111] leading-tight truncate">{p?.full_name ?? "—"}</p>
-                            {(viewingReg.cancel_count || 0) > 0 && (
-                               <span className="text-[10px] font-bold bg-red-100 text-red-600 px-1.5 py-0.5 rounded uppercase tracking-wider">Cancelled {viewingReg.cancel_count} {viewingReg.cancel_count === 1 ? 'time' : 'times'}</span>
-                            )}
                           </div>
                           <p className="text-[13px] text-[#6E6E73] font-medium mt-0.5 truncate">{p?.email ?? "—"}</p>
                         </div>

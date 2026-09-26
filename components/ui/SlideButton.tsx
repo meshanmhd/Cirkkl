@@ -187,7 +187,9 @@ function SlideButtonBase({
           ? { bg: 'bg-[#F6F7F0]', iconBg: 'bg-[#cfe467]/40', iconColor: 'text-[#4a6000]', Icon: PartyPopper, label: 'Thank you for attending', sub: 'See you at the next one!' }
           : isPending
             ? { bg: 'bg-amber-50', iconBg: 'bg-amber-100', iconColor: 'text-amber-600', Icon: Clock, label: successMessage!, sub: "We'll notify you once confirmed." }
-            : { bg: 'bg-[#F6F7F0]', iconBg: 'bg-[#cfe467]/40', iconColor: 'text-[#4a6000]', Icon: Check, label: 'Registered', sub: "We're glad you're part of this!" };
+            : successMessage === 'Rejected'
+              ? { bg: 'bg-red-50', iconBg: 'bg-red-100', iconColor: 'text-red-600', Icon: X, label: 'Rejected', sub: "Your registration was declined." }
+              : { bg: 'bg-[#F6F7F0]', iconBg: 'bg-[#cfe467]/40', iconColor: 'text-[#4a6000]', Icon: Check, label: 'Registered', sub: "We're glad you're part of this!" };
         return (
           <div className={`absolute inset-0 flex items-center px-3 gap-2.5 z-40 animate-fade-in rounded-[14px] ${cfg.bg}`}>
             <div className={`w-8 h-8 rounded-[10px] ${cfg.iconBg} flex items-center justify-center shrink-0`}>
@@ -313,31 +315,35 @@ function RegistrationModal({
   const handleNextStep = async () => {
     setStepError("");
     if (!validateCurrentStep()) return;
-    
+
     if (currentStepIdx < steps.length - 1) {
       const nextStepIdx = currentStepIdx + 1;
       const nextStepName = steps[nextStepIdx];
-      
+
       if (nextStepName === "payment" && isPaid) {
+        setCurrentStepIdx(nextStepIdx);
         setPaymentLoading(true);
-        try {
-          const res = await fetch('/api/payments/create', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ticketId: selectedTicketId, eventId: event.id })
+        setUpiUrl(null);
+        setOrderReference(null);
+        setPaymentAmount(null);
+        fetch('/api/payments/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ticketId: selectedTicketId, eventId: event.id })
+        })
+          .then(async (res) => {
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to initialize payment');
+            setUpiUrl(data.upi_uri);
+            setOrderReference(data.order_reference);
+            setPaymentAmount(data.amount);
+          })
+          .catch((err: any) => {
+            setStepError(err.message);
+          })
+          .finally(() => {
+            setPaymentLoading(false);
           });
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.error || 'Failed to initialize payment');
-          
-          setUpiUrl(data.upi_uri);
-          setOrderReference(data.order_reference);
-          setPaymentAmount(data.amount);
-          setCurrentStepIdx(nextStepIdx);
-        } catch (err: any) {
-          setStepError(err.message);
-        } finally {
-          setPaymentLoading(false);
-        }
       } else {
         setCurrentStepIdx(nextStepIdx);
       }
@@ -469,14 +475,15 @@ function RegistrationModal({
                         }
 
                         // Check if in another team for this event (even pending)
-                        const { data: existingTeamMember, error: teamCheckErr } = await supabase
+                        const { data: existingTeamMembers, error: teamCheckErr } = await supabase
                           .from('team_members')
-                          .select('id, teams!inner(event_id)')
+                          .select('id, status, teams!inner(event_id)')
                           .eq('teams.event_id', event.id)
-                          .eq('user_id', data.id)
-                          .maybeSingle();
+                          .eq('user_id', data.id);
 
-                        if (existingTeamMember) {
+                        const activeMembership = existingTeamMembers?.find(tm => tm.status !== 'rejected' && tm.status !== 'cancelled');
+
+                        if (activeMembership) {
                           setTeammateSearchLoading(false);
                           setTeammateSearchError("User is already invited or in a team for this event.");
                           return;
@@ -516,7 +523,7 @@ function RegistrationModal({
                         <CheckCircle2 size={16} className="text-[#4a6000]" />
                       </div>
                     </div>
-                    
+
                     {/* Added Teammates */}
                     {teamMates.map(mate => (
                       <div key={mate.id} className="flex items-center justify-between p-3 rounded-xl border border-[#E5E5EA] bg-[#F9F9F9]">
@@ -609,13 +616,19 @@ function RegistrationModal({
                 <div className="flex flex-col items-center gap-1 bg-[#F7F7F8] rounded-[16px] p-5 border border-[#E5E5EA]">
                   <p className="text-[11px] font-semibold text-[#9E9EA7] uppercase tracking-wider">Scan & Pay</p>
                   <p className="text-[24px] font-bold text-[#111111] tracking-tight mb-2">₹{paymentAmount || selectedTicket?.price || event.priceAmount || "0"}</p>
-                  
+
                   {upiUrl ? (
-                    <div className="bg-white p-2 rounded-xl shadow-sm border border-[#E5E5EA] transition-opacity">
+                    <div className="bg-white p-2 rounded-xl shadow-sm border border-[#E5E5EA] transition-opacity animate-fade-in">
                       <QRCode value={upiUrl} size={130} className="w-32 h-32" />
                     </div>
                   ) : (
-                    <div className="w-32 h-32 rounded-xl border border-dashed border-[#E5E5EA] bg-white flex items-center justify-center text-[12px] text-[#9E9EA7]">Loading...</div>
+                    <div className="bg-white p-2 rounded-xl shadow-sm border border-[#E5E5EA] overflow-hidden">
+                      <div className="w-32 h-32 relative flex items-center justify-center">
+                        <div className="absolute inset-0 opacity-30 blur-[3px] animate-pulse pointer-events-none">
+                          <QRCode value="loading-dummy" size={130} className="w-32 h-32" />
+                        </div>
+                      </div>
+                    </div>
                   )}
 
                   {upiUrl && (
@@ -775,7 +788,7 @@ export const SlideButton = ({ onComplete, event, isFull = false, userRegistratio
   const approvalRequired = event?.approval_required || event?.price === "paid";
   const pendingStatus = isFull || approvalRequired;
   const successMessage = userRegistration
-    ? ((userRegistration.attended === true || userRegistration.attended === 'true' || userRegistration.status === 'attended') ? "Thank you for attending" : userRegistration.status === 'pending' ? "Pending Approval" : "Registered")
+    ? (userRegistration.status === 'rejected' ? 'Rejected' : (userRegistration.attended === true || userRegistration.attended === 'true' || userRegistration.status === 'attended') ? "Thank you for attending" : userRegistration.status === 'pending' ? "Pending Approval" : "Registered")
     : (isFull ? "Pending (Waitlist)" : (approvalRequired ? "Pending Approval" : "Registered"));
 
   const doRegister = async (

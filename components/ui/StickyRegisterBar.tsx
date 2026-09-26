@@ -49,8 +49,16 @@ export function StickyRegisterBar({
     return () => observer.disconnect();
   }, [isEnded, userRegistration]);
 
-  // Only show if the user has NOT registered (or was cancelled) and the event has not ended
-  if ((userRegistration && userRegistration.status !== 'cancelled') || isEnded) return null;
+  const isRegistrationClosed = (() => {
+    if (!event?.registration_deadline) return false;
+    const now = new Date();
+    const deadlineStr = event.registration_deadline +
+      (event.registration_end_time ? `T${event.registration_end_time}` : 'T23:59:59');
+    return now > new Date(deadlineStr);
+  })();
+
+  // Only show if the user has NOT registered (or was cancelled), the event has not ended, and registration is not closed
+  if ((userRegistration && userRegistration.status !== 'cancelled') || isEnded || isRegistrationClosed) return null;
 
   return (
     <div

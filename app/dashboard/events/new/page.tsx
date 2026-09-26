@@ -382,6 +382,14 @@ export default function NewEventPage() {
         throw new Error("You must select at least one host for the event.");
       }
 
+      if (form.startDate && form.registrationDeadline) {
+        const startDateTimeStr = form.startDate + (form.startTime ? `T${form.startTime}` : 'T00:00:00');
+        const regEndDateTimeStr = form.registrationDeadline + (form.registrationEndTime ? `T${form.registrationEndTime}` : 'T23:59:59');
+        if (new Date(regEndDateTimeStr) > new Date(startDateTimeStr)) {
+          throw new Error("Registration deadline cannot be after the event start date and time.");
+        }
+      }
+
       if (form.price === "paid") {
         if (!form.cancellationPolicy.trim() || !form.refundPolicy.trim()) {
           throw new Error("Cancellation and Refund policies are required for paid events.");
@@ -438,7 +446,7 @@ export default function NewEventPage() {
       }).select('id').single();
 
       if (insertError) throw insertError;
-      
+
       const newEventId = eventData.id;
 
       if (form.price === "paid" && tickets.filter(t => t.name.trim()).length > 0) {
@@ -449,7 +457,7 @@ export default function NewEventPage() {
           quantity: t.unlimited ? null : (parseInt(t.quantity) || null),
           unlimited: t.unlimited,
         }));
-        
+
         const { error: ticketError } = await supabase.from('tickets').insert(ticketsToInsert);
         if (ticketError) throw ticketError;
       }
@@ -626,7 +634,7 @@ export default function NewEventPage() {
                 />
               </FormInput>
             </div>
-            
+
             {form.isTeamEvent === "true" && (
               <div className="grid grid-cols-2 gap-4 mt-2">
                 <FormInput label="Min Team Size" required>

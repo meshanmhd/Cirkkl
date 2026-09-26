@@ -429,6 +429,14 @@ export default function EditEventPage() {
         throw new Error("You must select at least one host for the event.");
       }
 
+      if (form.startDate && form.registrationDeadline) {
+        const startDateTimeStr = form.startDate + (form.startTime ? `T${form.startTime}` : 'T00:00:00');
+        const regEndDateTimeStr = form.registrationDeadline + (form.registrationEndTime ? `T${form.registrationEndTime}` : 'T23:59:59');
+        if (new Date(regEndDateTimeStr) > new Date(startDateTimeStr)) {
+          throw new Error("Registration deadline cannot be after the event start date and time.");
+        }
+      }
+
       if (form.price === "paid") {
         if (!form.cancellationPolicy.trim() || !form.refundPolicy.trim()) {
           throw new Error("Cancellation and Refund policies are required for paid events.");
@@ -482,14 +490,14 @@ export default function EditEventPage() {
       }).eq("id", eventId);
 
       if (updateError) throw updateError;
-      
+
       // Update tickets
       if (form.price === "paid") {
         const validTickets = tickets.filter(t => t.name.trim());
-        
+
         // Delete all old tickets
         await supabase.from('tickets').delete().eq('event_id', eventId);
-        
+
         // Insert new tickets
         if (validTickets.length > 0) {
           const ticketsToInsert = validTickets.map(t => ({
@@ -499,7 +507,7 @@ export default function EditEventPage() {
             quantity: t.unlimited ? null : (parseInt(t.quantity) || null),
             unlimited: t.unlimited,
           }));
-          
+
           const { error: ticketError } = await supabase.from('tickets').insert(ticketsToInsert);
           if (ticketError) throw ticketError;
         }
@@ -685,7 +693,7 @@ export default function EditEventPage() {
                 />
               </FormInput>
             </div>
-            
+
             {form.isTeamEvent === "true" && (
               <div className="grid grid-cols-2 gap-4">
                 <FormInput label="Min Team Size" required>
