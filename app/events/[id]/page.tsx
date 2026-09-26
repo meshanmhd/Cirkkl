@@ -7,6 +7,7 @@ import { Metadata } from "next";
 import { SlideButton } from "@/components/ui/SlideButton";
 import { StickyRegisterBar } from "@/components/ui/StickyRegisterBar";
 import CursorGrid from "@/components/CursorGrid";
+import { ShareButton } from "@/components/ui/share-button";
 import { format, parse } from "date-fns";
 import {
   Accordion,
@@ -146,6 +147,13 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
             alt={event.title}
             className="w-full h-full object-cover"
           />
+          <div className="absolute top-4 right-4 z-20">
+            <ShareButton 
+               url={`https://cirkkl.com/events/${event.id}`} 
+               title={event.title} 
+               description={event.description}
+            />
+          </div>
         </div>
       </div>
 
@@ -283,7 +291,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                             (event.refund_policy && event.refund_policy.trim() !== "") ? "refund" :
                               (event.photography_policy && event.photography_policy.trim() !== "") ? "photography" : undefined;
                           return (
-                            <Accordion defaultValue={defaultPolicy} className="w-full space-y-4">
+                            <Accordion defaultValue={defaultPolicy ? [defaultPolicy] : undefined} className="w-full space-y-4">
                               {event.cancellation_policy && event.cancellation_policy.trim() !== "" && (
                                 <AccordionItem value="cancellation" className="border border-[#E5E5EA] bg-white rounded-2xl px-5 overflow-hidden">
                                   <AccordionTrigger className="hover:no-underline py-5 text-[#111111]">
