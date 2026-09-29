@@ -220,7 +220,10 @@ export function ProfileMenu({ initialUser = null, initialRole = "user", initialQ
                   <ChevronRight size={14} className="text-[#6E6E73]" />
                 </DropdownMenuItem>
                 
-                <DropdownMenuItem className="cursor-pointer rounded-lg px-2 py-2 text-sm text-[#111111] hover:bg-[#F5F5F7] focus:bg-[#F5F5F7]">
+                <DropdownMenuItem
+                  className="cursor-pointer rounded-lg px-2 py-2 text-sm text-[#111111] hover:bg-[#F5F5F7] focus:bg-[#F5F5F7]"
+                  onClick={() => router.push("/profile")}
+                >
                   Profile
                 </DropdownMenuItem>
                 <DropdownMenuItem className="cursor-pointer rounded-lg px-2 py-2 text-sm text-[#111111] hover:bg-[#F5F5F7] focus:bg-[#F5F5F7]">
