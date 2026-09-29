@@ -153,9 +153,9 @@ export function ShareButton({
       transition={t}
       onPointerDownCapture={() => (usingKeys.current = false)}
       onKeyDownCapture={() => (usingKeys.current = true)}
-      // Radius set here so the reshaping keeps a true pill; the pill clips,
+      // Radius set here so the reshaping keeps a pill; the pill clips,
       // so contents arriving or leaving never show outside it.
-      style={{ borderRadius: 999 }}
+      style={{ borderRadius: '2rem' }}
       className={cn(
         "relative flex h-11 items-center overflow-hidden bg-background shadow-[0_0_15px_rgba(0,0,0,0.1)] border border-border/50",
         className,
@@ -175,7 +175,7 @@ export function ShareButton({
             initial={{ opacity: 0, filter: "blur(4px)" }}
             animate={{ opacity: 1, filter: "blur(0px)", transition: { ...fade, delay: 0.08 } }}
             exit={{ opacity: 0, filter: "blur(4px)", transition: { duration: 0.1 } }}
-            className="flex h-11 shrink-0 items-center gap-2 rounded-full px-5 text-[14px] font-medium text-foreground outline-hidden transition-[scale] duration-150 ease-out focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-solid focus-visible:outline-foreground active:scale-[0.96] hover:bg-muted/50 cursor-pointer"
+            className="flex h-11 shrink-0 items-center gap-2 rounded-[2rem] px-5 text-[14px] font-medium text-foreground outline-hidden transition-[scale] duration-150 ease-out focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-solid focus-visible:outline-foreground active:scale-[0.96] hover:bg-muted/50 cursor-pointer"
           >
             {Icon.share}
             Share
@@ -276,4 +276,4 @@ export function ShareButton({
 }
 
 const target =
-  "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-foreground outline-hidden transition-[background-color,color,scale] duration-150 ease-out hover:bg-muted focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-solid focus-visible:outline-foreground active:scale-[0.96] cursor-pointer";
+  "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[2rem] text-foreground outline-hidden transition-[background-color,color,scale] duration-150 ease-out hover:bg-muted focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-solid focus-visible:outline-foreground active:scale-[0.96] cursor-pointer";

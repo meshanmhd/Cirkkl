@@ -32,21 +32,20 @@ export default function HeroSection() {
             className="text-5xl sm:text-6xl lg:text-7xl font-extrabold leading-[1.06] tracking-tight"
             style={{ color: "#111111" }}
           >
-            Discover
+            What's
             <br />
             <span style={{ color: "#cfe467" }}>
-              Everything
+              Happening
             </span>
             <br />
-            <span style={{ color: "#111111" }}>on Campus</span>
+            <span style={{ color: "#111111" }}>on Campus?</span>
           </h1>
 
           <p
             className="mt-6 text-lg leading-relaxed max-w-lg"
             style={{ color: "#6E6E73" }}
           >
-            Find workshops, hackathons, cultural festivals, sports events,
-            seminars, and club activities — all in one beautifully simple place.
+            Discover everything happening on campus — events, workshops, hackathons, clubs and more, all brought together in one <b>circle</b>.
           </p>
 
           <div className="flex flex-wrap gap-4 mt-10">
