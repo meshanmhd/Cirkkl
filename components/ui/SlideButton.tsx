@@ -746,16 +746,28 @@ export const SlideButton = ({ onComplete, event, isFull = false, userRegistratio
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
   const supabase = createClient();
   const pathname = usePathname();
   const router = useRouter();
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data.user);
+      if (data.user) {
+        supabase.from('profiles').select('is_profile_completed').eq('id', data.user.id).single().then(({ data: p }) => setProfile(p));
+      }
+    });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user || null);
-      if (session?.user) setShowLoginModal(false);
+      if (session?.user) {
+        setShowLoginModal(false);
+        supabase.from('profiles').select('is_profile_completed').eq('id', session.user.id).single().then(({ data: p }) => setProfile(p));
+      } else {
+        setProfile(null);
+      }
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -857,6 +869,10 @@ export const SlideButton = ({ onComplete, event, isFull = false, userRegistratio
       setShowLoginModal(true);
       return;
     }
+    if (profile && !profile.is_profile_completed) {
+      setShowProfileModal(true);
+      return;
+    }
     if (requiresModal) {
       setShowModal(true);
     } else {
@@ -880,6 +896,33 @@ export const SlideButton = ({ onComplete, event, isFull = false, userRegistratio
               <X size={16} />
             </button>
             <LoginForm redirectTo={pathname} />
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {showProfileModal && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowProfileModal(false)} />
+          <div className="relative z-10 w-full max-w-sm bg-white rounded-[24px] shadow-2xl overflow-hidden p-6 text-center">
+            <h2 className="text-[20px] font-bold text-[#111111] mt-3 mb-3">Almost there!</h2>
+            <p className="text-[14px] text-[#6E6E73] mb-8 leading-relaxed px-2">
+              We just need a bit more info before you can register. <strong className="text-[#111111]">Let's complete your profile real quick!</strong>
+            </p>
+            <div className="flex items-center gap-3 w-full">
+              <button 
+                onClick={() => setShowProfileModal(false)} 
+                className="flex-1 py-3 px-2 rounded-[14px] bg-[#F5F5F7] text-[#111111] text-[14px] font-bold hover:bg-[#E5E5EA] transition-colors"
+              >
+                Not Now
+              </button>
+              <button 
+                onClick={() => { setShowProfileModal(false); router.push('/profile'); }} 
+                className="flex-1 py-3 px-2 rounded-[14px] bg-[#cfe467] text-[#111111] text-[14px] font-bold hover:bg-[#c0d955] transition-colors"
+              >
+                Let's Go!
+              </button>
+            </div>
           </div>
         </div>,
         document.body

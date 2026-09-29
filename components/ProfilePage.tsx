@@ -227,7 +227,7 @@ export function ProfilePage({ profile: initialProfile }: { profile: any }) {
       gender: profile.gender ?? "",
       city: profile.city ?? "",
       state: profile.state ?? "",
-      country: profile.country ?? "",
+      country: profile.country || "IN",
       pincode: profile.pincode ?? "",
     });
     setProfileEditOpen(true);
@@ -259,7 +259,24 @@ export function ProfilePage({ profile: initialProfile }: { profile: any }) {
     setSaving(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setSaving(false); return; }
-    const { data } = await supabase.from("profiles").update(draft).eq("id", user.id).select().single();
+    
+    const updated = { ...profile, ...draft };
+    const isCompleted = !!(
+      updated.full_name && 
+      updated.date_of_birth && 
+      updated.gender && 
+      updated.country && 
+      updated.state && 
+      updated.city && 
+      updated.pincode && 
+      updated.college_name && 
+      updated.department && 
+      updated.semester && 
+      updated.admission_year && 
+      updated.graduation_year
+    );
+
+    const { data } = await supabase.from("profiles").update({ ...draft, is_profile_completed: isCompleted }).eq("id", user.id).select().single();
     if (data) setProfile((p: any) => ({ ...p, ...data }));
     setOpen(false);
     setSaving(false);
@@ -287,7 +304,14 @@ export function ProfilePage({ profile: initialProfile }: { profile: any }) {
   const location = [profile.city, resolvedState, resolvedCountry].filter(Boolean).join(", ");
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col relative">
+      {(!profile.is_profile_completed) && (
+        <div className="w-full bg-[#FFF5E5] border-b border-[#FFB020] text-[#B76F00] px-6 py-3 flex items-center justify-center text-[13px] font-medium gap-2 text-center sticky top-0 z-50">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
+          Your profile is incomplete. Please complete all required fields to unlock full features.
+          <button onClick={openProfileEdit} className="ml-2 underline font-bold hover:text-[#995C00] transition-colors">Complete Now</button>
+        </div>
+      )}
       <div className="flex flex-1 gap-6 max-w-7xl mx-auto w-full px-6 py-8 items-start">
 
         {/* ─── LEFT 30%: sticky identity + nav ─── */}
@@ -490,33 +514,6 @@ export function ProfilePage({ profile: initialProfile }: { profile: any }) {
         saving={saving}
         disabled={!profileDraft.full_name || !profileDraft.date_of_birth || !profileDraft.gender || !profileDraft.country || !profileDraft.state || !profileDraft.city || !profileDraft.pincode}
       >
-        {/* Avatar upload — only inside edit modal */}
-        <div className="flex flex-col items-center gap-3 pb-2">
-          <div className="relative">
-            <Avatar className="w-20 h-20 rounded-full border-2 border-[#E5E5EA]">
-              <AvatarImage
-                src={profile.avatar_url || `https://api.dicebear.com/7.x/notionists/svg?seed=${profile.id}`}
-                className="object-cover"
-              />
-              <AvatarFallback className="bg-[#F5F5F7] text-[#111111] font-bold text-xl rounded-full">
-                {getInitials(profile.full_name)}
-              </AvatarFallback>
-            </Avatar>
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={avatarUploading}
-              className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-white border border-[#E5E5EA] flex items-center justify-center text-[#6E6E73] hover:text-[#111111] hover:border-[#cfe467] transition-all shadow-sm"
-            >
-              {avatarUploading
-                ? <span className="w-3 h-3 border-2 border-[#111111]/30 border-t-[#111111] rounded-full animate-spin" />
-                : <Camera size={12} />}
-            </button>
-            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
-          </div>
-          <p className="text-[12px] text-[#6E6E73]">Click the camera icon to change photo</p>
-        </div>
-
         <InputField label="Full Name" required value={profileDraft.full_name ?? ""} onChange={v => setProfileDraft((d: any) => ({ ...d, full_name: v }))} placeholder="Your full name" />
         <TextareaField label={<span>Short Bio <span className="text-[#9E9EA7] font-normal">(Optional)</span></span>} value={profileDraft.bio ?? ""} onChange={v => setProfileDraft((d: any) => ({ ...d, bio: v }))} placeholder="A short sentence about yourself..." />
         <div className="grid grid-cols-2 gap-3">
