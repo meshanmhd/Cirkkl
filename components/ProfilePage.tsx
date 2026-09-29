@@ -47,7 +47,7 @@ function SectionCard({ title, subtitle, action, children }: {
   );
 }
 
-function FieldRow({ label, value, placeholder }: { label: string; value?: string | null; placeholder?: string }) {
+function FieldRow({ label, value, placeholder, type }: { label: string; value?: string | null; placeholder?: string; type?: string }) {
   return (
     <div className="flex flex-col gap-1">
       <p className="text-[12px] font-semibold text-[#6E6E73]">{label}</p>
@@ -165,7 +165,7 @@ function SelectField({ label, value, onChange, options, required }: {
       <label className="text-sm font-medium text-[#111111]">
         {label} {required && <span className="text-red-500">*</span>}
       </label>
-      <ShadcnSelect value={value || "unspecified"} onValueChange={(v) => onChange(v === "unspecified" ? "" : v)} required={required}>
+      <ShadcnSelect value={value || "unspecified"} onValueChange={(v) => onChange(v === "unspecified" ? "" : (v as string))} required={required}>
         <SelectTrigger className="h-12 px-4 rounded-xl border-[#E5E5EA] shadow-none focus:ring-0 focus:border-[#9E9EA7] bg-white text-sm text-[#111111]">
           <SelectValue placeholder="Not specified" />
         </SelectTrigger>
