@@ -8,6 +8,7 @@ import { SlideButton } from "@/components/ui/SlideButton";
 import { StickyRegisterBar } from "@/components/ui/StickyRegisterBar";
 import CursorGrid from "@/components/CursorGrid";
 import { ShareButton } from "@/components/ui/share-button";
+import { BackButton } from "@/components/ui/back-button";
 import { format, parse } from "date-fns";
 import {
   Accordion,
@@ -147,6 +148,9 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
             alt={event.title}
             className="w-full h-full object-cover"
           />
+          <div className="absolute top-4 left-4 z-20">
+            <BackButton />
+          </div>
           <div className="absolute top-4 right-4 z-20">
             <ShareButton 
                url={`https://cirkkl.com/events/${event.id}`} 

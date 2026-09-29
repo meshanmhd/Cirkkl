@@ -3,15 +3,25 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
-  title: "Campus Events — Discover Everything Happening on Your Campus",
+  title: "Cirkkl",
   description:
     "Find workshops, hackathons, cultural festivals, sports events, seminars, and club activities all in one place.",
   keywords: ["campus events", "college events", "student activities", "hackathons", "workshops"],
   openGraph: {
-    title: "Campus Events",
+    title: "Cirkkl",
     description: "Discover everything happening on your campus.",
     type: "website",
   },
+  icons: {
+    icon: [
+      { url: "/favicon/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+    ],
+    apple: [
+      { url: "/favicon/apple-touch-icon.png", sizes: "180x180" },
+    ],
+  },
+  manifest: "/favicon/site.webmanifest",
 };
 
 export default function RootLayout({

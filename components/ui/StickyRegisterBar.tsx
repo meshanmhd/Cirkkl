@@ -62,37 +62,37 @@ export function StickyRegisterBar({
 
   return (
     <div
-      className={`fixed z-50 transform transition-transform duration-300 ease-in-out ${
-        visible ? 'translate-y-0' : 'translate-y-[150%]'
-      } bottom-0 left-0 right-0 lg:bottom-6 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:w-[600px] lg:max-w-[90vw]`}
+      className={`fixed z-50 transform transition-all duration-400 ease-out ${
+        visible ? 'translate-y-0 opacity-100' : 'translate-y-[150%] opacity-0'
+      } bottom-0 left-0 right-0 lg:bottom-6 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:w-[640px] lg:max-w-[92vw]`}
     >
-      <div className="bg-white border-t lg:border border-[#E5E5EA] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] lg:shadow-xl lg:rounded-2xl pb-[env(safe-area-inset-bottom)] lg:pb-0">
-        <div className="px-4 py-3 flex items-center gap-3">
+      <div className="bg-white/90 backdrop-blur-xl border-t lg:border border-[#E5E5EA]/80 shadow-[0_-8px_30px_rgba(0,0,0,0.06)] lg:shadow-[0_20px_40px_rgba(0,0,0,0.08)] lg:rounded-[24px] pb-[env(safe-area-inset-bottom)] lg:pb-0">
+        <div className="px-5 py-4 lg:p-3 flex items-center justify-between gap-5">
           {/* Left: Info */}
-          <div className="flex-1 min-w-0">
-            <h4 className="text-[14px] font-bold text-[#111111] truncate mb-0.5">
+          <div className="flex-1 min-w-0 lg:pl-3">
+            <h4 className="text-[15px] font-bold text-[#111111] truncate mb-1.5">
               {event.title}
             </h4>
-            <div className="flex items-center gap-2 text-[12px] font-medium text-[#6E6E73] truncate">
-              <span className="flex items-center gap-1 shrink-0">
-                <Calendar size={12} />
-                {formattedDate}
+            <div className="flex items-center gap-3 text-[13px] font-medium text-[#6E6E73] truncate">
+              <span className="flex items-center gap-1.5 shrink-0">
+                <Calendar size={14} className="text-[#9E9EA7]" strokeWidth={2.5} />
+                <span className="text-[#333333]">{formattedDate}</span>
               </span>
               {formattedTime && (
-                <span className="flex items-center gap-1 shrink-0">
-                  <Clock size={12} />
-                  {formattedTime}
+                <span className="flex items-center gap-1.5 shrink-0">
+                  <Clock size={14} className="text-[#9E9EA7]" strokeWidth={2.5} />
+                  <span className="text-[#333333]">{formattedTime}</span>
                 </span>
               )}
-              <span className="shrink-0">•</span>
-              <span className="text-[#111111] shrink-0 font-semibold">
+              <span className="w-1 h-1 rounded-full bg-[#D1D1D6] shrink-0" />
+              <span className="text-[#111111] shrink-0 font-bold bg-[#F5F5F7] px-2 py-0.5 rounded-md border border-[#E5E5EA]/50">
                 {event.price === 'paid' ? 'Paid' : 'Free'}
               </span>
             </div>
           </div>
 
           {/* Right: SlideButton */}
-          <div className="w-[140px] shrink-0">
+          <div className="w-[150px] shrink-0">
             <SlideButton
               event={event}
               isFull={isFull}

@@ -910,14 +910,14 @@ export const SlideButton = ({ onComplete, event, isFull = false, userRegistratio
               We just need a bit more info before you can register. <strong className="text-[#111111]">Let's complete your profile real quick!</strong>
             </p>
             <div className="flex items-center gap-3 w-full">
-              <button 
-                onClick={() => setShowProfileModal(false)} 
+              <button
+                onClick={() => setShowProfileModal(false)}
                 className="flex-1 py-3 px-2 rounded-[14px] bg-[#F5F5F7] text-[#111111] text-[14px] font-bold hover:bg-[#E5E5EA] transition-colors"
               >
                 Not Now
               </button>
-              <button 
-                onClick={() => { setShowProfileModal(false); router.push('/profile'); }} 
+              <button
+                onClick={() => { setShowProfileModal(false); router.push('/profile'); }}
                 className="flex-1 py-3 px-2 rounded-[14px] bg-[#cfe467] text-[#111111] text-[14px] font-bold hover:bg-[#c0d955] transition-colors"
               >
                 Let's Go!
