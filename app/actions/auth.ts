@@ -1,8 +1,10 @@
 'use server'
 
 import { createClient } from '@/utils/supabase/server'
+import { createAdminClient } from '@/utils/supabase/admin'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
+import crypto from 'crypto'
 
 export async function loginAction(prevState: any, formData: FormData) {
   const email = formData.get('email') as string
@@ -19,14 +21,32 @@ export async function loginAction(prevState: any, formData: FormData) {
     return { error: error.message }
   }
 
-  const role = data?.user?.user_metadata?.role
+  const userId = data?.user?.id
+  let orgData: { id: string; is_otp_verified?: boolean; is_approved?: boolean } | null = null
+  if (userId) {
+    const admin = createAdminClient()
+    const { data: orgRecord } = await admin
+      .from('organisations')
+      .select('id, is_otp_verified, is_approved')
+      .eq('id', userId)
+      .maybeSingle()
+    if (orgRecord) {
+      orgData = orgRecord
+    }
+  }
 
   revalidatePath('/', 'layout')
-  
-  if (role === 'organisation') {
+
+  if (orgData) {
+    if (!orgData.is_otp_verified) {
+      redirect('/verify-org')
+    }
+    if (!orgData.is_approved) {
+      redirect('/pending-approval')
+    }
     redirect('/dashboard/events')
   }
-  
+
   if (redirectTo) {
     redirect(redirectTo)
   }
@@ -37,22 +57,39 @@ export async function signupAction(prevState: any, formData: FormData) {
   const email = formData.get('email') as string
   const password = formData.get('password') as string
   const fullName = formData.get('name') as string
-  const role = formData.get('role') as string || 'user'
+  const roleInput = formData.get('role') as string
+  const role = roleInput === 'organisation' ? 'organisation' : 'member'
+
   const supabase = await createClient()
 
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
       data: {
         full_name: fullName,
-        role: role,
       }
     }
   })
 
   if (error) {
     return { error: error.message }
+  }
+
+  if (role === 'organisation' && data.user) {
+    const admin = createAdminClient()
+    const { error: orgInsertError } = await admin
+      .from('organisations')
+      .insert({
+        id: data.user.id,
+        name: fullName,
+        is_approved: false,
+        is_otp_verified: false,
+      })
+
+    if (orgInsertError) {
+      console.error('Failed to create organisation record:', orgInsertError)
+    }
   }
 
   revalidatePath('/', 'layout')
@@ -68,43 +105,45 @@ export async function signOutAction() {
 
 export async function verifyOrgOtpAction(otpCode: string) {
   const supabase = await createClient()
-  
-  // Get the logged in user
+
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) {
-    return { error: "You must be logged in to verify." }
+    return { error: 'You must be logged in to verify.' }
   }
 
-  // Fetch the custom OTP from the organisations table
-  const { data: orgData, error: orgError } = await supabase
+  const admin = createAdminClient()
+  const { data: orgData, error: orgError } = await admin
     .from('organisations')
     .select('org_otp')
     .eq('id', user.id)
     .single()
 
   if (orgError || !orgData) {
-    return { error: "Organisation record not found." }
+    return { error: 'Organisation record not found.' }
   }
 
-  // Check if the OTP matches
-  if (orgData.org_otp !== otpCode) {
-    return { error: "Invalid code. Please try again." }
+  const storedOtp = orgData.org_otp || ''
+  const isMatch =
+    storedOtp.length > 0 &&
+    otpCode.length > 0 &&
+    storedOtp.length === otpCode.length &&
+    crypto.timingSafeEqual(Buffer.from(storedOtp), Buffer.from(otpCode))
+
+  if (!isMatch) {
+    return { error: 'Invalid code. Please try again.' }
   }
 
-  // Success! Update user metadata to mark OTP as verified
-  const { error: updateError } = await supabase.auth.updateUser({
-    data: { is_otp_verified: true }
-  })
-  
-  if (updateError) {
-    return { error: "Failed to update verification status." }
-  }
-  
-  // Optionally clear the OTP from the database so it can't be reused
-  await supabase
+  const { error: updateError } = await admin
     .from('organisations')
-    .update({ org_otp: null })
+    .update({
+      is_otp_verified: true,
+      org_otp: null,
+    })
     .eq('id', user.id)
+
+  if (updateError) {
+    return { error: 'Failed to update verification status.' }
+  }
 
   revalidatePath('/', 'layout')
   redirect('/pending-approval')

@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/utils/supabase/server";
+import { requireOrg } from "@/lib/auth/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 
 const VALID_ROLES = ["ceo", "lead", "co-lead", "member"];
@@ -12,21 +12,13 @@ export async function updateMemberRole(memberId: string, newRole: string) {
     return { error: `Invalid role: ${newRole}` };
   }
 
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
+  const { org } = await requireOrg();
 
   const { error, data } = await createAdminClient()
     .from("members")
     .update({ role: normalizedRole })
     .eq("id", memberId)
-    .eq("org_id", user.id)
+    .eq("org_id", org.id)
     .select();
 
   if (error) {
@@ -35,7 +27,7 @@ export async function updateMemberRole(memberId: string, newRole: string) {
   }
 
   if (!data || data.length === 0) {
-    console.error("[updateMemberRole] No rows matched — memberId:", memberId, "org_id:", user.id);
+    console.error("[updateMemberRole] No rows matched — memberId:", memberId, "org_id:", org.id);
     return { error: "Member not found or not in your organisation." };
   }
 

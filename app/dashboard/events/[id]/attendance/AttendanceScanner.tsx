@@ -6,7 +6,7 @@ import { ArrowLeft, CheckCircle2, XCircle, X, AlertTriangle } from "lucide-react
 import { Scanner } from "@yudiel/react-qr-scanner";
 import { processAttendanceScan, confirmAttendance } from "./actions";
 
-export default function AttendanceScanner({ eventId, eventTitle, orgId }: { eventId: string; eventTitle: string; orgId: string }) {
+export default function AttendanceScanner({ eventId, eventTitle }: { eventId: string; eventTitle: string; orgId?: string }) {
   const [scanning, setScanning] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [scanResult, setScanResult] = useState<any>(null);
@@ -31,7 +31,7 @@ export default function AttendanceScanner({ eventId, eventTitle, orgId }: { even
     setProcessing(true);
     
     try {
-      const result = await processAttendanceScan(eventId, code, orgId);
+      const result = await processAttendanceScan(eventId, code);
       
       if (result.error) {
         setScanResult({ error: result.error, code });
