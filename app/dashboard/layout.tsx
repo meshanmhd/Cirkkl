@@ -1,5 +1,4 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/utils/supabase/server";
+import { requireOrg } from "@/lib/auth/server";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { DashboardTopBar } from "@/components/dashboard/DashboardTopBar";
 
@@ -8,26 +7,7 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login");
-  }
-
-  const role = user.user_metadata?.role;
-
-  if (role === "org") {
-    const { data: orgData, error } = await supabase
-      .from("organisations")
-      .select("is_approved")
-      .eq("id", user.id)
-      .single();
-
-    if (error || !orgData?.is_approved) {
-      redirect("/pending-approval");
-    }
-  }
+  const { user } = await requireOrg();
 
   return (
     <div className="flex min-h-screen bg-[#F7F7F8]">

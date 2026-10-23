@@ -14,12 +14,12 @@ export function SignupForm({
   ...props
 }: React.ComponentPropsWithoutRef<"div">) {
   const [state, formAction, isPending] = useActionState(signupAction, null);
-  const [role, setRole] = useState("user");
+  const [role, setRole] = useState<"member" | "organisation">("member");
   const [passwordError, setPasswordError] = useState("");
   const [isFading, setIsFading] = useState(false);
 
   // Handle role change with fade animation
-  const handleRoleChange = (newRole: string) => {
+  const handleRoleChange = (newRole: "member" | "organisation") => {
     if (newRole === role) return;
     setIsFading(true);
     setTimeout(() => {
@@ -58,8 +58,8 @@ export function SignupForm({
             isFading ? "opacity-0" : "opacity-100"
           )}
         >
-          Sign Up as {role === 'user' ? 'a' : 'an'}{" "}
-          <span className="text-[#cfe467]">{role === 'user' ? 'Member' : 'Organisation'}</span>
+          Sign Up as {role === 'member' ? 'a' : 'an'}{" "}
+          <span className="text-[#cfe467]">{role === 'member' ? 'Member' : 'Organisation'}</span>
         </h1>
         <p className="text-balance text-sm text-[#6E6E73]">
           Enter your details below to sign up
@@ -70,24 +70,24 @@ export function SignupForm({
       <div className="relative flex w-full h-12 bg-[#F5F5F7] rounded-xl p-1 shadow-inner">
         <div 
           className="absolute top-1 bottom-1 w-[calc(50%-4px)] bg-white rounded-lg shadow-sm transition-transform duration-300 ease-in-out"
-          style={{ transform: role === 'user' ? 'translateX(0)' : 'translateX(100%)' }}
+          style={{ transform: role === 'member' ? 'translateX(0)' : 'translateX(100%)' }}
         />
         <button
           type="button"
-          onClick={() => handleRoleChange("user")}
+          onClick={() => handleRoleChange("member")}
           className={cn(
             "relative z-10 flex-1 flex items-center justify-center text-sm font-medium transition-colors duration-300 rounded-lg",
-            role === "user" ? "text-[#111111]" : "text-[#6E6E73] hover:text-[#111111]"
+            role === "member" ? "text-[#111111]" : "text-[#6E6E73] hover:text-[#111111]"
           )}
         >
           Member
         </button>
         <button
           type="button"
-          onClick={() => handleRoleChange("org")}
+          onClick={() => handleRoleChange("organisation")}
           className={cn(
             "relative z-10 flex-1 flex items-center justify-center text-sm font-medium transition-colors duration-300 rounded-lg",
-            role === "org" ? "text-[#111111]" : "text-[#6E6E73] hover:text-[#111111]"
+            role === "organisation" ? "text-[#111111]" : "text-[#6E6E73] hover:text-[#111111]"
           )}
         >
           Organisation
@@ -118,7 +118,7 @@ export function SignupForm({
           <div className="grid gap-2">
             <label htmlFor="name" className="text-sm font-medium text-[#111111] transition-opacity duration-200">
               <span className={cn(isFading ? "opacity-0" : "opacity-100")}>
-                {role === 'user' ? 'Full Name' : 'Organisation Name'}
+                {role === 'member' ? 'Full Name' : 'Organisation Name'}
               </span>
             </label>
             <Input

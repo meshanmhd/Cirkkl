@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { createAdminClient } from '@/utils/supabase/admin'
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -27,30 +28,42 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // IMPORTANT: Avoid writing any logic between createServerClient and
-  // supabase.auth.getUser(). A simple mistake could make it very hard to debug
-  // issues with users being randomly logged out.
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Here you can add route protection logic based on user existence or roles later.
+  const path = request.nextUrl.pathname
+
   if (user) {
-    const role = user.user_metadata?.role;
-    const isOtpVerified = user.user_metadata?.is_otp_verified === true;
-    const path = request.nextUrl.pathname;
-    
-    // Organisation routing logic
-    if (role === 'org' || role === 'organisation') {
-      if (!isOtpVerified && path !== '/verify-org' && path !== '/login' && path !== '/signup') {
-        // Not verified yet, lock them out of everything except verify page
-        return NextResponse.redirect(new URL('/verify-org', request.url));
+    try {
+      const adminClient = createAdminClient()
+      const { data: orgData } = await adminClient
+        .from('organisations')
+        .select('is_approved, is_otp_verified')
+        .eq('id', user.id)
+        .maybeSingle()
+
+      if (orgData) {
+        const isOtpVerified = orgData.is_otp_verified === true
+        const isApproved = orgData.is_approved === true
+
+        if (!isOtpVerified) {
+          if (path !== '/verify-org' && path !== '/login' && path !== '/signup') {
+            return NextResponse.redirect(new URL('/verify-org', request.url))
+          }
+        } else if (!isApproved) {
+          if (path !== '/pending-approval' && path !== '/login' && path !== '/signup') {
+            return NextResponse.redirect(new URL('/pending-approval', request.url))
+          }
+        } else {
+          const isUserRoute = path === '/' || path.startsWith('/events') || path === '/profile' || path === '/verify-org' || path === '/pending-approval' || path === '/login' || path === '/signup'
+          if (isUserRoute) {
+            return NextResponse.redirect(new URL('/dashboard/events', request.url))
+          }
+        }
       }
-      
-      if (isOtpVerified && !path.startsWith('/dashboard') && path !== '/pending-approval') {
-        // Verified orgs shouldn't be on the landing page, events page, or anywhere else. Redirect to dashboard.
-        return NextResponse.redirect(new URL('/dashboard/events', request.url));
-      }
+    } catch {
+      return supabaseResponse
     }
   }
 
@@ -59,13 +72,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * Feel free to modify this pattern to include more paths.
-     */
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }

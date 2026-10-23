@@ -487,7 +487,7 @@ export default function EditEventPage() {
         team_min_size: parseInt(form.teamMinSize) || 1,
         team_max_size: parseInt(form.teamMaxSize) || 1,
         status: isDraft ? "draft" : "published",
-      }).eq("id", eventId);
+      }).eq("id", eventId).eq("org_id", user.id);
 
       if (updateError) throw updateError;
 

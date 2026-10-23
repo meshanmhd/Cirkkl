@@ -404,6 +404,12 @@ export default function NewEventPage() {
         return { id: s.id, name: s.name, subtext: s.subtext, imageUrl: s.imageUrl };
       }));
 
+      const { data: orgRecord } = await supabase
+        .from('organisations')
+        .select('name')
+        .eq('id', user.id)
+        .maybeSingle();
+
       const { data: eventData, error: insertError } = await supabase.from("events").insert({
         title: form.title,
         tagline: form.tagline,
@@ -442,7 +448,7 @@ export default function NewEventPage() {
         team_max_size: parseInt(form.teamMaxSize) || 1,
         org_id: user.id,
         status: isDraft ? "draft" : "published",
-        organizer: user.user_metadata?.full_name || user.email,
+        organizer: orgRecord?.name || user.email,
       }).select('id').single();
 
       if (insertError) throw insertError;

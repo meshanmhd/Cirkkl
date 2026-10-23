@@ -1,20 +1,17 @@
+import { requireOrg } from "@/lib/auth/server";
 import { createClient } from "@/utils/supabase/server";
-import { Users, UserCog } from "lucide-react";
+import { Users } from "lucide-react";
 import { MembersTable } from "@/components/dashboard/MembersTable";
 
 export default async function MembersPage() {
+  const { org } = await requireOrg();
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
 
   const { data: members } = await supabase
     .from("members")
     .select("id, ckl_id, full_name, avatar_url, email, role, joined_at, department")
-    .eq("org_id", user?.id)
+    .eq("org_id", org.id)
     .order("joined_at", { ascending: false });
-
-  const totalMembers = members?.length ?? 0;
-  const leads = members?.filter(m => m.role === "lead").length ?? 0;
-  const coLeads = members?.filter(m => m.role === "co-lead").length ?? 0;
 
   return (
     <div className="flex flex-col gap-6">

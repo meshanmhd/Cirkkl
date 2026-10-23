@@ -1,16 +1,17 @@
+import { requireOrg } from "@/lib/auth/server";
 import { createClient } from "@/utils/supabase/server";
 import { Plus } from "lucide-react";
 import Link from "next/link";
 import { EventsTable } from "@/components/dashboard/EventsTable";
 
 export default async function EventsDashboardPage() {
+  const { org } = await requireOrg();
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
 
   const { data: events } = await supabase
     .from("events")
     .select("id, title, date, category, status, visibility, price")
-    .eq("org_id", user?.id)
+    .eq("org_id", org.id)
     .order("date", { ascending: false });
 
   return (

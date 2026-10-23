@@ -1,21 +1,21 @@
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
+import { requireOrg } from "@/lib/auth/server";
 import { createClient } from "@/utils/supabase/server";
-import { createClient as createAdminClient } from "@supabase/supabase-js";
+import { createAdminClient } from "@/utils/supabase/admin";
 import { EventManagePage } from "@/components/dashboard/EventManagePage";
 
 export const dynamic = 'force-dynamic';
 
 export default async function EventDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const { org } = await requireOrg();
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
 
   const { data: event } = await supabase
     .from("events")
     .select("*")
     .eq("id", id)
-    .eq("org_id", user.id)
+    .eq("org_id", org.id)
     .single();
 
   if (!event) notFound();
@@ -26,10 +26,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
     .eq("event_id", id)
     .order("created_at", { ascending: false });
 
-  const adminSupabase = createAdminClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const adminSupabase = createAdminClient();
 
   let teams: any[] = [];
   let teamMembers: any[] = [];
@@ -68,7 +65,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
   const { data: orgMembers } = await supabase
     .from("members")
     .select("id, full_name, email, avatar_url")
-    .eq("org_id", user.id);
+    .eq("org_id", org.id);
 
   const { data: eventRoles } = await supabase
     .from("event_roles")
