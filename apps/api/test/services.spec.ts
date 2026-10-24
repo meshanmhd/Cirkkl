@@ -1,5 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { createContainer } from "../src/container";
+import { AuthService } from "../src/services/auth.service";
+import { hashOtp } from "../src/crypto";
+import { createAuthRoutes } from "../src/routes/auth.routes";
 
 describe("API Service Layer Tests", () => {
   let container: ReturnType<typeof createContainer>;
@@ -643,7 +646,7 @@ describe("API Service Layer Tests", () => {
       expect(refreshRes.expiresAt).toBeGreaterThan(0);
     });
 
-    it("generates a 6-digit org OTP on signup and verifies it within expiry", async () => {
+    it("generates a 6-digit org OTP on signup, stores it hashed in DB, and verifies it within expiry", async () => {
       const { services, ports } = container;
 
       const signupRes = await services.authService.signup({
@@ -653,19 +656,26 @@ describe("API Service Layer Tests", () => {
         orgName: "OTP Test Org",
       });
 
+      expect(signupRes.otp).toMatch(/^\d{6}$/);
+
       const org = await ports.orgRepo.findById(signupRes.userId!);
       expect(org).toBeDefined();
-      expect(org!.otp).toMatch(/^\d{6}$/);
+      expect(org!.otp).toBe(hashOtp(signupRes.otp!));
+      expect(org!.otpExpiresAt).toBeDefined();
+      expect(org!.otpFailedAttempts).toBe(0);
 
-      const verified = await services.authService.verifyOrgOtp(signupRes.userId!, org!.otp!);
+      const freshAuthService = new AuthService(ports.authProvider, ports.orgRepo, ports.profileRepo);
+      const verified = await freshAuthService.verifyOrgOtp(signupRes.userId!, signupRes.otp!);
       expect(verified).toBe(true);
 
       const updatedOrg = await ports.orgRepo.findById(signupRes.userId!);
       expect(updatedOrg!.isOtpVerified).toBe(true);
       expect(updatedOrg!.otp).toBeNull();
+      expect(updatedOrg!.otpExpiresAt).toBeNull();
+      expect(updatedOrg!.otpFailedAttempts).toBe(0);
     });
 
-    it("rejects OTP after 10-minute expiry and requires a new OTP", async () => {
+    it("rejects OTP after 10-minute expiry and requires a new OTP across AuthService re-instantiations", async () => {
       vi.useFakeTimers();
       try {
         const { services, ports } = container;
@@ -677,29 +687,32 @@ describe("API Service Layer Tests", () => {
           orgName: "Expire Org",
         });
 
-        const org = await ports.orgRepo.findById(signupRes.userId!);
-        const originalOtp = org!.otp!;
+        const rawOtp = signupRes.otp!;
 
         vi.advanceTimersByTime(10 * 60 * 1000 + 1000);
 
+        const freshAuthService = new AuthService(ports.authProvider, ports.orgRepo, ports.profileRepo);
         await expect(
-          services.authService.verifyOrgOtp(signupRes.userId!, originalOtp)
+          freshAuthService.verifyOrgOtp(signupRes.userId!, rawOtp)
         ).rejects.toThrow("OTP code has expired. Please request a new OTP");
 
-        await services.authService.resendOrgOtp(signupRes.userId!);
+        const resendRes = await freshAuthService.resendOrgOtp(signupRes.userId!);
+        expect(resendRes.success).toBe(true);
+        expect(resendRes.otp).toMatch(/^\d{6}$/);
 
         const refreshedOrg = await ports.orgRepo.findById(signupRes.userId!);
-        expect(refreshedOrg!.otp).toMatch(/^\d{6}$/);
-        expect(refreshedOrg!.otp).not.toBeNull();
+        expect(refreshedOrg!.otp).toBe(hashOtp(resendRes.otp!));
+        expect(refreshedOrg!.otpFailedAttempts).toBe(0);
 
-        const verified = await services.authService.verifyOrgOtp(signupRes.userId!, refreshedOrg!.otp!);
+        const restartAuthService = new AuthService(ports.authProvider, ports.orgRepo, ports.profileRepo);
+        const verified = await restartAuthService.verifyOrgOtp(signupRes.userId!, resendRes.otp!);
         expect(verified).toBe(true);
       } finally {
         vi.useRealTimers();
       }
     });
 
-    it("enforces max of 10 failed attempts per OTP then requires a new OTP", async () => {
+    it("enforces max of 10 failed attempts across new AuthService instances then requires a new OTP", async () => {
       vi.useFakeTimers();
       try {
         const { services, ports } = container;
@@ -711,37 +724,103 @@ describe("API Service Layer Tests", () => {
           orgName: "Attempts Org",
         });
 
-        const org = await ports.orgRepo.findById(signupRes.userId!);
-        const correctOtp = org!.otp!;
+        const correctOtp = signupRes.otp!;
 
         for (let i = 0; i < 9; i++) {
           if (i > 0 && i % 4 === 0) {
             vi.advanceTimersByTime(65000);
           }
+          const instance = new AuthService(ports.authProvider, ports.orgRepo, ports.profileRepo);
           await expect(
-            services.authService.verifyOrgOtp(signupRes.userId!, "000000")
+            instance.verifyOrgOtp(signupRes.userId!, "000000")
           ).rejects.toThrow("Invalid OTP code");
         }
 
         vi.advanceTimersByTime(65000);
+        const instance10 = new AuthService(ports.authProvider, ports.orgRepo, ports.profileRepo);
         await expect(
-          services.authService.verifyOrgOtp(signupRes.userId!, "000000")
+          instance10.verifyOrgOtp(signupRes.userId!, "000000")
         ).rejects.toThrow("Maximum failed attempts exceeded. Please request a new OTP");
 
         vi.advanceTimersByTime(65000);
+        const freshInstance = new AuthService(ports.authProvider, ports.orgRepo, ports.profileRepo);
         await expect(
-          services.authService.verifyOrgOtp(signupRes.userId!, correctOtp)
+          freshInstance.verifyOrgOtp(signupRes.userId!, correctOtp)
         ).rejects.toThrow("Maximum failed attempts exceeded. Please request a new OTP");
 
-        await services.authService.resendOrgOtp(signupRes.userId!);
+        const resendRes = await freshInstance.resendOrgOtp(signupRes.userId!);
+        expect(resendRes.otp).toMatch(/^\d{6}$/);
 
         const refreshedOrg = await ports.orgRepo.findById(signupRes.userId!);
-        expect(refreshedOrg!.otp).toMatch(/^\d{6}$/);
+        expect(refreshedOrg!.otpFailedAttempts).toBe(0);
 
-        const verified = await services.authService.verifyOrgOtp(signupRes.userId!, refreshedOrg!.otp!);
+        const anotherInstance = new AuthService(ports.authProvider, ports.orgRepo, ports.profileRepo);
+        const verified = await anotherInstance.verifyOrgOtp(signupRes.userId!, resendRes.otp!);
         expect(verified).toBe(true);
       } finally {
         vi.useRealTimers();
+      }
+    });
+
+    it("accepts client IP only with valid INTERNAL_PROXY_SECRET and uses last entry", async () => {
+      const originalSecret = process.env.INTERNAL_PROXY_SECRET;
+      process.env.INTERNAL_PROXY_SECRET = "secret-test-key";
+
+      try {
+        const app = container.app;
+
+        for (let i = 0; i < 6; i++) {
+          const res = await app.request("/api/v1/auth/signup", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-forwarded-for": "203.0.113.5",
+            },
+            body: JSON.stringify({
+              email: `untrusted-${i}@test.com`,
+              password: "password123",
+              name: `User ${i}`,
+              role: "member",
+            }),
+          });
+          expect(res.status).toBe(201);
+        }
+
+        for (let i = 0; i < 5; i++) {
+          const res = await app.request("/api/v1/auth/signup", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-forwarded-for": "10.0.0.1, 198.51.100.99",
+              "x-internal-proxy-secret": "secret-test-key",
+            },
+            body: JSON.stringify({
+              email: `trusted-${i}@test.com`,
+              password: "password123",
+              name: `User ${i}`,
+              role: "member",
+            }),
+          });
+          expect(res.status).toBe(201);
+        }
+
+        const blockedRes = await app.request("/api/v1/auth/signup", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-forwarded-for": "10.0.0.1, 198.51.100.99",
+            "x-internal-proxy-secret": "secret-test-key",
+          },
+          body: JSON.stringify({
+            email: "trusted-blocked@test.com",
+            password: "password123",
+            name: "User Blocked",
+            role: "member",
+          }),
+        });
+        expect(blockedRes.status).toBe(429);
+      } finally {
+        process.env.INTERNAL_PROXY_SECRET = originalSecret;
       }
     });
   });

@@ -119,6 +119,13 @@ export interface TeamRepo {
   removeMember(teamId: string, userId: string): Promise<void>;
 }
 
+export type VerifyOtpReason = "expired" | "max_attempts" | "invalid" | "not_found";
+
+export interface VerifyOtpResult {
+  success: boolean;
+  reason?: VerifyOtpReason;
+}
+
 export interface OrganisationRepo {
   findById(id: string): Promise<Organisation | null>;
   findByOwnerId(ownerId: string): Promise<Organisation | null>;
@@ -126,7 +133,7 @@ export interface OrganisationRepo {
     data: Omit<Organisation, "id" | "createdAt" | "updatedAt">
   ): Promise<Organisation>;
   update(id: string, data: Partial<Organisation>): Promise<Organisation>;
-  verifyOtp(orgId: string, otp: string): Promise<boolean>;
+  verifyOtp(orgId: string, otp: string): Promise<VerifyOtpResult>;
 }
 
 export interface MemberRepo {

@@ -1,7 +1,8 @@
 import { Kysely } from "kysely";
 import { Database } from "./database";
-import { OrganisationRepo } from "../../ports/repositories";
+import { OrganisationRepo, VerifyOtpResult } from "../../ports/repositories";
 import { Organisation, OrgStatus } from "../../ports/domain";
+import { verifyOtpHash } from "../../crypto";
 
 export class KyselyOrganisationRepo implements OrganisationRepo {
   constructor(private readonly db: Kysely<Database>) {}
@@ -15,6 +16,8 @@ export class KyselyOrganisationRepo implements OrganisationRepo {
       status: (row.is_approved ? "approved" : "pending") as OrgStatus,
       isOtpVerified: Boolean(row.is_otp_verified),
       otp: row.org_otp,
+      otpExpiresAt: row.otp_expires_at ? new Date(row.otp_expires_at) : null,
+      otpFailedAttempts: row.otp_failed_attempts ?? 0,
       createdAt: new Date(row.created_at),
     };
   }
@@ -39,6 +42,8 @@ export class KyselyOrganisationRepo implements OrganisationRepo {
         is_approved: data.status === "approved",
         is_otp_verified: data.isOtpVerified,
         org_otp: data.otp ?? null,
+        otp_expires_at: data.otpExpiresAt ?? null,
+        otp_failed_attempts: data.otpFailedAttempts ?? 0,
       })
       .execute();
 
@@ -56,6 +61,8 @@ export class KyselyOrganisationRepo implements OrganisationRepo {
     if (data.status !== undefined) values.is_approved = data.status === "approved";
     if (data.isOtpVerified !== undefined) values.is_otp_verified = data.isOtpVerified;
     if (data.otp !== undefined) values.org_otp = data.otp;
+    if (data.otpExpiresAt !== undefined) values.otp_expires_at = data.otpExpiresAt;
+    if (data.otpFailedAttempts !== undefined) values.otp_failed_attempts = data.otpFailedAttempts;
 
     if (Object.keys(values).length > 0) {
       await this.db.updateTable("organisations").set(values).where("id", "=", id).execute();
@@ -68,29 +75,61 @@ export class KyselyOrganisationRepo implements OrganisationRepo {
     return updated;
   }
 
-  async verifyOtp(orgId: string, otp: string): Promise<boolean> {
-    const row = await this.db
-      .selectFrom("organisations")
-      .select(["id", "org_otp"])
-      .where("id", "=", orgId)
-      .executeTakeFirst();
+  async verifyOtp(orgId: string, otp: string): Promise<VerifyOtpResult> {
+    return this.db.transaction().execute(async (trx) => {
+      const row = await trx
+        .selectFrom("organisations")
+        .select([
+          "id",
+          "org_otp",
+          "otp_expires_at",
+          "otp_failed_attempts",
+          "is_otp_verified",
+        ])
+        .where("id", "=", orgId)
+        .forUpdate()
+        .executeTakeFirst();
 
-    if (!row || !row.org_otp) {
-      return false;
-    }
+      if (!row || !row.org_otp) {
+        return { success: false, reason: "not_found" };
+      }
 
-    if (row.org_otp === otp) {
-      await this.db
+      if ((row.otp_failed_attempts ?? 0) >= 10) {
+        return { success: false, reason: "max_attempts" };
+      }
+
+      if (row.otp_expires_at && new Date(row.otp_expires_at).getTime() < Date.now()) {
+        return { success: false, reason: "expired" };
+      }
+
+      const isMatch = verifyOtpHash(otp, row.org_otp);
+      if (isMatch) {
+        await trx
+          .updateTable("organisations")
+          .set({
+            is_otp_verified: true,
+            org_otp: null,
+            otp_expires_at: null,
+            otp_failed_attempts: 0,
+          })
+          .where("id", "=", orgId)
+          .execute();
+        return { success: true };
+      }
+
+      const nextAttempts = (row.otp_failed_attempts ?? 0) + 1;
+      await trx
         .updateTable("organisations")
         .set({
-          is_otp_verified: true,
-          org_otp: null,
+          otp_failed_attempts: nextAttempts,
         })
         .where("id", "=", orgId)
         .execute();
-      return true;
-    }
 
-    return false;
+      if (nextAttempts >= 10) {
+        return { success: false, reason: "max_attempts" };
+      }
+      return { success: false, reason: "invalid" };
+    });
   }
 }

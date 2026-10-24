@@ -15,36 +15,65 @@ function isTokenExpired(token: string): boolean {
   }
 }
 
-async function refreshTokens(refreshToken: string): Promise<{ accessToken: string; refreshToken: string; expiresAt: number } | null> {
+type RefreshResult =
+  | { status: "ok"; tokens: { accessToken: string; refreshToken: string; expiresAt: number } }
+  | { status: "invalid" }
+  | { status: "unavailable" };
+
+async function refreshTokens(refreshToken: string): Promise<RefreshResult> {
   try {
+    const proxySecret = process.env.INTERNAL_PROXY_SECRET;
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (proxySecret) {
+      headers["x-internal-proxy-secret"] = proxySecret;
+    }
     const res = await fetch(`${API_BASE_URL}/api/v1/auth/refresh`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify({ refreshToken }),
     });
-    if (!res.ok) return null;
-    return await res.json();
+    if (res.ok) {
+      const tokens = await res.json();
+      return { status: "ok", tokens };
+    }
+    if (res.status === 400 || res.status === 401) {
+      return { status: "invalid" };
+    }
+    return { status: "unavailable" };
   } catch {
-    return null;
+    return { status: "unavailable" };
   }
 }
 
 async function handleProxy(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   if (["POST", "PUT", "PATCH", "DELETE"].includes(req.method)) {
     const origin = req.headers.get("origin");
-    const host = req.headers.get("host");
-    const siteOrigin = req.nextUrl.origin;
-    const isMatch =
-      origin &&
-      (origin === siteOrigin ||
-        (host && (origin === `http://${host}` || origin === `https://${host}`)));
+    if (!origin) {
+      return new NextResponse(
+        JSON.stringify({ error: { code: "FORBIDDEN", message: "Missing origin header" } }),
+        { status: 403, headers: { "Content-Type": "application/json" } }
+      );
+    }
+    const siteUrl = process.env.SITE_URL || process.env.NEXT_PUBLIC_SITE_URL;
+    const expectedOrigins: string[] = [];
+    if (siteUrl) {
+      try {
+        expectedOrigins.push(new URL(siteUrl).origin);
+      } catch {}
+    }
+    expectedOrigins.push(req.nextUrl.origin);
+
+    const isDevelopment = process.env.NODE_ENV !== "production";
+    const isLocalhost =
+      isDevelopment &&
+      (/^https?:\/\/localhost(:\d+)?$/.test(origin) ||
+        /^https?:\/\/127\.0\.0\.1(:\d+)?$/.test(origin));
+
+    const isMatch = expectedOrigins.includes(origin) || isLocalhost;
     if (!isMatch) {
       return new NextResponse(
         JSON.stringify({ error: { code: "FORBIDDEN", message: "Invalid origin" } }),
-        {
-          status: 403,
-          headers: { "Content-Type": "application/json" },
-        }
+        { status: 403, headers: { "Content-Type": "application/json" } }
       );
     }
   }
@@ -90,16 +119,30 @@ async function handleProxy(req: NextRequest, { params }: { params: Promise<{ pat
   let refreshedTokens: { accessToken: string; refreshToken: string; expiresAt: number } | null = null;
 
   if (refreshToken && (!accessToken || isTokenExpired(accessToken))) {
-    refreshedTokens = await refreshTokens(refreshToken);
-    if (refreshedTokens) {
+    const refresh = await refreshTokens(refreshToken);
+    if (refresh.status === "ok") {
+      refreshedTokens = refresh.tokens;
       accessToken = refreshedTokens.accessToken;
+    } else if (refresh.status === "invalid") {
+      const response = new NextResponse(
+        JSON.stringify({ error: { code: "UNAUTHORIZED", message: "Session expired" } }),
+        { status: 401, headers: { "Content-Type": "application/json" } }
+      );
+      response.cookies.delete(ACCESS_TOKEN_COOKIE);
+      response.cookies.delete(REFRESH_TOKEN_COOKIE);
+      return response;
     }
   }
 
-  const clientIp =
-    (req as any).ip ||
-    req.headers.get("x-real-ip") ||
-    "127.0.0.1";
+  const trustedHeader = (process.env.TRUSTED_IP_HEADER || "x-real-ip").toLowerCase();
+  const rawIp = req.headers.get(trustedHeader);
+  let clientIp: string | undefined = undefined;
+  if (rawIp) {
+    const parts = rawIp.split(",").map((s) => s.trim()).filter(Boolean);
+    if (parts.length > 0) {
+      clientIp = parts[parts.length - 1];
+    }
+  }
 
   const forwardHeaders = new Headers();
   req.headers.forEach((val, key) => {
@@ -113,14 +156,23 @@ async function handleProxy(req: NextRequest, { params }: { params: Promise<{ pat
       lower !== "content-length" &&
       lower !== "authorization" &&
       lower !== "x-forwarded-for" &&
-      lower !== "x-real-ip"
+      lower !== "x-real-ip" &&
+      lower !== "x-internal-proxy-secret" &&
+      lower !== "internal-proxy-secret"
     ) {
       forwardHeaders.set(key, val);
     }
   });
 
-  forwardHeaders.set("x-forwarded-for", clientIp);
-  forwardHeaders.set("x-real-ip", clientIp);
+  if (clientIp) {
+    forwardHeaders.set("x-forwarded-for", clientIp);
+    forwardHeaders.set("x-real-ip", clientIp);
+  }
+
+  const proxySecret = process.env.INTERNAL_PROXY_SECRET;
+  if (proxySecret) {
+    forwardHeaders.set("x-internal-proxy-secret", proxySecret);
+  }
 
   if (accessToken) {
     forwardHeaders.set("Authorization", `Bearer ${accessToken}`);
@@ -138,8 +190,9 @@ async function handleProxy(req: NextRequest, { params }: { params: Promise<{ pat
   });
 
   if (upstreamRes.status === 401 && refreshToken && !refreshedTokens) {
-    refreshedTokens = await refreshTokens(refreshToken);
-    if (refreshedTokens) {
+    const refresh = await refreshTokens(refreshToken);
+    if (refresh.status === "ok") {
+      refreshedTokens = refresh.tokens;
       accessToken = refreshedTokens.accessToken;
       forwardHeaders.set("Authorization", `Bearer ${accessToken}`);
       upstreamRes = await fetch(targetUrl.toString(), {
@@ -147,6 +200,14 @@ async function handleProxy(req: NextRequest, { params }: { params: Promise<{ pat
         headers: forwardHeaders,
         body,
       });
+    } else if (refresh.status === "invalid") {
+      const response = new NextResponse(
+        JSON.stringify({ error: { code: "UNAUTHORIZED", message: "Session expired" } }),
+        { status: 401, headers: { "Content-Type": "application/json" } }
+      );
+      response.cookies.delete(ACCESS_TOKEN_COOKIE);
+      response.cookies.delete(REFRESH_TOKEN_COOKIE);
+      return response;
     }
   }
 

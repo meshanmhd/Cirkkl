@@ -18,6 +18,8 @@ export interface Organisation {
   status: OrgStatus;
   isOtpVerified: boolean;
   otp?: string | null;
+  otpExpiresAt?: Date | null;
+  otpFailedAttempts?: number;
   phone?: string | null;
   website?: string | null;
   logoKey?: string | null;
