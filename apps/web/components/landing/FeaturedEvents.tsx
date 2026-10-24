@@ -1,8 +1,9 @@
 import { api } from "@/lib/api";
 import { AccordionGallery } from "@/components/ui/AccordionGallery";
+import { EventSummary } from "@cirkkl/contracts";
 
 export default async function FeaturedEvents() {
-  let featured: any[] = [];
+  let featured: EventSummary[] = [];
   try {
     const res = await api.events.list({ limit: 6 });
     const all = res.items || [];

@@ -337,4 +337,61 @@ describe("API Service Layer Tests", () => {
       ).rejects.toThrow("Approved organisation required to create events");
     });
   });
+
+  describe("profileService", () => {
+    it("should compute isProfileCompleted only when all required fields are present", async () => {
+      const { services, ports } = container;
+      const caller = { userId: "user-profile-1", role: "attendee" as const };
+
+      await ports.profileRepo.create({
+        userId: caller.userId,
+        email: "user1@example.com",
+        isProfileCompleted: false,
+      });
+
+      const partialRes = await services.profileService.updateProfile(
+        { bio: "Just a short bio" },
+        caller
+      );
+      expect(partialRes.profile.isProfileCompleted).toBe(false);
+
+      const completeRes = await services.profileService.updateProfile(
+        {
+          fullName: "Jane Doe",
+          college: "MIT",
+          branch: "CS",
+          academicYear: "4",
+          phoneNumber: "+919876543210",
+          gender: "Female",
+        },
+        caller
+      );
+      expect(completeRes.profile.isProfileCompleted).toBe(true);
+    });
+
+    it("should reject avatar key that does not start with profiles/<userId>/", async () => {
+      const { services, ports } = container;
+      const caller = { userId: "user-profile-2", role: "attendee" as const };
+
+      await ports.profileRepo.create({
+        userId: caller.userId,
+        email: "user2@example.com",
+        isProfileCompleted: false,
+      });
+
+      await expect(
+        services.profileService.updateAvatar("other-folder/avatar.png", caller)
+      ).rejects.toThrow(`Avatar key must start with profiles/${caller.userId}/`);
+
+      await expect(
+        services.profileService.updateAvatar(`profiles/victim-id/avatar.png`, caller)
+      ).rejects.toThrow(`Avatar key must start with profiles/${caller.userId}/`);
+
+      const validRes = await services.profileService.updateAvatar(
+        `profiles/${caller.userId}/my-avatar.png`,
+        caller
+      );
+      expect(validRes.avatarUrl).toBeDefined();
+    });
+  });
 });

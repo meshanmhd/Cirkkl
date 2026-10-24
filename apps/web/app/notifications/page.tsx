@@ -3,14 +3,14 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { 
-  Loader2, Check, X, Users, Search, ChevronDown, MoreHorizontal, 
-  AlertCircle, Ticket, Trash2, Calendar, Bell, RefreshCw
+  Loader2, Check, X, Users, Search, 
+  AlertCircle, Ticket, Trash2, Calendar, RefreshCw
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { formatDistanceToNow } from "date-fns";
 import Navbar from "@/components/layout/Navbar";
-import { acceptTeamInvite } from "@/app/actions/registration";
+import { api, NotificationItem, getErrorMessage } from "@/lib/api";
 import {
   Dialog,
   DialogContent,
@@ -18,21 +18,8 @@ import {
   DialogTitle
 } from "@/components/ui/dialog";
 
-type Notification = {
-  id: string;
-  type: string;
-  read: boolean;
-  created_at: string;
-  sender_id: string;
-  event_id: string;
-  team_id: string;
-  sender: { full_name: string };
-  event: { title: string };
-  team: { name: string };
-};
-
 export default function NotificationsPage() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
   
@@ -41,37 +28,12 @@ export default function NotificationsPage() {
   const [successDialogOpen, setSuccessDialogOpen] = useState(false);
   const [successDialogMessage, setSuccessDialogMessage] = useState("");
   const [notLoggedIn, setNotLoggedIn] = useState(false);
-  const [inviteToAccept, setInviteToAccept] = useState<Notification | null>(null);
-  const [inviteToReject, setInviteToReject] = useState<Notification | null>(null);
+  const [inviteToAccept, setInviteToAccept] = useState<NotificationItem | null>(null);
+  const [inviteToReject, setInviteToReject] = useState<NotificationItem | null>(null);
   
   const supabase = createClient();
 
-  useEffect(() => {
-    fetchNotifications();
-
-    let subscription: any = null;
-    
-    const setupRealtime = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      
-      const channelName = `notifications-${user.id}-${Date.now()}`;
-      subscription = supabase.channel(channelName)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` }, (payload) => {
-          fetchNotifications();
-        })
-        .subscribe();
-    };
-    
-    setupRealtime();
-
-    return () => {
-      if (subscription) supabase.removeChannel(subscription);
-    };
-  }, []);
-
-  const fetchNotifications = async () => {
-    setLoading(true);
+  const loadNotifications = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       setNotLoggedIn(true);
@@ -79,118 +41,85 @@ export default function NotificationsPage() {
       return;
     }
 
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    await supabase.from('notifications')
-      .delete()
-      .eq('user_id', user.id)
-      .lt('created_at', thirtyDaysAgo.toISOString());
-
-    const { data, error } = await supabase
-      .from('notifications')
-      .select(`
-        id, type, read, created_at, sender_id, event_id, team_id,
-        event:events(title),
-        team:teams(name)
-      `)
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
-
-    if (data && !error) {
-      const senderIds = Array.from(new Set(data.map((n: any) => n.sender_id).filter(Boolean)));
-      let userMap = new Map();
-      if (senderIds.length > 0) {
-        const { data: usersData } = await supabase
-          .from('users')
-          .select('id, full_name')
-          .in('id', senderIds);
-        userMap = new Map(usersData?.map((u: any) => [u.id, u.full_name]) || []);
-      }
-      
-      const teamIds = Array.from(new Set(data.map((n: any) => n.team_id).filter(Boolean)));
-      let teamStatusMap = new Map();
-      if (teamIds.length > 0) {
-        const { data: teamMembersData } = await supabase
-          .from('team_members')
-          .select('team_id, status')
-          .eq('user_id', user.id)
-          .in('team_id', teamIds);
-        teamStatusMap = new Map(teamMembersData?.map((tm: any) => [tm.team_id, tm.status]) || []);
-      }
-      
-      const enrichedData = data.map((n: any) => {
-        let isRead = n.read;
-        let finalStatus = null;
-        if (n.type === 'team_invite') {
-          const status = teamStatusMap.get(n.team_id);
-          finalStatus = status;
-          if (status === 'pending') {
-            isRead = false;
-          } else if (status === 'approved' || status === 'rejected') {
-            isRead = true;
-          }
-        }
-        return {
-          ...n,
-          read: isRead,
-          team_status: finalStatus,
-          sender: { full_name: userMap.get(n.sender_id) || 'Someone' }
-        };
-      });
-      
-      setNotifications(enrichedData as unknown as Notification[]);
-    } else if (error) {
-      console.error('[Notifications] fetch error:', error);
+    try {
+      const res = await api.notifications.list({ filter: "all" });
+      setNotifications(res.items);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
+  };
+
+  useEffect(() => {
+    let mounted = true;
+    const init = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!mounted) return;
+      if (!user) {
+        setNotLoggedIn(true);
+        setLoading(false);
+        return;
+      }
+      try {
+        const res = await api.notifications.list({ filter: "all" });
+        if (mounted) setNotifications(res.items);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    init();
+    const unsubscribe = api.notifications.stream(() => {
+      init();
+    });
+
+    return () => {
+      mounted = false;
+      unsubscribe();
+    };
+  }, []);
+
+  const handleRefresh = async () => {
+    setLoading(true);
+    await loadNotifications();
   };
 
   const markAllAsRead = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    await supabase.from('notifications')
-      .update({ read: true })
-      .eq('user_id', user.id)
-      .eq('read', false)
-      .neq('type', 'team_invite');
-      
-    setNotifications(prev => prev.map(n => 
-      (n.type === 'team_invite' && !n.read) ? n : { ...n, read: true }
-    ));
+    try {
+      await api.notifications.markAllRead();
+      setNotifications(prev => prev.map(n => 
+        (n.type === 'team_invite' && (!n.inviteStatus || n.inviteStatus === 'pending')) ? n : { ...n, isRead: true }
+      ));
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   const markSingleAsRead = async (id: string) => {
-    await supabase.from('notifications').update({ read: true }).eq('id', id);
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
-  };
-
-  const deleteNotif = async (id: string) => {
-    await supabase.from('notifications').delete().eq('id', id);
-    setNotifications(prev => prev.filter(n => n.id !== id));
+    try {
+      await api.notifications.markRead(id);
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   const confirmAccept = async () => {
-    if (!inviteToAccept) return;
-    const notif = inviteToAccept;
-    setProcessingId(notif.id);
+    if (!inviteToAccept?.teamId || !inviteToAccept.eventId) return;
+    const { id, teamId, eventId, teamName, message } = inviteToAccept;
+    setProcessingId(id);
     try {
-      const result = await acceptTeamInvite(notif.team_id, notif.event_id);
-      
-      if (!result.success) {
-        if (result.error === 'Team not found.' || result.error === 'Team not found' || (result.error && result.error.includes('rejected'))) {
-          alert(`This invite is no longer valid or the team was rejected/deleted. (Error: ${result.error})`);
-          await deleteNotif(notif.id);
-          return;
-        }
-        throw new Error(result.error);
-      }
-
-      await supabase.from('notifications').update({ read: true }).eq('id', notif.id);
-      setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, team_status: 'approved', read: true } : n));
-      setSuccessDialogMessage(`You have joined the team ${notif.team?.name}, for any query contact the team leader.`);
+      await api.registrations.acceptTeamInvite(teamId, eventId);
+      await api.notifications.markRead(id);
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, inviteStatus: 'approved', isRead: true } : n));
+      const targetTeam = teamName || message.match(/join team (.+?) for/)?.[1] || "the team";
+      setSuccessDialogMessage(`You have joined the team ${targetTeam}, for any query contact the team leader.`);
       setSuccessDialogOpen(true);
-    } catch (err: any) {
-      alert("Failed to accept invite: " + err.message);
+    } catch (err) {
+      alert("Failed to accept invite: " + getErrorMessage(err));
     } finally {
       setProcessingId(null);
       setInviteToAccept(null);
@@ -198,59 +127,45 @@ export default function NotificationsPage() {
   };
 
   const confirmDecline = async () => {
-    if (!inviteToReject) return;
-    const notif = inviteToReject;
-    setProcessingId(notif.id);
+    if (!inviteToReject?.teamId || !inviteToReject.eventId) return;
+    const { id, teamId, eventId } = inviteToReject;
+    setProcessingId(id);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      await supabase.from('team_members').update({ status: 'rejected' }).eq('team_id', notif.team_id).eq('user_id', user.id);
-      
-      await supabase.from('notifications').update({ read: true }).eq('id', notif.id);
-      setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, team_status: 'rejected', read: true } : n));
-    } catch (err: any) {
-      alert("Failed to decline invite: " + err.message);
+      await api.registrations.declineTeamInvite(teamId, eventId);
+      await api.notifications.markRead(id);
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, inviteStatus: 'rejected', isRead: true } : n));
+    } catch (err) {
+      alert("Failed to decline invite: " + getErrorMessage(err));
     } finally {
       setProcessingId(null);
       setInviteToReject(null);
     }
   };
 
-  const getTitleDesc = (n: Notification & { team_status?: string }) => {
+  const getTitleDesc = (n: NotificationItem) => {
     if (n.type === 'team_invite') {
-      const teamName = n.team?.name || 'the team';
-      if (n.team_status === 'approved') {
+      const teamName = n.teamName || n.message.match(/join team (.+?) for/)?.[1] || "the team";
+      const eventTitle = n.eventTitle || "the event";
+      if (n.inviteStatus === 'approved') {
         return {
-          title: `Team Invite Accepted`,
-          desc: `You joined ${teamName} for the event ${n.event?.title}.`
+          title: "Team Invite Accepted",
+          desc: `You joined ${teamName} for the event ${eventTitle}.`
         };
       }
-      if (n.team_status === 'rejected') {
+      if (n.inviteStatus === 'rejected') {
         return {
-          title: `Team Invite Rejected`,
-          desc: `You declined the invite to join ${teamName} for the event ${n.event?.title}.`
+          title: "Team Invite Rejected",
+          desc: `You declined the invite to join ${teamName} for the event ${eventTitle}.`
         };
       }
       return {
-        title: `Team Invite received`,
-        desc: `${n.sender?.full_name || 'Someone'} invited you to join ${teamName} for the event ${n.event?.title}.`
-      };
-    }
-    if (n.type === 'registration_approved') {
-      return {
-        title: `Registration Approved`,
-        desc: `Your registration for ${n.event?.title} has been approved.`
-      };
-    }
-    if (n.type === 'registration_rejected') {
-      return {
-        title: `Registration Rejected`,
-        desc: `Your registration for ${n.event?.title} has been rejected.`
+        title: n.title || "Team Invite received",
+        desc: n.message || `${n.senderName || 'Someone'} invited you to join ${teamName} for the event ${eventTitle}.`
       };
     }
     return {
-      title: `Notification`,
-      desc: `You have a new update for ${n.event?.title || 'an event'}.`
+      title: n.title,
+      desc: n.message
     };
   };
 
@@ -288,18 +203,21 @@ export default function NotificationsPage() {
         </div>
 
         <div className="flex items-center gap-6 border-b border-[#E5E5EA] mb-6">
-          {["All", "Invites", "General"].map(tab => (
-            <button 
-              key={tab} 
-              onClick={() => setActiveTab(tab.toLowerCase() as any)}
-              className={`pb-3 text-sm font-medium transition-all relative ${activeTab === tab.toLowerCase() ? "text-[#111111]" : "text-[#6E6E73] hover:text-[#111111]"}`}
-            >
-              {tab}
-              {activeTab === tab.toLowerCase() && (
-                <span className="absolute bottom-[-1px] left-0 right-0 h-[2px] bg-[#cfe467] rounded-t-md" />
-              )}
-            </button>
-          ))}
+          {(["All", "Invites", "General"] as const).map(tab => {
+            const key = tab.toLowerCase() as "all" | "invites" | "general";
+            return (
+              <button 
+                key={tab} 
+                onClick={() => setActiveTab(key)}
+                className={`pb-3 text-sm font-medium transition-all relative ${activeTab === key ? "text-[#111111]" : "text-[#6E6E73] hover:text-[#111111]"}`}
+              >
+                {tab}
+                {activeTab === key && (
+                  <span className="absolute bottom-[-1px] left-0 right-0 h-[2px] bg-[#cfe467] rounded-t-md" />
+                )}
+              </button>
+            );
+          })}
         </div>
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
@@ -314,7 +232,7 @@ export default function NotificationsPage() {
             />
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={fetchNotifications} className="p-2 bg-white border border-[#E5E5EA] rounded-lg text-[#111111] hover:bg-[#F5F5F7] transition-all" title="Refresh">
+            <button onClick={handleRefresh} className="p-2 bg-white border border-[#E5E5EA] rounded-lg text-[#111111] hover:bg-[#F5F5F7] transition-all" title="Refresh">
               <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
             </button>
             <button onClick={markAllAsRead} className="px-4 py-2 bg-white border border-[#E5E5EA] rounded-lg text-[13px] font-medium text-[#111111] hover:bg-[#cfe467]/20 hover:border-[#cfe467] hover:text-[#111111] transition-all whitespace-nowrap">
@@ -345,7 +263,7 @@ export default function NotificationsPage() {
             <Image src="/noNotification.png" alt="No notifications" width={240} height={240} className="mb-4 opacity-90" />
             <h2 className="text-lg font-bold text-[#111111]">No notifications here</h2>
             <p className="text-[14px] text-[#6E6E73] mt-2 max-w-sm leading-relaxed">
-              You're all caught up! Check back later for updates.
+              You&apos;re all caught up! Check back later for updates.
             </p>
           </div>
         ) : (
@@ -353,18 +271,17 @@ export default function NotificationsPage() {
             {filtered.map(notif => {
               const { title, desc } = getTitleDesc(notif);
               const badge = getBadgeInfo(notif.type);
-              const Icon = badge.icon;
               return (
                 <div 
                   key={notif.id} 
-                  onClick={() => { if (!notif.read && notif.type !== 'team_invite') markSingleAsRead(notif.id); }}
+                  onClick={() => { if (!notif.isRead && notif.type !== 'team_invite') markSingleAsRead(notif.id); }}
                   className={`flex items-center justify-between py-4 border-b border-[#E5E5EA] group -mx-4 px-4 transition-colors rounded-xl cursor-pointer ${
-                    !notif.read ? 'bg-[#cfe467]/10 hover:bg-[#cfe467]/20' : 'hover:bg-[#F9F9F9]'
+                    !notif.isRead ? 'bg-[#cfe467]/10 hover:bg-[#cfe467]/20' : 'hover:bg-[#F9F9F9]'
                   }`}
                 >
                   <div className="flex items-start gap-4 flex-1 min-w-0 pr-4">
                     <div className="mt-1.5 shrink-0 flex items-center justify-center w-2">
-                      {!notif.read && (
+                      {!notif.isRead && (
                         <div className="w-2 h-2 rounded-full bg-[#cfe467]" />
                       )}
                     </div>
@@ -380,10 +297,10 @@ export default function NotificationsPage() {
                     </div>
                     
                     <span className="text-[13px] text-[#6E6E73] min-w-[120px] text-right shrink-0">
-                      {formatDistanceToNow(new Date(notif.created_at), { addSuffix: true })}
+                      {formatDistanceToNow(new Date(notif.createdAt), { addSuffix: true })}
                     </span>
 
-                    {notif.type === 'team_invite' && !notif.read && (
+                    {notif.type === 'team_invite' && (!notif.inviteStatus || notif.inviteStatus === 'pending') && !notif.isRead && (
                       <div className="hidden sm:flex items-center gap-2">
                         <button
                           onClick={(e) => { e.stopPropagation(); setInviteToReject(notif); }}
@@ -437,7 +354,7 @@ export default function NotificationsPage() {
             <div>
               <DialogTitle className="text-[17px] font-bold text-[#111111]">Reject Invite?</DialogTitle>
               <p className="text-[13px] text-[#6E6E73] mt-2">
-                Are you sure you want to reject the invite to join the team <span className="font-semibold text-[#111111]">{inviteToReject?.team?.name}</span>?
+                Are you sure you want to reject the invite to join the team <span className="font-semibold text-[#111111]">{inviteToReject?.teamName || inviteToReject?.message.match(/join team (.+?) for/)?.[1] || "the team"}</span>?
               </p>
             </div>
             <div className="flex gap-3 w-full mt-2">
@@ -465,7 +382,7 @@ export default function NotificationsPage() {
             <div>
               <DialogTitle className="text-[17px] font-bold text-[#111111]">Accept Invite?</DialogTitle>
               <p className="text-[13px] text-[#6E6E73] mt-2">
-                Are you sure you want to join the team <span className="font-semibold text-[#111111]">{inviteToAccept?.team?.name}</span>?
+                Are you sure you want to join the team <span className="font-semibold text-[#111111]">{inviteToAccept?.teamName || inviteToAccept?.message.match(/join team (.+?) for/)?.[1] || "the team"}</span>?
               </p>
             </div>
             <div className="flex gap-3 w-full mt-2">
