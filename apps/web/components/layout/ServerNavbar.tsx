@@ -1,25 +1,21 @@
-import { createClient } from "@/utils/supabase/server";
+import { getAuthContext } from "@/lib/auth/server";
+import { api } from "@/lib/api";
 import Navbar from "./Navbar";
 
 export default async function ServerNavbar() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  
-  let role = "user";
+  const { user, role } = await getAuthContext();
   let qrCode = null;
+
   if (user) {
-    const { data: profile } = await supabase
-      .from("users")
-      .select("role, qr_code")
-      .eq("id", user.id)
-      .single();
-    if (profile) {
-      role = profile.role;
-      qrCode = profile.qr_code;
-    }
+    try {
+      const { profile } = await api.profile.get();
+      if (profile?.cklId) {
+        qrCode = profile.cklId;
+      }
+    } catch {}
   }
-  
+
   const serializedUser = user ? JSON.parse(JSON.stringify(user)) : null;
 
-  return <Navbar initialUser={serializedUser} initialRole={role} initialQrCode={qrCode} />;
+  return <Navbar initialUser={serializedUser} initialRole={role || "user"} initialQrCode={qrCode} />;
 }

@@ -2,11 +2,10 @@
 
 # Cirkkl Workspace Instructions
 
-## Architecture
-- `apps/web`: Next.js web application (`@cirkkl/web`)
+- `apps/web`: Next.js web application (`@cirkkl/web`, zero dependency on Supabase)
 - `apps/api`: Hono API service (`@cirkkl/api`)
 - `packages/contracts`: Shared schemas and types (`@cirkkl/contracts`)
-- `supabase`: Database migrations at repo root
+- `supabase`: Database migrations at repo root (backend only)
 
 ## Common Commands
 - `pnpm install`: Install all workspace dependencies

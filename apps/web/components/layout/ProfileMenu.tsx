@@ -13,7 +13,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DotQRCode } from "@/components/ui/DotQRCode";
-import { createClient } from "@/utils/supabase/client";
+import { useAuth } from "@/lib/auth/context";
+import { signOutAction } from "@/app/actions/auth";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronRight, Ticket, ChevronLeft, Bell } from "lucide-react";
@@ -36,6 +37,7 @@ interface MenuUser {
 }
 
 export function ProfileMenu({ initialUser = null, initialRole = "user", initialQrCode = null }: { initialUser?: MenuUser | null, initialRole?: string, initialQrCode?: string | null }) {
+  const { user: authUser, role: authRole, loading: authLoading } = useAuth();
   const [user, setUser] = useState<MenuUser | null>(initialUser);
   const [role, setRole] = useState<string>(initialRole);
   const [qrCode, setQrCode] = useState<string | null>(initialQrCode);
@@ -50,7 +52,6 @@ export function ProfileMenu({ initialUser = null, initialRole = "user", initialQ
   const [myEvents, setMyEvents] = useState<EventRegistration[]>([]);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   
-  const supabase = createClient();
   const router = useRouter();
 
   const fetchRole = async () => {
@@ -87,65 +88,39 @@ export function ProfileMenu({ initialUser = null, initialRole = "user", initialQ
     let mounted = true;
     let unsubStream: (() => void) | undefined;
 
-    const initSession = async () => {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) throw error;
-        if (mounted && session?.user) {
-          setUser(session.user);
-          await Promise.all([
-            fetchRole(), 
-            fetchMyEvents(),
-            fetchUnreadCount()
-          ]);
-          unsubStream = api.notifications.stream(() => {
-            if (mounted) fetchUnreadCount();
-          });
-        }
-      } catch (err) {
-        console.error("Error fetching session:", err);
-      } finally {
+    if (authUser) {
+      setUser(authUser);
+      if (authRole) setRole(authRole);
+      Promise.all([
+        fetchRole(),
+        fetchMyEvents(),
+        fetchUnreadCount(),
+      ]).finally(() => {
         if (mounted) setLoading(false);
-      }
-    };
-
-    initSession();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (mounted) {
-        if (session?.user) {
-          setUser(session.user);
-          await Promise.all([fetchRole(), fetchMyEvents(), fetchUnreadCount()]);
-          if (!unsubStream) {
-            unsubStream = api.notifications.stream(() => {
-              if (mounted) fetchUnreadCount();
-            });
-          }
-        } else {
-          setUser(null);
-          setRole("user");
-          setMyEvents([]);
-          setUnreadNotifications(0);
-          unsubStream?.();
-          unsubStream = undefined;
-        }
-        setLoading(false);
-      }
-    });
+      });
+      unsubStream = api.notifications.stream(() => {
+        if (mounted) fetchUnreadCount();
+      });
+    } else if (!authLoading) {
+      setUser(null);
+      setRole("user");
+      setMyEvents([]);
+      setUnreadNotifications(0);
+      setLoading(false);
+    }
 
     return () => {
       mounted = false;
       unsubStream?.();
-      subscription.unsubscribe();
     };
-  }, [supabase]);
+  }, [authUser, authRole, authLoading]);
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    await signOutAction();
     router.push("/login");
   };
 
-  if (loading) {
+  if (loading || authLoading) {
     return <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse shrink-0"></div>;
   }
 

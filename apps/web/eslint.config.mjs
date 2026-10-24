@@ -14,27 +14,16 @@ const eslintConfig = defineConfig([
   {
     rules: {
       "no-restricted-imports": [
-        "warn",
+        "error",
         {
           patterns: [
             {
               group: ["@supabase/*"],
-              message: "Direct imports from @supabase/* are restricted outside of utils/supabase and lib/auth.",
+              message: "Direct imports from @supabase/* are prohibited.",
             },
           ],
         },
       ],
-    },
-  },
-  {
-    files: [
-      "utils/supabase/**",
-      "lib/auth/**",
-      "**/utils/supabase/**",
-      "**/lib/auth/**",
-    ],
-    rules: {
-      "no-restricted-imports": "off",
     },
   },
 ]);

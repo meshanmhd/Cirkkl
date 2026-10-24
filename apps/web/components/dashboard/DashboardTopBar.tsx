@@ -2,7 +2,7 @@
 
 import { Bell } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { signOut } from "@/lib/auth/client";
+import { signOutAction } from "@/app/actions/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -42,7 +42,7 @@ export function DashboardTopBar({ user }: DashboardTopBarProps) {
   const initials = getInitials(fullName);
 
   const handleSignOut = async () => {
-    await signOut();
+    await signOutAction();
     router.push("/login");
   };
 

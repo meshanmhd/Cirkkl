@@ -20,8 +20,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 ## Workspace Rules
 - Use `pnpm` exclusively as the package manager.
 - Workspace packages are referenced with `workspace:*`.
-- `apps/web` must not import from `apps/api`.
-- Direct imports from `@supabase/*` outside of `apps/web/utils/supabase/**` and `apps/web/lib/auth/**` are restricted.
+- Direct imports from `@supabase/*` in `apps/web` are prohibited (apps/web has zero dependency on Supabase).
 
 ## Commands
 - Install: `pnpm install`
