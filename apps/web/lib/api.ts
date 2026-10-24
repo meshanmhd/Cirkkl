@@ -50,17 +50,26 @@ import {
   ListOrgEventsInput,
   ListOrgEventsOutput,
   ListOrgEventsOutputSchema,
+  LoginInput,
+  LoginOutput,
+  LoginOutputSchema,
+  LogoutOutput,
+  LogoutOutputSchema,
   LookupTeammateOutput,
   LookupTeammateOutputSchema,
   MarkAllNotificationsReadOutput,
   MarkAllNotificationsReadOutputSchema,
   MarkNotificationReadOutput,
   MarkNotificationReadOutputSchema,
+  MeOutput,
+  MeOutputSchema,
   MyTicketsOutput,
   MyTicketsOutputSchema,
   NotificationItem,
   OrgEventRegistrationItem,
   OrgMemberItem,
+  RefreshOutput,
+  RefreshOutputSchema,
   RegisterForEventInput,
   RegisterForEventOutput,
   RegisterForEventOutputSchema,
@@ -72,10 +81,15 @@ import {
   RequestUploadOutputSchema,
   ScanAttendanceOutput,
   ScanAttendanceOutputSchema,
+  SignupInput,
+  SignupOutput,
+  SignupOutputSchema,
   ToggleAttendanceOutput,
   ToggleAttendanceOutputSchema,
   UnreadNotificationsCountOutput,
   UnreadNotificationsCountOutputSchema,
+  UpdateAvatarOutput,
+  UpdateAvatarOutputSchema,
   UpdateEventBody,
   UpdateEventOutput,
   UpdateEventOutputSchema,
@@ -86,7 +100,10 @@ import {
   UpdateProfileInput,
   UpdateProfileOutput,
   UpdateProfileOutputSchema,
+  VerifyOrgOtpOutput,
+  VerifyOrgOtpOutputSchema,
 } from "@cirkkl/contracts";
+import { ACCESS_TOKEN_COOKIE } from "@/lib/auth/cookies";
 
 export type {
   NotificationItem,
@@ -97,6 +114,14 @@ export type {
   UpdateEventBody,
   RegistrationStatus,
   EventStatus,
+  LoginInput,
+  LoginOutput,
+  SignupInput,
+  SignupOutput,
+  RefreshOutput,
+  LogoutOutput,
+  VerifyOrgOtpOutput,
+  MeOutput,
 };
 
 export class ApiError extends Error {
@@ -130,6 +155,12 @@ export function getErrorMessage(err: unknown, fallback: string = "An error occur
         return "Please log in to continue.";
       case "FORBIDDEN":
         return "You do not have permission to perform this action.";
+      case "INVALID_CREDENTIALS":
+        return "Invalid email or password.";
+      case "INVALID_OTP":
+        return "Invalid verification code. Please try again.";
+      case "TOO_MANY_REQUESTS":
+        return "Too many requests. Please wait and try again later.";
       case "NOT_FOUND":
         return err.message || "Requested resource not found.";
       case "BAD_REQUEST":
@@ -146,63 +177,44 @@ export function getErrorMessage(err: unknown, fallback: string = "An error occur
   return fallback;
 }
 
-async function getAccessToken(): Promise<string | undefined> {
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+
+async function getServerAccessToken(): Promise<string | undefined> {
   try {
-    if (typeof window !== "undefined") {
-      const { createClient } = await import("@/utils/supabase/client");
-      const supabase = createClient();
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      return session?.access_token;
-    } else {
-      const getHeaders = new Function('return import("next/headers")');
-      const getSupabaseSsr = new Function('return import("@supabase/ssr")');
-      const { cookies } = await getHeaders();
-      const { createServerClient } = await getSupabaseSsr();
-      const cookieStore = await cookies();
-      const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-          cookies: {
-            getAll() {
-              return cookieStore.getAll();
-            },
-            setAll() {},
-          },
-        }
-      );
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      return session?.access_token;
-    }
+    const { cookies } = await import("next/headers");
+    const cookieStore = await cookies();
+    return cookieStore.get(ACCESS_TOKEN_COOKIE)?.value;
   } catch {
     return undefined;
   }
 }
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 async function request<T>(
   path: string,
   options: RequestInit = {},
   schema?: z.ZodType<T>
 ): Promise<T> {
-  const token = await getAccessToken();
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  const isClient = typeof window !== "undefined";
+
   const headers = new Headers(options.headers);
 
-  if (!headers.has("Content-Type") && options.body) {
+  if (!headers.has("Content-Type") && options.body && typeof options.body === "string") {
     headers.set("Content-Type", "application/json");
   }
 
-  if (token && !headers.has("Authorization")) {
-    headers.set("Authorization", `Bearer ${token}`);
+  let url: string;
+  if (isClient) {
+    url = `/api/proxy${normalizedPath}`;
+  } else {
+    url = `${API_BASE_URL}${normalizedPath}`;
+    if (!headers.has("Authorization")) {
+      const serverToken = await getServerAccessToken();
+      if (serverToken) {
+        headers.set("Authorization", `Bearer ${serverToken}`);
+      }
+    }
   }
-
-  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-  const url = `${API_BASE_URL}${normalizedPath}`;
 
   let res: Response;
   try {
@@ -236,6 +248,60 @@ async function request<T>(
 }
 
 export const api = {
+  auth: {
+    login: async (body: LoginInput): Promise<LoginOutput> => {
+      return request<LoginOutput>(
+        "/api/v1/auth/login",
+        {
+          method: "POST",
+          body: JSON.stringify(body),
+        },
+        LoginOutputSchema
+      );
+    },
+    signup: async (body: SignupInput): Promise<SignupOutput> => {
+      return request<SignupOutput>(
+        "/api/v1/auth/signup",
+        {
+          method: "POST",
+          body: JSON.stringify(body),
+        },
+        SignupOutputSchema
+      );
+    },
+    refresh: async (refreshToken: string): Promise<RefreshOutput> => {
+      return request<RefreshOutput>(
+        "/api/v1/auth/refresh",
+        {
+          method: "POST",
+          body: JSON.stringify({ refreshToken }),
+        },
+        RefreshOutputSchema
+      );
+    },
+    logout: async (): Promise<LogoutOutput> => {
+      return request<LogoutOutput>(
+        "/api/v1/auth/logout",
+        {
+          method: "POST",
+        },
+        LogoutOutputSchema
+      );
+    },
+    verifyOrgOtp: async (otpCode: string): Promise<VerifyOrgOtpOutput> => {
+      return request<VerifyOrgOtpOutput>(
+        "/api/v1/auth/verify-org-otp",
+        {
+          method: "POST",
+          body: JSON.stringify({ otpCode }),
+        },
+        VerifyOrgOtpOutputSchema
+      );
+    },
+    me: async (): Promise<MeOutput> => {
+      return request<MeOutput>("/api/v1/auth/me", { method: "GET" }, MeOutputSchema);
+    },
+  },
   events: {
     list: async (params?: Partial<ListEventsInput>): Promise<ListEventsOutput> => {
       const searchParams = new URLSearchParams();
@@ -446,17 +512,23 @@ export const api = {
       onError?: (err: unknown) => void
     ): (() => void) => {
       const controller = new AbortController();
+      const isClient = typeof window !== "undefined";
+      const streamUrl = isClient
+        ? "/api/proxy/api/v1/notifications/stream"
+        : `${API_BASE_URL}/api/v1/notifications/stream`;
 
       (async () => {
         try {
-          const token = await getAccessToken();
           const headers: Record<string, string> = {
             Accept: "text/event-stream",
           };
-          if (token) {
-            headers["Authorization"] = `Bearer ${token}`;
+          if (!isClient) {
+            const token = await getServerAccessToken();
+            if (token) {
+              headers["Authorization"] = `Bearer ${token}`;
+            }
           }
-          const res = await fetch(`${API_BASE_URL}/api/v1/notifications/stream`, {
+          const res = await fetch(streamUrl, {
             headers,
             signal: controller.signal,
           });
@@ -515,6 +587,16 @@ export const api = {
           body: JSON.stringify(body),
         },
         UpdateProfileOutputSchema
+      );
+    },
+    updateAvatar: async (avatarKey: string): Promise<UpdateAvatarOutput> => {
+      return request<UpdateAvatarOutput>(
+        "/api/v1/profile/avatar",
+        {
+          method: "POST",
+          body: JSON.stringify({ avatarKey }),
+        },
+        UpdateAvatarOutputSchema
       );
     },
   },

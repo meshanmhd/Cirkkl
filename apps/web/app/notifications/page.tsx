@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createClient } from "@/utils/supabase/client";
+import { useAuth } from "@/lib/auth/context";
 import { 
   Loader2, Check, X, Users, Search, 
   AlertCircle, Ticket, Trash2, Calendar, RefreshCw
@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 
 export default function NotificationsPage() {
+  const { user, loading: authLoading } = useAuth();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
@@ -30,14 +31,13 @@ export default function NotificationsPage() {
   const [notLoggedIn, setNotLoggedIn] = useState(false);
   const [inviteToAccept, setInviteToAccept] = useState<NotificationItem | null>(null);
   const [inviteToReject, setInviteToReject] = useState<NotificationItem | null>(null);
-  
-  const supabase = createClient();
 
   const loadNotifications = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      setNotLoggedIn(true);
-      setLoading(false);
+      if (!authLoading) {
+        setNotLoggedIn(true);
+        setLoading(false);
+      }
       return;
     }
 
@@ -53,34 +53,40 @@ export default function NotificationsPage() {
 
   useEffect(() => {
     let mounted = true;
-    const init = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!mounted) return;
-      if (!user) {
-        setNotLoggedIn(true);
-        setLoading(false);
-        return;
-      }
-      try {
-        const res = await api.notifications.list({ filter: "all" });
-        if (mounted) setNotifications(res.items);
-      } catch (error) {
-        console.error(error);
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    };
+    let unsubscribe: (() => void) | undefined;
 
-    init();
-    const unsubscribe = api.notifications.stream(() => {
-      init();
-    });
+    if (user) {
+      setNotLoggedIn(false);
+      api.notifications
+        .list({ filter: "all" })
+        .then((res) => {
+          if (mounted) setNotifications(res.items);
+        })
+        .catch(console.error)
+        .finally(() => {
+          if (mounted) setLoading(false);
+        });
+
+      unsubscribe = api.notifications.stream(() => {
+        if (mounted) {
+          api.notifications
+            .list({ filter: "all" })
+            .then((res) => {
+              if (mounted) setNotifications(res.items);
+            })
+            .catch(console.error);
+        }
+      });
+    } else if (!authLoading) {
+      setNotLoggedIn(true);
+      setLoading(false);
+    }
 
     return () => {
       mounted = false;
-      unsubscribe();
+      unsubscribe?.();
     };
-  }, []);
+  }, [user, authLoading]);
 
   const handleRefresh = async () => {
     setLoading(true);

@@ -112,7 +112,7 @@ export function createContainer(adapterOverride?: "supabase" | "memory") {
     });
   }
 
-  const authService = new AuthService(authProvider, orgRepo);
+  const authService = new AuthService(authProvider, orgRepo, profileRepo);
   const eventService = new EventService(eventRepo, ticketRepo, transactionRunner);
   const registrationService = new RegistrationService(
     registrationRepo,

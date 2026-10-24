@@ -1,150 +1,101 @@
 'use server'
 
-import { createClient } from '@/utils/supabase/server'
-import { createAdminClient } from '@/utils/supabase/admin'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
-import crypto from 'crypto'
+import { cookies } from 'next/headers'
+import { api, getErrorMessage } from '@/lib/api'
+import { ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE, getCookieOptions } from '@/lib/auth/cookies'
 
-export async function loginAction(prevState: any, formData: FormData) {
+export async function loginAction(prevState: unknown, formData: FormData) {
   const email = formData.get('email') as string
   const password = formData.get('password') as string
   const redirectTo = formData.get('redirectTo') as string
-  const supabase = await createClient()
 
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  })
+  try {
+    const res = await api.auth.login({ email, password })
+    const cookieStore = await cookies()
+    cookieStore.set(ACCESS_TOKEN_COOKIE, res.accessToken, getCookieOptions(false))
+    cookieStore.set(REFRESH_TOKEN_COOKIE, res.refreshToken, getCookieOptions(true))
 
-  if (error) {
-    return { error: error.message }
-  }
+    revalidatePath('/', 'layout')
 
-  const userId = data?.user?.id
-  let orgData: { id: string; is_otp_verified?: boolean; is_approved?: boolean } | null = null
-  if (userId) {
-    const admin = createAdminClient()
-    const { data: orgRecord } = await admin
-      .from('organisations')
-      .select('id, is_otp_verified, is_approved')
-      .eq('id', userId)
-      .maybeSingle()
-    if (orgRecord) {
-      orgData = orgRecord
+    const isOrg = res.user?.role === 'organisation' || !!res.orgStatus
+    if (isOrg) {
+      if (res.orgStatus && !res.orgStatus.isOtpVerified) {
+        redirect('/verify-org')
+      }
+      if (res.orgStatus && !res.orgStatus.isApproved) {
+        redirect('/pending-approval')
+      }
+      redirect('/dashboard/events')
     }
-  }
 
-  revalidatePath('/', 'layout')
-
-  if (orgData) {
-    if (!orgData.is_otp_verified) {
-      redirect('/verify-org')
+    if (redirectTo) {
+      redirect(redirectTo)
     }
-    if (!orgData.is_approved) {
-      redirect('/pending-approval')
+    redirect('/')
+  } catch (err: unknown) {
+    if (err && typeof err === 'object' && 'digest' in err) {
+      throw err
     }
-    redirect('/dashboard/events')
+    return { error: getErrorMessage(err, 'Invalid email or password.') }
   }
-
-  if (redirectTo) {
-    redirect(redirectTo)
-  }
-  redirect('/')
 }
 
-export async function signupAction(prevState: any, formData: FormData) {
+export async function signupAction(prevState: unknown, formData: FormData) {
   const email = formData.get('email') as string
   const password = formData.get('password') as string
   const fullName = formData.get('name') as string
   const roleInput = formData.get('role') as string
   const role = roleInput === 'organisation' ? 'organisation' : 'member'
 
-  const supabase = await createClient()
+  try {
+    const res = await api.auth.signup({
+      email,
+      password,
+      name: fullName,
+      role,
+      orgName: role === 'organisation' ? fullName : undefined,
+    })
 
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        full_name: fullName,
-      }
+    if (res.accessToken && res.refreshToken) {
+      const cookieStore = await cookies()
+      cookieStore.set(ACCESS_TOKEN_COOKIE, res.accessToken, getCookieOptions(false))
+      cookieStore.set(REFRESH_TOKEN_COOKIE, res.refreshToken, getCookieOptions(true))
     }
-  })
 
-  if (error) {
-    return { error: error.message }
-  }
-
-  if (role === 'organisation' && data.user) {
-    const admin = createAdminClient()
-    const { error: orgInsertError } = await admin
-      .from('organisations')
-      .insert({
-        id: data.user.id,
-        name: fullName,
-        is_approved: false,
-        is_otp_verified: false,
-      })
-
-    if (orgInsertError) {
-      console.error('Failed to create organisation record:', orgInsertError)
+    revalidatePath('/', 'layout')
+    redirect(`/check-email?email=${encodeURIComponent(email)}`)
+  } catch (err: unknown) {
+    if (err && typeof err === 'object' && 'digest' in err) {
+      throw err
     }
+    return { error: getErrorMessage(err, 'Failed to sign up.') }
   }
-
-  revalidatePath('/', 'layout')
-  redirect(`/check-email?email=${encodeURIComponent(email)}`)
 }
 
 export async function signOutAction() {
-  const supabase = await createClient()
-  await supabase.auth.signOut()
+  try {
+    await api.auth.logout()
+  } catch {}
+
+  const cookieStore = await cookies()
+  cookieStore.delete(ACCESS_TOKEN_COOKIE)
+  cookieStore.delete(REFRESH_TOKEN_COOKIE)
+
   revalidatePath('/', 'layout')
   redirect('/login')
 }
 
 export async function verifyOrgOtpAction(otpCode: string) {
-  const supabase = await createClient()
-
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
-    return { error: 'You must be logged in to verify.' }
+  try {
+    await api.auth.verifyOrgOtp(otpCode)
+    revalidatePath('/', 'layout')
+    redirect('/pending-approval')
+  } catch (err: unknown) {
+    if (err && typeof err === 'object' && 'digest' in err) {
+      throw err
+    }
+    return { error: getErrorMessage(err, 'Failed to verify code.') }
   }
-
-  const admin = createAdminClient()
-  const { data: orgData, error: orgError } = await admin
-    .from('organisations')
-    .select('org_otp')
-    .eq('id', user.id)
-    .single()
-
-  if (orgError || !orgData) {
-    return { error: 'Organisation record not found.' }
-  }
-
-  const storedOtp = orgData.org_otp || ''
-  const isMatch =
-    storedOtp.length > 0 &&
-    otpCode.length > 0 &&
-    storedOtp.length === otpCode.length &&
-    crypto.timingSafeEqual(Buffer.from(storedOtp), Buffer.from(otpCode))
-
-  if (!isMatch) {
-    return { error: 'Invalid code. Please try again.' }
-  }
-
-  const { error: updateError } = await admin
-    .from('organisations')
-    .update({
-      is_otp_verified: true,
-      org_otp: null,
-    })
-    .eq('id', user.id)
-
-  if (updateError) {
-    return { error: 'Failed to update verification status.' }
-  }
-
-  revalidatePath('/', 'layout')
-  redirect('/pending-approval')
 }

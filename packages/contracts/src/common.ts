@@ -27,6 +27,7 @@ export const ErrorCodeSchema = z.enum([
   "INVALID_TICKET_TIER",
   "PAYMENT_REQUIRED",
   "UNAUTHORIZED_EVENT_ACTION",
+  "TOO_MANY_REQUESTS",
 ]);
 export type ErrorCode = z.infer<typeof ErrorCodeSchema>;
 

@@ -41,3 +41,7 @@ export function unprocessable(message: string, details?: unknown): AppError {
 export function internalError(message: string = "Internal server error"): AppError {
   return new AppError("INTERNAL_SERVER_ERROR", message, 500);
 }
+
+export function tooManyRequests(message: string = "Too many requests. Please try again later."): AppError {
+  return new AppError("TOO_MANY_REQUESTS", message, 429);
+}

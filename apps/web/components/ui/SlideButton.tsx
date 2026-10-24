@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import QRCode from "react-qr-code";
 import { useState, useRef, useEffect } from 'react';
-import { createClient } from '@/utils/supabase/client';
+import { useAuth } from '@/lib/auth/context';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { usePathname, useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
@@ -261,8 +261,6 @@ function RegistrationModal({
   const [orderReference, setOrderReference] = useState<string | null>(null);
   const [paymentAmount, setPaymentAmount] = useState<number | null>(null);
   const [paymentLoading, setPaymentLoading] = useState(false);
-
-  const supabase = createClient();
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -692,32 +690,21 @@ export const SlideButton = ({ onComplete, event, isFull = false, userRegistratio
   const [regData, setRegData] = useState<any>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  const { user: authUser } = useAuth();
+  const user = authUser;
   const [profile, setProfile] = useState<any>(null);
   const [showProfileModal, setShowProfileModal] = useState(false);
-
-  const supabase = createClient();
   const pathname = usePathname();
   const router = useRouter();
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(data.user);
-      if (data.user) {
-        api.profile.get().then(({ profile: p }) => setProfile(p ? { is_profile_completed: p.isProfileCompleted } : null)).catch(() => setProfile(null));
-      }
-    });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user || null);
-      if (session?.user) {
-        setShowLoginModal(false);
-        api.profile.get().then(({ profile: p }) => setProfile(p ? { is_profile_completed: p.isProfileCompleted } : null)).catch(() => setProfile(null));
-      } else {
-        setProfile(null);
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, []);
+    if (authUser) {
+      setShowLoginModal(false);
+      api.profile.get().then(({ profile: p }) => setProfile(p ? { is_profile_completed: p.isProfileCompleted } : null)).catch(() => setProfile(null));
+    } else {
+      setProfile(null);
+    }
+  }, [authUser]);
 
   useEffect(() => {
     setIsCompleted(!!userRegistration && userRegistration.status !== 'cancelled');
@@ -760,9 +747,9 @@ export const SlideButton = ({ onComplete, event, isFull = false, userRegistratio
   ) => {
     setLoading(true);
     try {
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
-      if (!currentUser) {
+      if (!authUser) {
         setShowLoginModal(true);
+        setLoading(false);
         return;
       }
 

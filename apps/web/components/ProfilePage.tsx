@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select as ShadcnSelect, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar as CalendarUI } from "@/components/ui/calendar";
-import { createClient } from "@/utils/supabase/client";
 import { api } from "@/lib/api";
 import { DotQRCode } from "@/components/ui/DotQRCode";
 import { CountryDropdown, StateDropdown } from "@/components/ui/country-dropdown";
@@ -204,7 +203,6 @@ function TextareaField({ label, value, onChange, placeholder, required }: {
 }
 
 export function ProfilePage({ profile: initialProfile }: { profile: any }) {
-  const supabase = createClient();
   const [profile, setProfile] = useState(initialProfile ?? {});
   const [activeSection, setActiveSection] = useState("profile");
   const [saving, setSaving] = useState(false);
@@ -299,17 +297,40 @@ export function ProfilePage({ profile: initialProfile }: { profile: any }) {
     const file = e.target.files?.[0];
     if (!file) return;
     setAvatarUploading(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setAvatarUploading(false); return; }
-    const ext = file.name.split(".").pop();
-    const path = `avatars/${user.id}.${ext}`;
-    const { error } = await supabase.storage.from("profiles").upload(path, file, { upsert: true });
-    if (!error) {
-      const { data: { publicUrl } } = supabase.storage.from("profiles").getPublicUrl(path);
-      const { data } = await supabase.from("profiles").update({ avatar_url: publicUrl }).eq("id", user.id).select().single();
-      if (data) setProfile((p: any) => ({ ...p, avatar_url: publicUrl }));
+    try {
+      const uploadRes = await api.uploads.requestUpload({
+        targetType: "profile_image",
+        fileName: file.name,
+        contentType: file.type || "image/jpeg",
+        sizeBytes: file.size,
+      });
+
+      const uploadHeaders: Record<string, string> = {
+        ...(uploadRes.headers || {}),
+      };
+      if (file.type) {
+        uploadHeaders["Content-Type"] = file.type;
+      }
+
+      const putRes = await fetch(uploadRes.uploadUrl, {
+        method: uploadRes.method || "PUT",
+        headers: uploadHeaders,
+        body: file,
+      });
+
+      if (!putRes.ok) {
+        throw new Error("Upload failed");
+      }
+
+      const res = await api.profile.updateAvatar(uploadRes.key);
+      if (res.avatarUrl) {
+        setProfile((p: any) => ({ ...p, avatar_url: res.avatarUrl }));
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setAvatarUploading(false);
     }
-    setAvatarUploading(false);
   }
 
   const resolvedCountry = profile.country ? (Country.getCountryByCode(profile.country)?.name || profile.country) : null;

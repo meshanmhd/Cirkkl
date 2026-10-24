@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { Operation } from "./common";
 
-export const UserRoleSchema = z.enum(["member", "organisation"]);
+export const UserRoleSchema = z.enum(["member", "organisation", "attendee", "organiser"]);
 export type UserRole = z.infer<typeof UserRoleSchema>;
 
 export const AuthUserSchema = z.object({
@@ -14,8 +14,8 @@ export const AuthUserSchema = z.object({
 export type AuthUser = z.infer<typeof AuthUserSchema>;
 
 export const OrgStatusSchema = z.object({
-  id: z.string().uuid(),
-  name: z.string(),
+  id: z.string().uuid().optional(),
+  name: z.string().optional(),
   isApproved: z.boolean(),
   isOtpVerified: z.boolean(),
 });
@@ -26,12 +26,16 @@ export const SignupInputSchema = z.object({
   password: z.string().min(6),
   name: z.string().min(1),
   role: UserRoleSchema.default("member"),
+  orgName: z.string().optional(),
 });
 export type SignupInput = z.infer<typeof SignupInputSchema>;
 
 export const SignupOutputSchema = z.object({
-  user: AuthUserSchema,
-  requiresEmailVerification: z.boolean(),
+  accessToken: z.string().optional(),
+  refreshToken: z.string().optional(),
+  expiresAt: z.number().int().optional(),
+  user: AuthUserSchema.optional(),
+  requiresEmailVerification: z.boolean().default(false),
 });
 export type SignupOutput = z.infer<typeof SignupOutputSchema>;
 
@@ -42,11 +46,26 @@ export const LoginInputSchema = z.object({
 export type LoginInput = z.infer<typeof LoginInputSchema>;
 
 export const LoginOutputSchema = z.object({
-  token: z.string(),
-  user: AuthUserSchema,
-  orgStatus: OrgStatusSchema.nullable(),
+  accessToken: z.string(),
+  refreshToken: z.string(),
+  expiresAt: z.number().int(),
+  token: z.string().optional(),
+  user: AuthUserSchema.optional(),
+  orgStatus: OrgStatusSchema.nullable().optional(),
 });
 export type LoginOutput = z.infer<typeof LoginOutputSchema>;
+
+export const RefreshInputSchema = z.object({
+  refreshToken: z.string().min(1),
+});
+export type RefreshInput = z.infer<typeof RefreshInputSchema>;
+
+export const RefreshOutputSchema = z.object({
+  accessToken: z.string(),
+  refreshToken: z.string(),
+  expiresAt: z.number().int(),
+});
+export type RefreshOutput = z.infer<typeof RefreshOutputSchema>;
 
 export const LogoutInputSchema = z.object({});
 export type LogoutInput = z.infer<typeof LogoutInputSchema>;
@@ -72,8 +91,16 @@ export const MeInputSchema = z.object({});
 export type MeInput = z.infer<typeof MeInputSchema>;
 
 export const MeOutputSchema = z.object({
-  user: AuthUserSchema,
-  org: OrgStatusSchema.nullable(),
+  userId: z.string().uuid(),
+  email: z.string().email(),
+  role: UserRoleSchema,
+  org: z
+    .object({
+      isOtpVerified: z.boolean(),
+      isApproved: z.boolean(),
+    })
+    .optional(),
+  user: AuthUserSchema.optional(),
 });
 export type MeOutput = z.infer<typeof MeOutputSchema>;
 
@@ -84,7 +111,7 @@ export const signupOperation: Operation<typeof SignupInputSchema, typeof SignupO
   auth: "public",
   input: SignupInputSchema,
   output: SignupOutputSchema,
-  errorCodes: ["BAD_REQUEST", "EMAIL_ALREADY_EXISTS", "INTERNAL_SERVER_ERROR"],
+  errorCodes: ["BAD_REQUEST", "EMAIL_ALREADY_EXISTS", "TOO_MANY_REQUESTS", "INTERNAL_SERVER_ERROR"],
 };
 
 export const loginOperation: Operation<typeof LoginInputSchema, typeof LoginOutputSchema> = {
@@ -94,7 +121,17 @@ export const loginOperation: Operation<typeof LoginInputSchema, typeof LoginOutp
   auth: "public",
   input: LoginInputSchema,
   output: LoginOutputSchema,
-  errorCodes: ["BAD_REQUEST", "INVALID_CREDENTIALS", "INTERNAL_SERVER_ERROR"],
+  errorCodes: ["BAD_REQUEST", "INVALID_CREDENTIALS", "TOO_MANY_REQUESTS", "INTERNAL_SERVER_ERROR"],
+};
+
+export const refreshOperation: Operation<typeof RefreshInputSchema, typeof RefreshOutputSchema> = {
+  name: "auth.refresh",
+  method: "POST",
+  path: "/api/v1/auth/refresh",
+  auth: "public",
+  input: RefreshInputSchema,
+  output: RefreshOutputSchema,
+  errorCodes: ["BAD_REQUEST", "UNAUTHORIZED", "INTERNAL_SERVER_ERROR"],
 };
 
 export const logoutOperation: Operation<typeof LogoutInputSchema, typeof LogoutOutputSchema> = {
@@ -114,7 +151,7 @@ export const verifyOrgOtpOperation: Operation<typeof VerifyOrgOtpInputSchema, ty
   auth: "user",
   input: VerifyOrgOtpInputSchema,
   output: VerifyOrgOtpOutputSchema,
-  errorCodes: ["UNAUTHORIZED", "NOT_FOUND", "INVALID_OTP", "INTERNAL_SERVER_ERROR"],
+  errorCodes: ["UNAUTHORIZED", "NOT_FOUND", "INVALID_OTP", "TOO_MANY_REQUESTS", "INTERNAL_SERVER_ERROR"],
 };
 
 export const meOperation: Operation<typeof MeInputSchema, typeof MeOutputSchema> = {

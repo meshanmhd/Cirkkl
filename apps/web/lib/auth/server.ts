@@ -1,8 +1,7 @@
 import { redirect } from 'next/navigation'
-import { createClient } from '@/utils/supabase/server'
-import { createAdminClient } from '@/utils/supabase/admin'
+import { api } from '@/lib/api'
 
-export type UserRole = 'member' | 'organisation'
+export type UserRole = 'member' | 'organisation' | 'attendee' | 'organiser'
 
 export interface OrganisationRecord {
   id: string
@@ -11,21 +10,56 @@ export interface OrganisationRecord {
   is_approved: boolean
   is_otp_verified: boolean
   org_otp?: string | null
-  [key: string]: any
+  [key: string]: unknown
+}
+
+export interface AuthUserRecord {
+  id: string
+  email?: string
+  role?: string
+  user_metadata?: {
+    full_name?: string
+    [key: string]: unknown
+  }
+  [key: string]: unknown
 }
 
 export interface AuthContext {
   userId: string | null
-  user: any | null
+  user: AuthUserRecord | null
   role: UserRole | null
   org: OrganisationRecord | null
 }
 
 export async function getAuthContext(): Promise<AuthContext> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  try {
+    const me = await api.auth.me()
+    const isOrg = me.role === 'organisation' || !!me.org
+    const orgRecord: OrganisationRecord | null = isOrg
+      ? {
+          id: me.userId,
+          name: me.user?.name || '',
+          org_email: me.email,
+          is_approved: me.org?.isApproved ?? false,
+          is_otp_verified: me.org?.isOtpVerified ?? false,
+        }
+      : null
 
-  if (!user) {
+    return {
+      userId: me.userId,
+      user: {
+        id: me.userId,
+        email: me.email,
+        role: me.role,
+        user_metadata: {
+          full_name: me.user?.name || (isOrg ? 'Organisation' : undefined),
+        },
+        ...me.user,
+      },
+      role: me.role as UserRole,
+      org: orgRecord,
+    }
+  } catch {
     return {
       userId: null,
       user: null,
@@ -33,72 +67,40 @@ export async function getAuthContext(): Promise<AuthContext> {
       org: null,
     }
   }
-
-  const adminClient = createAdminClient()
-  const { data: orgData } = await adminClient
-    .from('organisations')
-    .select('*')
-    .eq('id', user.id)
-    .maybeSingle()
-
-  if (orgData) {
-    return {
-      userId: user.id,
-      user,
-      role: 'organisation',
-      org: orgData as OrganisationRecord,
-    }
-  }
-
-  return {
-    userId: user.id,
-    user,
-    role: 'member',
-    org: null,
-  }
 }
 
-export async function requireUser() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+export async function requireUser(): Promise<{ userId: string; user: AuthUserRecord }> {
+  const ctx = await getAuthContext()
 
-  if (!user) {
+  if (!ctx.user) {
     redirect('/login')
   }
 
-  return { userId: user.id, user }
+  return { userId: ctx.userId!, user: ctx.user }
 }
 
-export async function requireOrg(): Promise<{ userId: string; user: any; org: OrganisationRecord }> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+export async function requireOrg(): Promise<{ userId: string; user: AuthUserRecord; org: OrganisationRecord }> {
+  const ctx = await getAuthContext()
 
-  if (!user) {
+  if (!ctx.user) {
     redirect('/login')
   }
 
-  const adminClient = createAdminClient()
-  const { data: orgData, error } = await adminClient
-    .from('organisations')
-    .select('*')
-    .eq('id', user.id)
-    .maybeSingle()
-
-  if (error || !orgData) {
+  if (ctx.role !== 'organisation' || !ctx.org) {
     redirect('/')
   }
 
-  if (!orgData.is_otp_verified) {
+  if (!ctx.org.is_otp_verified) {
     redirect('/verify-org')
   }
 
-  if (!orgData.is_approved) {
+  if (!ctx.org.is_approved) {
     redirect('/pending-approval')
   }
 
   return {
-    userId: user.id,
-    user,
-    org: orgData as OrganisationRecord,
+    userId: ctx.userId!,
+    user: ctx.user,
+    org: ctx.org,
   }
 }

@@ -543,4 +543,104 @@ describe("API Service Layer Tests", () => {
       expect(validRes.avatarUrl).toBeDefined();
     });
   });
+
+  describe("authService", () => {
+    it("compensates and deletes auth user if organisation creation fails during signup", async () => {
+      const { services, ports } = container;
+
+      const originalCreate = ports.orgRepo.create;
+      ports.orgRepo.create = async () => {
+        throw new Error("DB failure on organisation create");
+      };
+
+      await expect(
+        services.authService.signup({
+          email: "compensate@org.com",
+          password: "password123",
+          role: "organisation",
+          orgName: "Failed Org",
+        })
+      ).rejects.toThrow("DB failure on organisation create");
+
+      ports.orgRepo.create = originalCreate;
+
+      await expect(
+        services.authService.login({
+          email: "compensate@org.com",
+          password: "password123",
+        })
+      ).rejects.toThrow("Invalid email or password");
+    });
+
+    it("enforces rate limiting on login, signup, and verifyOrgOtp", async () => {
+      const { services } = container;
+
+      for (let i = 0; i < 5; i++) {
+        await services.authService.signup({
+          email: `ratelimit-signup-${i}@test.com`,
+          password: "password123",
+          role: "member",
+          clientIp: "192.168.1.100",
+        });
+      }
+
+      await expect(
+        services.authService.signup({
+          email: "ratelimit-signup-blocked@test.com",
+          password: "password123",
+          role: "member",
+          clientIp: "192.168.1.100",
+        })
+      ).rejects.toThrow("Too many requests. Please try again later.");
+
+      for (let i = 0; i < 5; i++) {
+        try {
+          await services.authService.login({
+            email: "target-user@login.com",
+            password: "wrong-password",
+            clientIp: `10.0.0.${i}`,
+          });
+        } catch (e: any) {
+          if (e.message?.includes("Too many")) throw e;
+        }
+      }
+
+      await expect(
+        services.authService.login({
+          email: "target-user@login.com",
+          password: "wrong-password",
+          clientIp: "10.0.0.99",
+        })
+      ).rejects.toThrow("Too many requests. Please try again later.");
+
+      for (let i = 0; i < 5; i++) {
+        try {
+          await services.authService.verifyOrgOtp("caller-1", "0000", "172.16.0.1");
+        } catch (e: any) {
+          if (e.message?.includes("Too many")) throw e;
+        }
+      }
+
+      await expect(
+        services.authService.verifyOrgOtp("caller-1", "0000", "172.16.0.1")
+      ).rejects.toThrow("Too many requests. Please try again later.");
+    });
+
+    it("supports token refresh", async () => {
+      const { services } = container;
+
+      const signupRes = await services.authService.signup({
+        email: "refresh-user@test.com",
+        password: "password123",
+        role: "member",
+      });
+
+      expect(signupRes.refreshToken).toBeDefined();
+
+      const refreshRes = await services.authService.refresh(signupRes.refreshToken!);
+      expect(refreshRes.accessToken).toBeDefined();
+      expect(refreshRes.refreshToken).toBeDefined();
+      expect(refreshRes.expiresAt).toBeGreaterThan(0);
+    });
+  });
 });

@@ -1,6 +1,5 @@
-import { createClient } from "@/utils/supabase/client";
+import { signOutAction } from "@/app/actions/auth";
 
 export async function signOut() {
-  const supabase = createClient();
-  return supabase.auth.signOut();
+  return signOutAction();
 }
