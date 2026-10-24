@@ -2,9 +2,18 @@
 
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { api, getErrorMessage } from '@/lib/api'
 import { ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE, getCookieOptions } from '@/lib/auth/cookies'
+
+async function getClientIp(): Promise<string | undefined> {
+  const headerList = await headers()
+  const forwardedFor = headerList.get('x-forwarded-for')
+  if (forwardedFor) {
+    return forwardedFor.split(',')[0].trim()
+  }
+  return headerList.get('x-real-ip') || undefined
+}
 
 export async function loginAction(prevState: unknown, formData: FormData) {
   const email = formData.get('email') as string
@@ -12,7 +21,8 @@ export async function loginAction(prevState: unknown, formData: FormData) {
   const redirectTo = formData.get('redirectTo') as string
 
   try {
-    const res = await api.auth.login({ email, password })
+    const clientIp = await getClientIp()
+    const res = await api.auth.login({ email, password }, clientIp)
     const cookieStore = await cookies()
     cookieStore.set(ACCESS_TOKEN_COOKIE, res.accessToken, getCookieOptions(false))
     cookieStore.set(REFRESH_TOKEN_COOKIE, res.refreshToken, getCookieOptions(true))
@@ -50,13 +60,14 @@ export async function signupAction(prevState: unknown, formData: FormData) {
   const role = roleInput === 'organisation' ? 'organisation' : 'member'
 
   try {
+    const clientIp = await getClientIp()
     const res = await api.auth.signup({
       email,
       password,
       name: fullName,
       role,
       orgName: role === 'organisation' ? fullName : undefined,
-    })
+    }, clientIp)
 
     if (res.accessToken && res.refreshToken) {
       const cookieStore = await cookies()
@@ -89,7 +100,8 @@ export async function signOutAction() {
 
 export async function verifyOrgOtpAction(otpCode: string) {
   try {
-    await api.auth.verifyOrgOtp(otpCode)
+    const clientIp = await getClientIp()
+    await api.auth.verifyOrgOtp(otpCode, clientIp)
     revalidatePath('/', 'layout')
     redirect('/pending-approval')
   } catch (err: unknown) {
