@@ -1,17 +1,12 @@
 import { serve } from "@hono/node-server";
-import { Hono } from "hono";
+import { createContainer } from "./container";
+import { env } from "./config/env";
 
-const app = new Hono();
-
-app.get("/health", (c) => {
-  return c.json({ status: "ok" });
-});
-
-const port = Number(process.env.PORT) || 3001;
+const { app } = createContainer();
 
 serve({
   fetch: app.fetch,
-  port,
+  port: env.PORT,
 });
 
 export default app;

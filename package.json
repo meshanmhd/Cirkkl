@@ -2,6 +2,7 @@
   "name": "cirkkl",
   "private": true,
   "scripts": {
+    "dev": "pnpm dev:web",
     "dev:web": "pnpm --filter web dev",
     "dev:api": "pnpm --filter api dev",
     "build": "pnpm --filter \"./packages/*\" --filter \"./apps/*\" build",
