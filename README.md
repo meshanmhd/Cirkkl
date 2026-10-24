@@ -29,6 +29,19 @@ Monorepo workspace powered by [pnpm](https://pnpm.io).
 pnpm install
 ```
 
+### Environment Variables
+
+Configure environment variables by creating `.env.local` based on `.env.example`:
+```bash
+cp .env.example .env.local
+```
+
+Key environment variables:
+- `NEXT_PUBLIC_API_URL`: Base URL for the Cirkkl API (default: `http://localhost:3001`).
+- `NEXT_PUBLIC_SUPABASE_URL`: Supabase project URL (used for Auth and remaining direct services).
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Supabase anon public key.
+- `SUPABASE_SERVICE_ROLE_KEY`: Supabase service role key.
+
 ### Development
 
 Run the Next.js web application:

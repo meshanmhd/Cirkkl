@@ -1,6 +1,6 @@
-import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import { ProfilePage } from "@/components/ProfilePage";
+import { api } from "@/lib/api";
 
 export const metadata = {
   title: "My Profile — Cirkkl",
@@ -8,32 +8,31 @@ export const metadata = {
 };
 
 export default async function ProfileRoute() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) redirect("/login?redirectTo=/profile");
-
-  const { data: userRow } = await supabase
-    .from("users")
-    .select("qr_code, full_name, role")
-    .eq("id", user.id)
-    .single();
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
+  let profileData;
+  try {
+    const res = await api.profile.get();
+    profileData = res.profile;
+  } catch {
+    redirect("/login?redirectTo=/profile");
+  }
 
   return (
     <div className="min-h-screen bg-[#F7F7F8]">
       <ProfilePage
         profile={{
-          ...profile,
-          id: user.id,
-          email: user.email,
-          qr_id: userRow?.qr_code ?? null,
-          full_name: profile?.full_name ?? userRow?.full_name ?? null,
+          ...profileData,
+          id: profileData.id,
+          email: profileData.email,
+          qr_id: profileData.cklId ?? null,
+          full_name: profileData.fullName ?? null,
+          college_name: profileData.college ?? null,
+          department: profileData.branch ?? null,
+          semester: profileData.academicYear ?? null,
+          phone: profileData.phoneNumber ?? null,
+          avatar_url: profileData.avatarUrl ?? null,
+          linkedin: profileData.linkedinUrl ?? null,
+          github: profileData.githubUrl ?? null,
+          is_profile_completed: profileData.isProfileCompleted ?? false,
         }}
       />
     </div>

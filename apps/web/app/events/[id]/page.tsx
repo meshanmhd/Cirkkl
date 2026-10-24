@@ -1,6 +1,4 @@
 import { notFound } from "next/navigation";
-import { createClient } from "@/utils/supabase/server";
-import { createAdminClient } from "@/utils/supabase/admin";
 import Link from "next/link";
 import { ArrowLeft, Calendar, Clock, MapPin, Ticket, User, Users, Globe, ExternalLink, Info, ShieldCheck, Banknote, Camera } from "lucide-react";
 import { Metadata } from "next";
@@ -16,72 +14,63 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { api } from "@/lib/api";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
-  const supabase = await createClient();
-  const { data: event } = await supabase.from('events').select('title').eq('id', id).single();
-
-  if (!event) return { title: "Event Not Found" };
-  return { title: `${event.title} | Campus Events` };
+  try {
+    const res = await api.events.get(id);
+    return { title: `${res.title} | Campus Events` };
+  } catch {
+    return { title: "Event Not Found" };
+  }
 }
 
 export default async function EventPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const supabase = await createClient();
-  const { data: event } = await supabase.from('events').select('*').eq('id', id).single();
-
-  if (!event) {
+  let apiEvent;
+  try {
+    const res = await api.events.get(id);
+    apiEvent = res;
+  } catch {
     notFound();
   }
 
-  // Fetch tickets
-  if (event.price === 'paid') {
-    const { data: tickets } = await supabase.from('tickets').select('*').eq('event_id', id);
-    if (tickets) {
-      // Deduplicate tickets by name to fix any repeats
-      const uniqueTickets = Array.from(
-        new Map(tickets.map(t => [t.name?.toLowerCase().trim(), t])).values()
-      );
-      event.ticket_types = uniqueTickets;
-    }
-  }
-
-  // Fetch registration count to determine if full
-  const { count } = await supabase
-    .from('registrations')
-    .select('*', { count: 'exact', head: true })
-    .eq('event_id', id);
-
-  const isFull = event.seats !== null && count !== null ? count >= event.seats : false;
-
-  // Check if current user is already registered
-  const { data: { user } } = await supabase.auth.getUser();
   let userRegistration = null;
-  if (user) {
-    const { data: reg } = await supabase
-      .from('registrations')
-      .select('status, attended')
-      .eq('event_id', id)
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (reg) userRegistration = reg;
+  try {
+    const regRes = await api.registrations.getMine(id);
+    userRegistration = regRes.registration;
+  } catch {
+    userRegistration = null;
   }
 
-  // Fetch hosts
-  let eventHosts: { id: string; name: string; avatar_url: string }[] = [];
-  if (event.hosts && event.hosts.length > 0) {
-    const adminSupabase = createAdminClient();
-    const { data } = await adminSupabase
-      .from('members')
-      .select('id, name:full_name, avatar_url')
-      .in('id', event.hosts);
-    if (data) eventHosts = data as any;
-  }
+  const isFull = apiEvent.isFull;
 
-  // Format Dates and Times
+  const eventHosts = (apiEvent.hosts || []).map((host: any) => ({
+    id: host.id,
+    name: host.name,
+    avatar_url: host.avatarUrl || null,
+  }));
+
+  const event = {
+    ...apiEvent,
+    end_date: apiEvent.endDate,
+    end_time: apiEvent.endTime,
+    location_type: apiEvent.locationType,
+    location_link: apiEvent.locationLink,
+    meeting_link: apiEvent.meetingLink,
+    registration_deadline: apiEvent.registrationDeadline,
+    registration_end_time: apiEvent.registrationEndTime,
+    cancellation_policy: apiEvent.cancellationPolicy,
+    refund_policy: apiEvent.refundPolicy,
+    photography_policy: apiEvent.photographyPolicy,
+    is_team_event: apiEvent.isTeamEvent,
+    team_min_size: apiEvent.teamMinSize,
+    team_max_size: apiEvent.teamMaxSize,
+    custom_fields: apiEvent.customFields,
+    ticket_types: apiEvent.ticketTypes,
+  };
+
   let formattedDate = event.date;
   let formattedEndDate = event.end_date;
   let formattedTime = event.time;
@@ -115,7 +104,6 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
     console.error("Date parsing error", e);
   }
 
-  // Calculate Event Status
   const now = new Date();
   let eventStart = null;
   let eventEnd = null;
@@ -480,8 +468,8 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
         event={event}
         isFull={isFull}
         userRegistration={userRegistration}
-        formattedDate={formattedDate}
-        formattedTime={formattedTime}
+        formattedDate={formattedDate || ""}
+        formattedTime={formattedTime || ""}
         isEnded={isEnded}
       />
     </div>

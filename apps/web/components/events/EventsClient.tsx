@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import SearchBar from "@/components/events/SearchBar";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import EventGrid from "@/components/events/EventGrid";
 import Pagination from "@/components/events/Pagination";
 import EmptyState from "@/components/events/EmptyState";
 import { LoadingAnimation } from "@/components/ui/LoadingAnimation";
-import { createClient } from "@/utils/supabase/client";
+import { api } from "@/lib/api";
 import { Event } from "@/data/events";
 
 const EVENTS_PER_PAGE = 12;
@@ -31,55 +31,60 @@ export default function EventsClient() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function fetchEvents() {
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from('events')
-        .select('*')
-        .eq('status', 'published');
-      
-      if (error) {
-        console.error("Error fetching events:", error);
-      } else if (data) {
-        setEvents(data as Event[]);
+  const fetchEvents = useCallback(async () => {
+    setLoading(true);
+    try {
+      const mappedTimeFilter = timeFilter.toLowerCase() as "upcoming" | "past" | "all";
+      const params: Record<string, any> = {
+        timeFilter: mappedTimeFilter,
+        limit: 100,
+      };
+
+      if (search.trim()) {
+        params.search = search.trim();
       }
+
+      if (categoryFilter !== "All") {
+        params.category = categoryFilter;
+      }
+
+      const res = await api.events.list(params);
+      const mapped = (res.items || []).map((e: any) => ({
+        id: e.id,
+        title: e.title,
+        slug: e.slug,
+        description: e.description || e.title,
+        category: e.category,
+        organizer: e.organizer,
+        image: e.image,
+        posterImage: e.posterImage,
+        date: e.date,
+        time: e.time,
+        location: e.location,
+        locationType: e.locationType,
+        price: e.price,
+        status: e.status,
+        featured: e.featured,
+      }));
+      setEvents(mapped as unknown as Event[]);
+    } catch {
+      setEvents([]);
+    } finally {
       setLoading(false);
     }
-    
-    fetchEvents();
-  }, []);
+  }, [search, timeFilter, categoryFilter]);
 
-  const filtered = useMemo(() => {
-    let result = [...events];
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchEvents();
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [fetchEvents]);
 
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      result = result.filter(
-        (e) =>
-          e.title.toLowerCase().includes(q) ||
-          e.description.toLowerCase().includes(q) ||
-          e.organizer.toLowerCase().includes(q) ||
-          e.category.toLowerCase().includes(q)
-      );
-    }
-
-    const now = new Date("Aug 12, 2025").getTime();
-    if (timeFilter === "Upcoming") {
-      result = result.filter(e => new Date(e.date).getTime() >= now);
-    } else if (timeFilter === "Past") {
-      result = result.filter(e => new Date(e.date).getTime() < now);
-    }
-
-    if (categoryFilter !== "All") {
-      result = result.filter((e) => e.category === categoryFilter);
-    }
-
-    return result;
-  }, [search, timeFilter, categoryFilter, events]);
-
-  const totalPages = Math.ceil(filtered.length / EVENTS_PER_PAGE);
-  const paginated = filtered.slice((page - 1) * EVENTS_PER_PAGE, page * EVENTS_PER_PAGE);
+  const totalPages = Math.ceil(events.length / EVENTS_PER_PAGE);
+  const paginated = useMemo(() => {
+    return events.slice((page - 1) * EVENTS_PER_PAGE, page * EVENTS_PER_PAGE);
+  }, [events, page]);
 
   const handleTimeFilter = (v: string) => {
     setTimeFilter(v);
@@ -107,12 +112,12 @@ export default function EventsClient() {
               <TabsTrigger value="All">All</TabsTrigger>
             </TabsList>
           </Tabs>
-          
+
           <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
             <div className="w-full sm:w-[240px]">
               <SearchBar value={search} onChange={handleSearch} />
             </div>
-            
+
             <div className="relative w-full sm:w-[180px]">
               <button
                 type="button"

@@ -1,26 +1,19 @@
-import Link from "next/link";
-import { ArrowRight } from "lucide-react";
-import { createClient } from "@/utils/supabase/server";
+import { api } from "@/lib/api";
 import { AccordionGallery } from "@/components/ui/AccordionGallery";
 
-
-const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
-  Hackathons: { bg: "#F3F0FF", text: "#7B61FF" },
-  Cultural: { bg: "#FFF0F5", text: "#FF3B7A" },
-  Workshops: { bg: "#FFF3EE", text: "#FF6B35" },
-  Technical: { bg: "#EBF5FF", text: "#cfe467" },
-  Sports: { bg: "#F0FFF4", text: "#34C759" },
-  Seminars: { bg: "#FFF8EE", text: "#FF9500" },
-  Competitions: { bg: "#F8F0FF", text: "#AF52DE" },
-  Music: { bg: "#FFF0F3", text: "#FF2D55" },
-};
-
 export default async function FeaturedEvents() {
-  const supabase = await createClient();
-  const { data: featured } = await supabase.from('events').select('*').eq('status', 'published').eq('featured', true).limit(3);
-  
+  let featured: any[] = [];
+  try {
+    const res = await api.events.list({ limit: 6 });
+    const all = res.items || [];
+    const withFeatured = all.filter((e) => e.featured);
+    featured = withFeatured.length > 0 ? withFeatured.slice(0, 3) : all.slice(0, 3);
+  } catch {
+    featured = [];
+  }
+
   if (!featured || featured.length === 0) return null;
-  
+
   return (
     <section className="pb-24 px-6 pt-0 mt-0" id="featured">
       <div className="max-w-7xl mx-auto">
@@ -33,7 +26,7 @@ export default async function FeaturedEvents() {
           </p>
         </div>
 
-        <AccordionGallery items={featured || []} />
+        <AccordionGallery items={featured} />
       </div>
     </section>
   );

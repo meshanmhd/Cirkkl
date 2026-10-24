@@ -12,6 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select as ShadcnSelect, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar as CalendarUI } from "@/components/ui/calendar";
 import { createClient } from "@/utils/supabase/client";
+import { api } from "@/lib/api";
 import { DotQRCode } from "@/components/ui/DotQRCode";
 import { CountryDropdown, StateDropdown } from "@/components/ui/country-dropdown";
 import { PhoneInput } from "@/components/ui/phone-input";
@@ -257,29 +258,41 @@ export function ProfilePage({ profile: initialProfile }: { profile: any }) {
 
   async function saveSection(draft: any, setOpen: (v: boolean) => void) {
     setSaving(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setSaving(false); return; }
-    
-    const updated = { ...profile, ...draft };
-    const isCompleted = !!(
-      updated.full_name && 
-      updated.date_of_birth && 
-      updated.gender && 
-      updated.country && 
-      updated.state && 
-      updated.city && 
-      updated.pincode && 
-      updated.college_name && 
-      updated.department && 
-      updated.semester && 
-      updated.admission_year && 
-      updated.graduation_year
-    );
+    const input: Record<string, string> = {};
+    if (draft.full_name !== undefined) input.fullName = draft.full_name;
+    if (draft.college_name !== undefined) input.college = draft.college_name;
+    if (draft.department !== undefined) input.branch = draft.department;
+    if (draft.semester !== undefined) input.academicYear = draft.semester;
+    if (draft.phone !== undefined) input.phoneNumber = draft.phone;
+    if (draft.gender !== undefined) input.gender = draft.gender;
+    if (draft.bio !== undefined) input.bio = draft.bio;
+    if (draft.linkedin !== undefined) input.linkedinUrl = draft.linkedin || "";
+    if (draft.github !== undefined) input.githubUrl = draft.github || "";
 
-    const { data } = await supabase.from("profiles").update({ ...draft, is_profile_completed: isCompleted }).eq("id", user.id).select().single();
-    if (data) setProfile((p: any) => ({ ...p, ...data }));
-    setOpen(false);
-    setSaving(false);
+    try {
+      const res = await api.profile.update(input);
+      if (res.profile) {
+        setProfile((p: any) => ({
+          ...p,
+          ...draft,
+          full_name: res.profile.fullName ?? draft.full_name ?? p.full_name,
+          college_name: res.profile.college ?? draft.college_name ?? p.college_name,
+          department: res.profile.branch ?? draft.department ?? p.department,
+          semester: res.profile.academicYear ?? draft.semester ?? p.semester,
+          phone: res.profile.phoneNumber ?? draft.phone ?? p.phone,
+          gender: res.profile.gender ?? draft.gender ?? p.gender,
+          bio: res.profile.bio ?? draft.bio ?? p.bio,
+          linkedin: res.profile.linkedinUrl ?? draft.linkedin ?? p.linkedin,
+          github: res.profile.githubUrl ?? draft.github ?? p.github,
+          is_profile_completed: res.profile.isProfileCompleted ?? p.is_profile_completed,
+        }));
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setOpen(false);
+      setSaving(false);
+    }
   }
 
   async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
