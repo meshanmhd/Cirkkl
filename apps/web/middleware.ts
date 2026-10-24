@@ -15,29 +15,51 @@ function isTokenExpired(token: string): boolean {
   }
 }
 
-async function refreshTokens(refreshToken: string) {
+type RefreshResult =
+  | { status: "ok"; tokens: { accessToken: string; refreshToken: string; expiresAt: number } }
+  | { status: "invalid" }
+  | { status: "unavailable" };
+
+async function refreshTokens(refreshToken: string): Promise<RefreshResult> {
   try {
+    const proxySecret = process.env.INTERNAL_PROXY_SECRET;
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (proxySecret) {
+      headers["x-internal-proxy-secret"] = proxySecret;
+    }
     const res = await fetch(`${API_BASE_URL}/api/v1/auth/refresh`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify({ refreshToken }),
     });
-    if (!res.ok) return null;
-    return await res.json();
+    if (res.ok) {
+      const tokens = await res.json();
+      return { status: "ok", tokens };
+    }
+    if (res.status === 400 || res.status === 401) {
+      return { status: "invalid" };
+    }
+    return { status: "unavailable" };
   } catch {
-    return null;
+    return { status: "unavailable" };
   }
 }
 
-async function fetchMe(token: string) {
+async function fetchMe(token: string): Promise<{ ok: boolean; status: number; data?: any }> {
   try {
-    const res = await fetch(`${API_BASE_URL}/api/v1/auth/me`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!res.ok) return null;
-    return await res.json();
+    const proxySecret = process.env.INTERNAL_PROXY_SECRET;
+    const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
+    if (proxySecret) {
+      headers["x-internal-proxy-secret"] = proxySecret;
+    }
+    const res = await fetch(`${API_BASE_URL}/api/v1/auth/me`, { headers });
+    if (res.ok) {
+      const data = await res.json();
+      return { ok: true, status: res.status, data };
+    }
+    return { ok: false, status: res.status };
   } catch {
-    return null;
+    return { ok: false, status: 503 };
   }
 }
 
@@ -81,16 +103,19 @@ export async function middleware(request: NextRequest) {
 
   if (!isProtectedPage && !isAuthPage) {
     if (refreshToken && (!accessToken || isTokenExpired(accessToken))) {
-      const refreshedTokens = await refreshTokens(refreshToken);
-      if (refreshedTokens) {
-        request.cookies.set(ACCESS_TOKEN_COOKIE, refreshedTokens.accessToken);
-        request.cookies.set(REFRESH_TOKEN_COOKIE, refreshedTokens.refreshToken);
-        return createNextResponse(refreshedTokens);
+      const refresh = await refreshTokens(refreshToken);
+      if (refresh.status === "ok") {
+        request.cookies.set(ACCESS_TOKEN_COOKIE, refresh.tokens.accessToken);
+        request.cookies.set(REFRESH_TOKEN_COOKIE, refresh.tokens.refreshToken);
+        return createNextResponse(refresh.tokens);
       }
-      const res = NextResponse.next();
-      res.cookies.delete(ACCESS_TOKEN_COOKIE);
-      res.cookies.delete(REFRESH_TOKEN_COOKIE);
-      return res;
+      if (refresh.status === "invalid") {
+        const res = NextResponse.next();
+        res.cookies.delete(ACCESS_TOKEN_COOKIE);
+        res.cookies.delete(REFRESH_TOKEN_COOKIE);
+        return res;
+      }
+      return NextResponse.next();
     }
     return NextResponse.next();
   }
@@ -107,12 +132,56 @@ export async function middleware(request: NextRequest) {
   let refreshedTokens: { accessToken: string; refreshToken: string; expiresAt: number } | null = null;
 
   if (refreshToken && (!accessToken || isTokenExpired(accessToken))) {
-    refreshedTokens = await refreshTokens(refreshToken);
-    if (refreshedTokens) {
+    const refresh = await refreshTokens(refreshToken);
+    if (refresh.status === "ok") {
+      refreshedTokens = refresh.tokens;
       accessToken = refreshedTokens.accessToken;
       request.cookies.set(ACCESS_TOKEN_COOKIE, refreshedTokens.accessToken);
       request.cookies.set(REFRESH_TOKEN_COOKIE, refreshedTokens.refreshToken);
+    } else if (refresh.status === "invalid") {
+      if (isAuthPage) {
+        const res = NextResponse.next();
+        res.cookies.delete(ACCESS_TOKEN_COOKIE);
+        res.cookies.delete(REFRESH_TOKEN_COOKIE);
+        return res;
+      }
+      const res = NextResponse.redirect(new URL("/login", request.url));
+      res.cookies.delete(ACCESS_TOKEN_COOKIE);
+      res.cookies.delete(REFRESH_TOKEN_COOKIE);
+      return res;
     } else {
+      return NextResponse.next();
+    }
+  }
+
+  let meRes = accessToken ? await fetchMe(accessToken) : null;
+
+  if ((!meRes || !meRes.ok) && refreshToken && !refreshedTokens) {
+    const refresh = await refreshTokens(refreshToken);
+    if (refresh.status === "ok") {
+      refreshedTokens = refresh.tokens;
+      accessToken = refreshedTokens.accessToken;
+      request.cookies.set(ACCESS_TOKEN_COOKIE, refreshedTokens.accessToken);
+      request.cookies.set(REFRESH_TOKEN_COOKIE, refreshedTokens.refreshToken);
+      meRes = await fetchMe(accessToken);
+    } else if (refresh.status === "invalid") {
+      if (isAuthPage) {
+        const res = NextResponse.next();
+        res.cookies.delete(ACCESS_TOKEN_COOKIE);
+        res.cookies.delete(REFRESH_TOKEN_COOKIE);
+        return res;
+      }
+      const res = NextResponse.redirect(new URL("/login", request.url));
+      res.cookies.delete(ACCESS_TOKEN_COOKIE);
+      res.cookies.delete(REFRESH_TOKEN_COOKIE);
+      return res;
+    } else {
+      return NextResponse.next();
+    }
+  }
+
+  if (!meRes || !meRes.ok) {
+    if (meRes && (meRes.status === 401 || meRes.status === 403)) {
       if (isAuthPage) {
         const res = NextResponse.next();
         res.cookies.delete(ACCESS_TOKEN_COOKIE);
@@ -124,33 +193,10 @@ export async function middleware(request: NextRequest) {
       res.cookies.delete(REFRESH_TOKEN_COOKIE);
       return res;
     }
+    return createNextResponse(refreshedTokens);
   }
 
-  let me = accessToken ? await fetchMe(accessToken) : null;
-
-  if (!me && refreshToken && !refreshedTokens) {
-    refreshedTokens = await refreshTokens(refreshToken);
-    if (refreshedTokens) {
-      accessToken = refreshedTokens.accessToken;
-      request.cookies.set(ACCESS_TOKEN_COOKIE, refreshedTokens.accessToken);
-      request.cookies.set(REFRESH_TOKEN_COOKIE, refreshedTokens.refreshToken);
-      me = await fetchMe(accessToken);
-    }
-  }
-
-  if (!me) {
-    if (isAuthPage) {
-      const res = NextResponse.next();
-      res.cookies.delete(ACCESS_TOKEN_COOKIE);
-      res.cookies.delete(REFRESH_TOKEN_COOKIE);
-      return res;
-    }
-    const res = NextResponse.redirect(new URL("/login", request.url));
-    res.cookies.delete(ACCESS_TOKEN_COOKIE);
-    res.cookies.delete(REFRESH_TOKEN_COOKIE);
-    return res;
-  }
-
+  const me = meRes.data;
   const isOrg = me.role === "organisation" || !!me.org;
 
   if (isOrg) {

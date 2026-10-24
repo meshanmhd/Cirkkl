@@ -12,8 +12,21 @@ export function createAuthRoutes(authService: AuthService) {
   const router = new Hono();
 
   const getClientIp = (c: any): string | undefined => {
+    const proxySecret = process.env.INTERNAL_PROXY_SECRET;
+    if (!proxySecret) {
+      return undefined;
+    }
+    const incomingSecret =
+      c.req.header("x-internal-proxy-secret") ||
+      c.req.header("internal-proxy-secret");
+    if (!incomingSecret || incomingSecret !== proxySecret) {
+      return undefined;
+    }
     const forwarded = c.req.header("x-forwarded-for");
-    if (forwarded) return forwarded.split(",")[0]?.trim();
+    if (forwarded) {
+      const parts = forwarded.split(",").map((s: string) => s.trim()).filter(Boolean);
+      return parts[parts.length - 1];
+    }
     return c.req.header("x-real-ip") || undefined;
   };
 

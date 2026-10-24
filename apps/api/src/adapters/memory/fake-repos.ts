@@ -32,7 +32,9 @@ import {
   TicketRepo,
   TransactionRunner,
   UnitOfWork,
+  VerifyOtpResult,
 } from "../../ports/repositories";
+import { verifyOtpHash } from "../../crypto";
 
 export class MemoryEventRepo implements EventRepo {
   events: Map<string, Event> = new Map();
@@ -491,14 +493,31 @@ export class MemoryOrganisationRepo implements OrganisationRepo {
     return updated;
   }
 
-  async verifyOtp(orgId: string, otp: string): Promise<boolean> {
+  async verifyOtp(orgId: string, otp: string): Promise<VerifyOtpResult> {
     const org = this.organisations.get(orgId);
-    if (org && org.otp === otp) {
+    if (!org || !org.otp) {
+      return { success: false, reason: "not_found" };
+    }
+    if ((org.otpFailedAttempts ?? 0) >= 10) {
+      return { success: false, reason: "max_attempts" };
+    }
+    if (org.otpExpiresAt && org.otpExpiresAt.getTime() < Date.now()) {
+      return { success: false, reason: "expired" };
+    }
+    const isMatch = verifyOtpHash(otp, org.otp);
+    if (isMatch) {
       org.isOtpVerified = true;
       org.otp = null;
-      return true;
+      org.otpExpiresAt = null;
+      org.otpFailedAttempts = 0;
+      return { success: true };
     }
-    return false;
+    const nextAttempts = (org.otpFailedAttempts ?? 0) + 1;
+    org.otpFailedAttempts = nextAttempts;
+    if (nextAttempts >= 10) {
+      return { success: false, reason: "max_attempts" };
+    }
+    return { success: false, reason: "invalid" };
   }
 }
 

@@ -38,6 +38,9 @@ cp .env.example .env.local
 
 Key environment variables:
 - `NEXT_PUBLIC_API_URL`: Base URL for the Cirkkl API (default: `http://localhost:3001`).
+- `SITE_URL`: Canonical origin for web app CSRF validation (e.g. `http://localhost:3000` or production domain).
+- `TRUSTED_IP_HEADER`: Configurable trusted client IP header from reverse proxies / edge (default: `x-real-ip`; use `x-vercel-forwarded-for` on Vercel, `cf-connecting-ip` on Cloudflare). Takes the last entry if a comma-separated list is provided.
+- `INTERNAL_PROXY_SECRET`: Shared secret header between web app proxy and API to validate forwarded client IP headers.
 
 ### Development
 

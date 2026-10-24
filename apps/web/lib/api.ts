@@ -189,6 +189,15 @@ async function getServerAccessToken(): Promise<string | undefined> {
   }
 }
 
+export function getClientIp(headers: Headers): string | undefined {
+  const trustedHeader = (process.env.TRUSTED_IP_HEADER || "x-real-ip").toLowerCase();
+  const rawIp = headers.get(trustedHeader);
+  if (!rawIp) return undefined;
+  const parts = rawIp.split(",").map((s) => s.trim()).filter(Boolean);
+  if (parts.length === 0) return undefined;
+  return parts[parts.length - 1];
+}
+
 async function request<T>(
   path: string,
   options: RequestInit = {},
@@ -208,6 +217,10 @@ async function request<T>(
     url = `/api/proxy${normalizedPath}`;
   } else {
     url = `${API_BASE_URL}${normalizedPath}`;
+    const proxySecret = process.env.INTERNAL_PROXY_SECRET;
+    if (proxySecret) {
+      headers.set("x-internal-proxy-secret", proxySecret);
+    }
     if (!headers.has("Authorization")) {
       const serverToken = await getServerAccessToken();
       if (serverToken) {

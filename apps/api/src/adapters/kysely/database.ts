@@ -17,6 +17,8 @@ export interface OrganisationsTable {
   is_approved: boolean;
   is_otp_verified: boolean;
   org_otp: string | null;
+  otp_expires_at: Date | null;
+  otp_failed_attempts: number;
   created_at: Generated<Date>;
 }
 

@@ -4,6 +4,7 @@ import { OrganisationRepo, ProfileRepo } from "../ports/repositories";
 import { UserRole } from "../ports/domain";
 import { badRequest, tooManyRequests } from "../errors";
 import { RateLimiter } from "./rate-limiter";
+import { hashOtp } from "../crypto";
 
 export interface CallerContext {
   userId: string;
@@ -12,15 +13,8 @@ export interface CallerContext {
   isOrgApproved?: boolean;
 }
 
-interface OtpState {
-  otp: string;
-  createdAt: number;
-  failedAttempts: number;
-}
-
 export class AuthService {
   private readonly rateLimiter = new RateLimiter();
-  private readonly otpStates = new Map<string, OtpState>();
 
   constructor(
     private readonly authProvider: AuthProvider,
@@ -48,6 +42,7 @@ export class AuthService {
       role: "member" | "organisation";
     };
     requiresEmailVerification: boolean;
+    otp?: string;
   }> {
     if (input.clientIp) {
       const allowed = this.rateLimiter.check(`ip:signup:${input.clientIp}`, 5, 60000);
@@ -67,21 +62,23 @@ export class AuthService {
       },
     });
 
+    let generatedOtp: string | undefined = undefined;
+
     if (normalizedRole === "organisation") {
       try {
         const otp = randomInt(100000, 1000000).toString();
+        generatedOtp = otp;
+        const hashedOtp = hashOtp(otp);
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
         await this.orgRepo.create({
           ownerId: res.userId,
           name: input.orgName || input.name || "Organisation",
           email: input.email,
           status: "pending",
           isOtpVerified: false,
-          otp,
-        });
-        this.otpStates.set(res.userId, {
-          otp,
-          createdAt: Date.now(),
-          failedAttempts: 0,
+          otp: hashedOtp,
+          otpExpiresAt: expiresAt,
+          otpFailedAttempts: 0,
         });
       } catch (err) {
         await this.authProvider.deleteUser(res.userId);
@@ -111,6 +108,7 @@ export class AuthService {
         role: normalizedRole,
       },
       requiresEmailVerification: !res.accessToken,
+      otp: generatedOtp,
     };
   }
 
@@ -182,7 +180,7 @@ export class AuthService {
     await this.authProvider.logout(token);
   }
 
-  async resendOrgOtp(callerId: string, clientIp?: string): Promise<{ success: boolean }> {
+  async resendOrgOtp(callerId: string, clientIp?: string): Promise<{ success: boolean; otp?: string }> {
     if (clientIp) {
       const allowed = this.rateLimiter.check(`ip:resend-otp:${clientIp}`, 5, 60000);
       if (!allowed) throw tooManyRequests();
@@ -195,13 +193,16 @@ export class AuthService {
     if (org.isOtpVerified) throw badRequest("Organisation is already verified");
 
     const newOtp = randomInt(100000, 1000000).toString();
-    await this.orgRepo.update(org.id, { otp: newOtp });
-    this.otpStates.set(org.id, {
-      otp: newOtp,
-      createdAt: Date.now(),
-      failedAttempts: 0,
+    const hashedOtp = hashOtp(newOtp);
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    await this.orgRepo.update(org.id, {
+      otp: hashedOtp,
+      otpExpiresAt: expiresAt,
+      otpFailedAttempts: 0,
     });
-    return { success: true };
+
+    return { success: true, otp: newOtp };
   }
 
   async verifyOrgOtp(callerId: string, otp: string, clientIp?: string): Promise<boolean> {
@@ -217,39 +218,20 @@ export class AuthService {
       throw badRequest("Invalid OTP code");
     }
 
-    if (!org.otp) {
-      throw badRequest("No active OTP. Please request a new OTP");
-    }
-
-    let state = this.otpStates.get(org.id);
-    if (!state || state.otp !== org.otp) {
-      state = {
-        otp: org.otp,
-        createdAt: Date.now(),
-        failedAttempts: 0,
-      };
-      this.otpStates.set(org.id, state);
-    }
-
-    if (state.failedAttempts >= 10) {
-      throw badRequest("Maximum failed attempts exceeded. Please request a new OTP");
-    }
-
-    const OTP_EXPIRY_MS = 10 * 60 * 1000;
-    if (Date.now() - state.createdAt > OTP_EXPIRY_MS) {
-      throw badRequest("OTP code has expired. Please request a new OTP");
-    }
-
-    const verified = await this.orgRepo.verifyOtp(org.id, otp);
-    if (!verified) {
-      state.failedAttempts += 1;
-      if (state.failedAttempts >= 10) {
+    const result = await this.orgRepo.verifyOtp(org.id, otp);
+    if (!result.success) {
+      if (result.reason === "expired") {
+        throw badRequest("OTP code has expired. Please request a new OTP");
+      }
+      if (result.reason === "max_attempts") {
         throw badRequest("Maximum failed attempts exceeded. Please request a new OTP");
+      }
+      if (result.reason === "not_found") {
+        throw badRequest("No active OTP. Please request a new OTP");
       }
       throw badRequest("Invalid OTP code");
     }
 
-    this.otpStates.delete(org.id);
     return true;
   }
 
