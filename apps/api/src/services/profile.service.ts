@@ -1,7 +1,7 @@
 import { ProfileRepo } from "../ports/repositories";
 import { StorageProvider } from "../ports/storage.provider";
 import { CallerContext } from "./auth.service";
-import { notFound } from "../errors";
+import { badRequest, notFound } from "../errors";
 
 export class ProfileService {
   constructor(
@@ -39,6 +39,23 @@ export class ProfileService {
   }
 
   async updateProfile(input: any, caller: CallerContext): Promise<any> {
+    const existing = await this.profileRepo.findByUserId(caller.userId);
+    const fullName = input.fullName !== undefined ? input.fullName : existing?.fullName;
+    const college = input.college !== undefined ? input.college : existing?.college;
+    const branch = input.branch !== undefined ? input.branch : existing?.branch;
+    const academicYear = input.academicYear !== undefined ? input.academicYear : existing?.academicYear;
+    const phoneNumber = input.phoneNumber !== undefined ? input.phoneNumber : existing?.phoneNumber;
+    const gender = input.gender !== undefined ? input.gender : existing?.gender;
+
+    const isProfileCompleted = Boolean(
+      fullName &&
+      college &&
+      branch &&
+      academicYear &&
+      phoneNumber &&
+      gender
+    );
+
     const updated = await this.profileRepo.update(caller.userId, {
       fullName: input.fullName,
       college: input.college,
@@ -49,7 +66,7 @@ export class ProfileService {
       linkedinUrl: input.linkedinUrl,
       githubUrl: input.githubUrl,
       bio: input.bio,
-      isProfileCompleted: true,
+      isProfileCompleted,
     });
 
     return {
@@ -74,6 +91,9 @@ export class ProfileService {
   }
 
   async updateAvatar(avatarKey: string, caller: CallerContext): Promise<{ avatarUrl: string }> {
+    if (!avatarKey.startsWith(`profiles/${caller.userId}/`)) {
+      throw badRequest(`Avatar key must start with profiles/${caller.userId}/`);
+    }
     const avatarUrl = await this.storageProvider.getPublicUrl(avatarKey);
     await this.profileRepo.updateAvatar(caller.userId, avatarUrl);
     return { avatarUrl };

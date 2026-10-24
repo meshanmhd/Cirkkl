@@ -272,7 +272,7 @@ export function ProfilePage({ profile: initialProfile }: { profile: any }) {
     try {
       const res = await api.profile.update(input);
       if (res.profile) {
-        setProfile((p: any) => ({
+        setProfile((p: Record<string, unknown>) => ({
           ...p,
           ...draft,
           full_name: res.profile.fullName ?? draft.full_name ?? p.full_name,

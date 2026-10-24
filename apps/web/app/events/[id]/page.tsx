@@ -46,7 +46,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
 
   const isFull = apiEvent.isFull;
 
-  const eventHosts = (apiEvent.hosts || []).map((host: any) => ({
+  const eventHosts = (apiEvent.hosts || []).map((host) => ({
     id: host.id,
     name: host.name,
     avatar_url: host.avatarUrl || null,

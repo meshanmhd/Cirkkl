@@ -9,6 +9,7 @@ import EmptyState from "@/components/events/EmptyState";
 import { LoadingAnimation } from "@/components/ui/LoadingAnimation";
 import { api } from "@/lib/api";
 import { Event } from "@/data/events";
+import { ListEventsInput } from "@cirkkl/contracts";
 
 const EVENTS_PER_PAGE = 12;
 
@@ -35,7 +36,7 @@ export default function EventsClient() {
     setLoading(true);
     try {
       const mappedTimeFilter = timeFilter.toLowerCase() as "upcoming" | "past" | "all";
-      const params: Record<string, any> = {
+      const params: Partial<ListEventsInput> = {
         timeFilter: mappedTimeFilter,
         limit: 100,
       };
@@ -49,11 +50,11 @@ export default function EventsClient() {
       }
 
       const res = await api.events.list(params);
-      const mapped = (res.items || []).map((e: any) => ({
+      const mapped = (res.items || []).map((e) => ({
         id: e.id,
         title: e.title,
         slug: e.slug,
-        description: e.description || e.title,
+        description: e.tagline || e.title,
         category: e.category,
         organizer: e.organizer,
         image: e.image,

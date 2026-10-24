@@ -15,6 +15,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
 import { DotQRCode } from "./DotQRCode";
 import { registerForEvent } from '@/app/actions/registration';
+import { api, getErrorMessage } from "@/lib/api";
 
 type CustomField = {
   id?: string;
@@ -326,20 +327,14 @@ function RegistrationModal({
         setUpiUrl(null);
         setOrderReference(null);
         setPaymentAmount(null);
-        fetch('/api/payments/create', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ticketId: selectedTicketId, eventId: event.id })
-        })
-          .then(async (res) => {
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Failed to initialize payment');
-            setUpiUrl(data.upi_uri);
-            setOrderReference(data.order_reference);
+        api.payments.create({ ticketId: selectedTicketId, eventId: event.id })
+          .then((data) => {
+            setUpiUrl(data.upiUri);
+            setOrderReference(data.orderReference);
             setPaymentAmount(data.amount);
           })
-          .catch((err: any) => {
-            setStepError(err.message);
+          .catch((err: unknown) => {
+            setStepError(getErrorMessage(err, "Failed to initialize payment"));
           })
           .finally(() => {
             setPaymentLoading(false);
@@ -439,71 +434,23 @@ function RegistrationModal({
                       onClick={async () => {
                         setTeammateSearchError("");
                         setTeammateSearchLoading(true);
-                        const { data, error } = await supabase
-                          .from('users')
-                          .select('id, full_name, qr_code')
-                          .ilike('qr_code', `%-${teammateSearch}`)
-                          .limit(1)
-                          .maybeSingle();
-
-                        if (error || !data) {
+                        try {
+                          const data = await api.registrations.lookupTeammate(event.id, teammateSearch);
+                          if (teamMates.find((m) => m.id === data.id)) {
+                            setTeammateSearchError("User already added to team.");
+                            return;
+                          }
+                          if (teamMates.length + 1 >= teamMaxSize) {
+                            setTeammateSearchError(`Max team size is ${teamMaxSize}.`);
+                            return;
+                          }
+                          setTeamMates([...teamMates, { id: data.id, name: data.displayName, ckl_id: teammateSearch }]);
+                          setTeammateSearch("");
+                        } catch (err: unknown) {
+                          setTeammateSearchError(getErrorMessage(err, "Failed to find teammate."));
+                        } finally {
                           setTeammateSearchLoading(false);
-                          setTeammateSearchError("User not found with this ID.");
-                          return;
                         }
-
-                        // Prevent adding self
-                        const { data: { user: currentUser } } = await supabase.auth.getUser();
-                        if (currentUser && data.id === currentUser.id) {
-                          setTeammateSearchLoading(false);
-                          setTeammateSearchError("You are already the team leader.");
-                          return;
-                        }
-
-                        // Check if already registered
-                        const { data: existingReg } = await supabase
-                          .from('registrations')
-                          .select('id')
-                          .eq('event_id', event.id)
-                          .eq('user_id', data.id)
-                          .maybeSingle();
-
-                        if (existingReg) {
-                          setTeammateSearchLoading(false);
-                          setTeammateSearchError("User is already registered for this event.");
-                          return;
-                        }
-
-                        // Check if in another team for this event (even pending)
-                        const { data: existingTeamMembers, error: teamCheckErr } = await supabase
-                          .from('team_members')
-                          .select('id, status, teams!inner(event_id)')
-                          .eq('teams.event_id', event.id)
-                          .eq('user_id', data.id);
-
-                        const activeMembership = existingTeamMembers?.find(tm => tm.status !== 'rejected' && tm.status !== 'cancelled');
-
-                        if (activeMembership) {
-                          setTeammateSearchLoading(false);
-                          setTeammateSearchError("User is already invited or in a team for this event.");
-                          return;
-                        }
-
-                        setTeammateSearchLoading(false);
-
-
-                        if (teamMates.find(m => m.id === data.id)) {
-                          setTeammateSearchError("User already added to team.");
-                          return;
-                        }
-
-                        if (teamMates.length + 1 >= teamMaxSize) {
-                          setTeammateSearchError(`Max team size is ${teamMaxSize}.`);
-                          return;
-                        }
-
-                        setTeamMates([...teamMates, { id: data.id, name: data.full_name, ckl_id: data.qr_code }]);
-                        setTeammateSearch("");
                       }}
                       className="px-6 h-[46px] flex items-center justify-center border border-[#E5E5EA] bg-white text-[#111111] rounded-xl transition-colors hover:bg-[#F5F5F7] disabled:opacity-50 shrink-0"
                     >
@@ -757,14 +704,14 @@ export const SlideButton = ({ onComplete, event, isFull = false, userRegistratio
     supabase.auth.getUser().then(({ data }) => {
       setUser(data.user);
       if (data.user) {
-        supabase.from('profiles').select('is_profile_completed').eq('id', data.user.id).single().then(({ data: p }) => setProfile(p));
+        api.profile.get().then(({ profile: p }) => setProfile(p ? { is_profile_completed: p.isProfileCompleted } : null)).catch(() => setProfile(null));
       }
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user || null);
       if (session?.user) {
         setShowLoginModal(false);
-        supabase.from('profiles').select('is_profile_completed').eq('id', session.user.id).single().then(({ data: p }) => setProfile(p));
+        api.profile.get().then(({ profile: p }) => setProfile(p ? { is_profile_completed: p.isProfileCompleted } : null)).catch(() => setProfile(null));
       } else {
         setProfile(null);
       }
@@ -819,19 +766,33 @@ export const SlideButton = ({ onComplete, event, isFull = false, userRegistratio
         return;
       }
 
-      let paymentProofUrl: string | null = null;
+      let paymentProofKey: string | null = null;
       if (paymentProofFile) {
-        const fileExt = paymentProofFile.name.split('.').pop();
-        const fileName = `${currentUser.id}_${event.id}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-        const { error: uploadError, data: uploadData } = await supabase.storage
-          .from('payment_proofs')
-          .upload(fileName, paymentProofFile);
-        if (!uploadError && uploadData) {
-          const { data: publicUrlData } = supabase.storage
-            .from('payment_proofs')
-            .getPublicUrl(fileName);
-          paymentProofUrl = publicUrlData.publicUrl;
+        const uploadRes = await api.uploads.requestUpload({
+          targetType: "payment_proof",
+          fileName: paymentProofFile.name,
+          contentType: paymentProofFile.type || "image/jpeg",
+          sizeBytes: paymentProofFile.size,
+        });
+
+        const uploadHeaders: Record<string, string> = {
+          ...(uploadRes.headers || {}),
+        };
+        if (paymentProofFile.type) {
+          uploadHeaders["Content-Type"] = paymentProofFile.type;
         }
+
+        const putRes = await fetch(uploadRes.uploadUrl, {
+          method: uploadRes.method || "PUT",
+          headers: uploadHeaders,
+          body: paymentProofFile,
+        });
+
+        if (!putRes.ok) {
+          throw new Error("Failed to upload payment proof. Please try again.");
+        }
+
+        paymentProofKey = uploadRes.key;
       }
 
       const result = await registerForEvent({
@@ -839,7 +800,8 @@ export const SlideButton = ({ onComplete, event, isFull = false, userRegistratio
         fieldValues,
         transactionId,
         ticketTierId,
-        paymentProofUrl,
+        paymentProofKey,
+        paymentProofUrl: paymentProofKey,
         pendingStatus,
         isTeamEvent: event.is_team_event === true,
         teamName,

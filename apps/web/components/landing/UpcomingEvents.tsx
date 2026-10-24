@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { Calendar, Clock, MapPin } from "lucide-react";
 import { api } from "@/lib/api";
+import { EventSummary } from "@cirkkl/contracts";
 
 export default async function UpcomingEvents() {
-  let upcoming: any[] = [];
+  let upcoming: EventSummary[] = [];
   try {
     const res = await api.events.list({ timeFilter: "upcoming", limit: 6 });
     upcoming = res.items || [];
@@ -32,7 +33,7 @@ export default async function UpcomingEvents() {
         </div>
 
         <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide -mx-2 px-2">
-          {(upcoming || []).map((event: any) => {
+          {(upcoming || []).map((event) => {
             return (
               <Link key={event.id} href={`/events/${event.id}`} className="group flex-none w-[320px]">
                 <article

@@ -18,6 +18,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronRight, Ticket, ChevronLeft, Bell } from "lucide-react";
 import { getUserTickets } from "@/app/actions/registration";
+import { api } from "@/lib/api";
 
 interface EventRegistration {
   ticket_code: string;
@@ -25,17 +26,24 @@ interface EventRegistration {
   event_title: string;
 }
 
-export function ProfileMenu({ initialUser = null, initialRole = "user", initialQrCode = null }: { initialUser?: any, initialRole?: string, initialQrCode?: string | null }) {
-  const [user, setUser] = useState<any>(initialUser);
+interface MenuUser {
+  id: string;
+  email?: string;
+  user_metadata?: {
+    full_name?: string;
+    [key: string]: unknown;
+  };
+}
+
+export function ProfileMenu({ initialUser = null, initialRole = "user", initialQrCode = null }: { initialUser?: MenuUser | null, initialRole?: string, initialQrCode?: string | null }) {
+  const [user, setUser] = useState<MenuUser | null>(initialUser);
   const [role, setRole] = useState<string>(initialRole);
   const [qrCode, setQrCode] = useState<string | null>(initialQrCode);
   const [loading, setLoading] = useState(false);
   
-  // Dialog state
   const [qrOpen, setQrOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<EventRegistration | null>(null);
   
-  // Menu state
   const [menuOpen, setMenuOpen] = useState(false);
   const [eventsView, setEventsView] = useState(false);
   
@@ -45,23 +53,19 @@ export function ProfileMenu({ initialUser = null, initialRole = "user", initialQ
   const supabase = createClient();
   const router = useRouter();
 
-  const fetchRole = async (userId: string) => {
+  const fetchRole = async () => {
     try {
-      const { data: profile } = await supabase
-        .from("users")
-        .select("role, qr_code")
-        .eq("id", userId)
-        .single();
+      const { profile } = await api.profile.get();
       if (profile) {
         setRole(profile.role);
-        setQrCode(profile.qr_code);
+        setQrCode(profile.cklId || null);
       }
     } catch (error) {
       console.error("Error fetching role:", error);
     }
   };
 
-  const fetchMyEvents = async (userId: string) => {
+  const fetchMyEvents = async () => {
     try {
       const tickets = await getUserTickets();
       setMyEvents(tickets);
@@ -70,8 +74,18 @@ export function ProfileMenu({ initialUser = null, initialRole = "user", initialQ
     }
   };
 
+  const fetchUnreadCount = async () => {
+    try {
+      const res = await api.notifications.unreadCount();
+      setUnreadNotifications(res.unreadCount);
+    } catch {
+      setUnreadNotifications(0);
+    }
+  };
+
   useEffect(() => {
     let mounted = true;
+    let unsubStream: (() => void) | undefined;
 
     const initSession = async () => {
       try {
@@ -80,13 +94,13 @@ export function ProfileMenu({ initialUser = null, initialRole = "user", initialQ
         if (mounted && session?.user) {
           setUser(session.user);
           await Promise.all([
-            fetchRole(session.user.id), 
-            fetchMyEvents(session.user.id),
-            (async () => {
-              const { count } = await supabase.from('notifications').select('*', { count: 'exact', head: true }).eq('user_id', session.user.id).eq('read', false);
-              if (count !== null) setUnreadNotifications(count);
-            })()
+            fetchRole(), 
+            fetchMyEvents(),
+            fetchUnreadCount()
           ]);
+          unsubStream = api.notifications.stream(() => {
+            if (mounted) fetchUnreadCount();
+          });
         }
       } catch (err) {
         console.error("Error fetching session:", err);
@@ -101,11 +115,19 @@ export function ProfileMenu({ initialUser = null, initialRole = "user", initialQ
       if (mounted) {
         if (session?.user) {
           setUser(session.user);
-          await Promise.all([fetchRole(session.user.id), fetchMyEvents(session.user.id)]);
+          await Promise.all([fetchRole(), fetchMyEvents(), fetchUnreadCount()]);
+          if (!unsubStream) {
+            unsubStream = api.notifications.stream(() => {
+              if (mounted) fetchUnreadCount();
+            });
+          }
         } else {
           setUser(null);
           setRole("user");
           setMyEvents([]);
+          setUnreadNotifications(0);
+          unsubStream?.();
+          unsubStream = undefined;
         }
         setLoading(false);
       }
@@ -113,6 +135,7 @@ export function ProfileMenu({ initialUser = null, initialRole = "user", initialQ
 
     return () => {
       mounted = false;
+      unsubStream?.();
       subscription.unsubscribe();
     };
   }, [supabase]);

@@ -175,6 +175,12 @@ export class RegistrationService {
         throw badRequest("Team leader does not have an active registration");
       }
 
+      const members = await uow.teamRepo.findMembers(teamId);
+      const member = members.find((m) => m.userId === userId);
+      if (!member || member.status !== "pending") {
+        throw badRequest("No pending invite found for this team");
+      }
+
       await uow.teamRepo.updateMemberStatus(teamId, userId, "approved");
 
       await uow.notificationRepo.create({
@@ -197,6 +203,11 @@ export class RegistrationService {
     eventId: string,
     caller: CallerContext
   ): Promise<{ success: boolean }> {
+    const members = await this.teamRepo.findMembers(teamId);
+    const member = members.find((m) => m.userId === caller.userId);
+    if (!member || member.status !== "pending") {
+      throw badRequest("No pending invite found for this team");
+    }
     await this.teamRepo.updateMemberStatus(teamId, caller.userId, "rejected");
     return { success: true };
   }
