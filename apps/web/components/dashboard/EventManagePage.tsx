@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/utils/supabase/client";
+import { api, getErrorMessage } from "@/lib/api";
 import {
   ArrowLeft, LayoutDashboard, Users, CheckSquare, Shield,
   Calendar, MapPin, Globe, Tag, Eye, EyeOff,
@@ -83,17 +83,20 @@ interface Props {
 }
 export function EventManagePage({ event: initialEvent, registrations: initialRegs, profiles, orgMembers, eventRoles: initialRoles, eventId, teams: initialTeams = [], teamMembers = [] }: Props) {
   const router = useRouter();
-  const supabase = createClient();
   const [activeSection, setActiveSection] = useState("overview");
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [event, setEvent] = useState(initialEvent);
   const [regs, setRegs] = useState(initialRegs);
   const [localTeams, setLocalTeams] = useState(initialTeams);
+  const [localProfiles, setLocalProfiles] = useState(profiles);
+  const [localTeamMembers, setLocalTeamMembers] = useState(teamMembers);
   const [eventRoles, setEventRoles] = useState(initialRoles);
 
   useEffect(() => { setEvent(initialEvent); }, [initialEvent]);
   useEffect(() => { setRegs(initialRegs); }, [initialRegs]);
   useEffect(() => { setLocalTeams(initialTeams); }, [initialTeams]);
+  useEffect(() => { setLocalProfiles(profiles); }, [profiles]);
+  useEffect(() => { setLocalTeamMembers(teamMembers); }, [teamMembers]);
   useEffect(() => { setEventRoles(initialRoles); }, [initialRoles]);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -110,13 +113,11 @@ export function EventManagePage({ event: initialEvent, registrations: initialReg
   const [refreshing, setRefreshing] = useState(false);
   const sectionIds = SECTIONS.map(s => s.id);
 
-
-
   const profileMap = useMemo(() => {
     const m: Record<string, any> = {};
-    profiles.forEach(p => { m[p.id] = p; });
+    localProfiles.forEach(p => { m[p.id] = p; });
     return m;
-  }, [profiles]);
+  }, [localProfiles]);
 
   const memberMap = useMemo(() => {
     const m: Record<string, any> = {};
@@ -132,12 +133,12 @@ export function EventManagePage({ event: initialEvent, registrations: initialReg
 
   const teamMembersByTeam = useMemo(() => {
     const m: Record<string, any[]> = {};
-    teamMembers.forEach(tm => {
+    localTeamMembers.forEach(tm => {
       if (!m[tm.team_id]) m[tm.team_id] = [];
       m[tm.team_id].push(tm);
     });
     return m;
-  }, [teamMembers]);
+  }, [localTeamMembers]);
 
   const filteredRegs = useMemo(() => regs.filter(r => {
     if (regFilterStatus !== "all" && r.status !== regFilterStatus) return false;
@@ -157,139 +158,157 @@ export function EventManagePage({ event: initialEvent, registrations: initialReg
   const attendedCount = regs.filter(r => r.attended).length;
   const isPublished = event.status === "published";
 
+  async function refreshData() {
+    setRefreshing(true);
+    try {
+      const [regsData, rolesData] = await Promise.all([
+        api.org.getEventRegistrations(eventId),
+        api.org.getEventRoles(eventId),
+      ]);
+      const mappedRegs = regsData.items.map(r => ({
+        id: r.id,
+        user_id: r.userId,
+        status: r.status,
+        attended: r.attended,
+        ticket_code: r.ticketCode,
+        team_id: r.teamId,
+        created_at: r.createdAt,
+        payment_proof_url: r.paymentProofUrl,
+        custom_field_values: r.fieldValues,
+      }));
+      const mappedProfiles = [
+        ...regsData.items.map(r => ({
+          id: r.userId,
+          full_name: r.userName,
+          email: r.userEmail,
+          phone: r.userPhone,
+          ckl_id: r.cklId,
+        })),
+        ...regsData.items.flatMap(r => r.teamMembers.map(tm => ({
+          id: tm.userId,
+          full_name: tm.name,
+          email: tm.email,
+          ckl_id: tm.cklId,
+        }))),
+      ];
+      const mappedTeams = regsData.items.filter(r => r.isTeam && r.teamId).map(r => ({
+        id: r.teamId!,
+        name: r.teamName || "Team",
+        leader_id: r.teamLeaderId,
+      }));
+      const mappedTeamMembers = regsData.items.flatMap(r => r.teamMembers.map(tm => ({
+        id: tm.id,
+        team_id: r.teamId,
+        user_id: tm.userId,
+        status: tm.status,
+      })));
+
+      setRegs(mappedRegs);
+      setLocalTeams(mappedTeams);
+      setLocalProfiles(mappedProfiles);
+      setLocalTeamMembers(mappedTeamMembers);
+      setEventRoles(rolesData.roles.map(r => ({
+        id: r.id,
+        user_id: r.userId,
+        role: r.role,
+        event_id: r.eventId,
+      })));
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
   async function handleDelete() {
     setDeleting(true);
-    await supabase.from("events").delete().eq("id", eventId);
-    router.push("/dashboard/events");
+    try {
+      await api.events.delete(eventId);
+      router.push("/dashboard/events");
+    } catch (err) {
+      alert(getErrorMessage(err));
+      setDeleting(false);
+    }
   }
 
   async function togglePublish() {
     setToggling(true);
     const newStatus = isPublished ? "draft" : "published";
-    await supabase.from("events").update({ status: newStatus }).eq("id", eventId);
-    setEvent((e: any) => ({ ...e, status: newStatus }));
-    setToggling(false);
+    try {
+      await api.events.updateStatus(eventId, newStatus);
+      setEvent((e: any) => ({ ...e, status: newStatus }));
+    } catch (err) {
+      alert(getErrorMessage(err));
+    } finally {
+      setToggling(false);
+    }
   }
 
   async function approveReg(id: string) {
-    const reg = regs.find((r: any) => r.id === id);
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (reg?.team_id) {
-      await supabase.from("registrations").update({ status: "approved" }).eq("team_id", reg.team_id);
-      setRegs((prev: any[]) => prev.map(r => r.team_id === reg.team_id ? { ...r, status: "approved" } : r));
-      
-      const teamRegs = regs.filter((r: any) => r.team_id === reg.team_id);
-      const notificationInserts = teamRegs.map((r: any) => ({
-        user_id: r.user_id,
-        sender_id: user?.id || r.user_id,
-        event_id: eventId,
-        type: 'registration_approved',
-      }));
-      await supabase.from('notifications').insert(notificationInserts);
-    } else {
-      await supabase.from("registrations").update({ status: "approved" }).eq("id", id);
-      setRegs((prev: any[]) => prev.map(r => r.id === id ? { ...r, status: "approved" } : r));
-      
-      await supabase.from('notifications').insert({
-        user_id: reg.user_id,
-        sender_id: user?.id || reg.user_id,
-        event_id: eventId,
-        type: 'registration_approved',
-      });
+    try {
+      await api.org.approveRegistration(eventId, id);
+      await refreshData();
+    } catch (err) {
+      alert(getErrorMessage(err));
+      await refreshData();
     }
   }
 
   async function rejectReg(id: string) {
-    const reg = regs.find((r: any) => r.id === id);
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (reg?.team_id) {
-      await supabase.from("registrations").update({ status: "rejected" }).eq("team_id", reg.team_id);
-      setRegs((prev: any[]) => prev.map(r => r.team_id === reg.team_id ? { ...r, status: "rejected" } : r));
-      
-      const teamRegs = regs.filter((r: any) => r.team_id === reg.team_id);
-      const notificationInserts = teamRegs.map((r: any) => ({
-        user_id: r.user_id,
-        sender_id: user?.id || r.user_id,
-        event_id: eventId,
-        type: 'registration_rejected',
-      }));
-      await supabase.from('notifications').insert(notificationInserts);
-      
-      await supabase.from('notifications')
-        .delete()
-        .eq('event_id', eventId)
-        .eq('team_id', reg.team_id)
-        .eq('type', 'team_invite');
-    } else {
-      await supabase.from("registrations").update({ status: "rejected" }).eq("id", id);
-      setRegs((prev: any[]) => prev.map(r => r.id === id ? { ...r, status: "rejected" } : r));
-      
-      await supabase.from('notifications').insert({
-        user_id: reg.user_id,
-        sender_id: user?.id || reg.user_id,
-        event_id: eventId,
-        type: 'registration_rejected',
-      });
+    try {
+      await api.org.rejectRegistration(eventId, id);
+      await refreshData();
+    } catch (err) {
+      alert(getErrorMessage(err));
+      await refreshData();
     }
   }
 
   async function deleteReg(id: string) {
-    const reg = regs.find((r: any) => r.id === id);
-    if (reg?.team_id) {
-      const newCancelCount = (reg.cancel_count || 0) + 1;
-      const { error } = await supabase.from("registrations").update({ status: "cancelled", cancel_count: newCancelCount }).eq("team_id", reg.team_id);
-      
-      if (error) {
-        console.error("Error cancelling registrations:", error);
-        alert("Failed to cancel team registrations.");
-        return;
-      }
-      setRegs((prev: any[]) => prev.map(r => r.team_id === reg.team_id ? { ...r, status: "cancelled", cancel_count: newCancelCount } : r));
-      
-      await supabase.from('notifications')
-        .delete()
-        .eq('event_id', eventId)
-        .eq('team_id', reg.team_id)
-        .eq('type', 'team_invite');
-    } else {
-      const { error } = await supabase.from("registrations").update({ status: "cancelled", cancel_count: (reg.cancel_count || 0) + 1 }).eq("id", id);
-      if (error) {
-        console.error("Error cancelling registration:", error);
-        alert("Failed to cancel registration. Make sure you have the necessary permissions (RLS).");
-        return;
-      }
-      setRegs((prev: any[]) => prev.map(r => r.id === id ? { ...r, status: "cancelled", cancel_count: (r.cancel_count || 0) + 1 } : r));
+    try {
+      await api.org.cancelRegistration(eventId, id);
+      await refreshData();
+    } catch (err) {
+      alert(getErrorMessage(err));
+      await refreshData();
+    } finally {
+      setViewingReg(null);
     }
-    setViewingReg(null);
   }
 
   async function toggleAttendance(regId: string, current: boolean) {
-    await supabase.from("registrations").update({ attended: !current }).eq("id", regId);
-    setRegs((prev: any[]) => prev.map(r => r.id === regId ? { ...r, attended: !current } : r));
-  }
-
-  async function refreshData() {
-    setRefreshing(true);
-    router.refresh();
-    setTimeout(() => setRefreshing(false), 1000);
+    try {
+      await api.org.toggleAttendance(eventId, regId, !current);
+      await refreshData();
+    } catch (err) {
+      alert(getErrorMessage(err));
+      await refreshData();
+    }
   }
 
   async function addRole() {
     if (!addRoleMember) return;
     setSavingRole(true);
-    const { data } = await supabase.from("event_roles").insert({ event_id: eventId, user_id: addRoleMember, role: addRoleValue }).select().single();
-    if (data) setEventRoles((prev: any[]) => [...prev, data]);
-    setAddRoleOpen(false);
-    setAddRoleMember("");
-    setAddRoleValue("viewer");
-    setSavingRole(false);
+    try {
+      await api.org.createEventRole(eventId, addRoleMember, addRoleValue);
+      setAddRoleOpen(false);
+      setAddRoleMember("");
+      setAddRoleValue("viewer");
+      await refreshData();
+    } catch (err) {
+      alert(getErrorMessage(err));
+    } finally {
+      setSavingRole(false);
+    }
   }
 
   async function removeRole(id: string) {
-    await supabase.from("event_roles").delete().eq("id", id);
-    setEventRoles((prev: any[]) => prev.filter(r => r.id !== id));
+    try {
+      await api.org.deleteEventRole(eventId, id);
+      await refreshData();
+    } catch (err) {
+      alert(getErrorMessage(err));
+    }
   }
 
   function exportCSV() {

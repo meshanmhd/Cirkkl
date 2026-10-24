@@ -1,17 +1,21 @@
-import { requireOrg } from "@/lib/auth/server";
-import { createClient } from "@/utils/supabase/server";
+import { api } from "@/lib/api";
 import { Users } from "lucide-react";
 import { MembersTable } from "@/components/dashboard/MembersTable";
 
-export default async function MembersPage() {
-  const { org } = await requireOrg();
-  const supabase = await createClient();
+export const dynamic = "force-dynamic";
 
-  const { data: members } = await supabase
-    .from("members")
-    .select("id, ckl_id, full_name, avatar_url, email, role, joined_at, department")
-    .eq("org_id", org.id)
-    .order("joined_at", { ascending: false });
+export default async function MembersPage() {
+  const data = await api.org.listMembers();
+  const members = data.items.map((m) => ({
+    id: m.id,
+    ckl_id: null,
+    full_name: m.name,
+    avatar_url: m.avatarUrl ?? null,
+    email: m.email ?? null,
+    role: m.role ?? null,
+    joined_at: m.createdAt ?? null,
+    department: m.department ?? null,
+  }));
 
   return (
     <div className="flex flex-col gap-6">
@@ -25,7 +29,7 @@ export default async function MembersPage() {
         </button>
       </div>
 
-      <MembersTable members={members ?? []} />
+      <MembersTable members={members} />
     </div>
   );
 }

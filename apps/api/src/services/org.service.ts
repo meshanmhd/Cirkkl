@@ -115,6 +115,14 @@ export class OrgService {
         throw notFound("Registration not found");
       }
 
+      if (reg.status === "approved") {
+        return {
+          success: true,
+          registrationId,
+          status: "approved",
+        };
+      }
+
       await uow.registrationRepo.update(registrationId, { status: "approved" });
 
       await uow.notificationRepo.create({
@@ -164,6 +172,14 @@ export class OrgService {
         throw notFound("Registration not found");
       }
 
+      if (reg.status === "rejected") {
+        return {
+          success: true,
+          registrationId,
+          status: "rejected",
+        };
+      }
+
       await uow.registrationRepo.update(registrationId, { status: "rejected" });
 
       await uow.notificationRepo.create({
@@ -198,6 +214,14 @@ export class OrgService {
       const reg = await uow.registrationRepo.findById(registrationId);
       if (!reg || reg.eventId !== eventId) {
         throw notFound("Registration not found");
+      }
+
+      if (reg.status === "cancelled") {
+        return {
+          success: true,
+          registrationId,
+          status: "cancelled",
+        };
       }
 
       await uow.registrationRepo.update(registrationId, { status: "cancelled" });

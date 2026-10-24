@@ -212,6 +212,11 @@ export class MemoryEventRepo implements EventRepo {
 
 export class MemoryTicketRepo implements TicketRepo {
   tickets: Map<string, Ticket> = new Map();
+  registrationRepo?: MemoryRegistrationRepo;
+
+  constructor(registrationRepo?: MemoryRegistrationRepo) {
+    this.registrationRepo = registrationRepo;
+  }
 
   async findById(id: string): Promise<Ticket | null> {
     return this.tickets.get(id) ?? null;
@@ -261,7 +266,10 @@ export class MemoryTicketRepo implements TicketRepo {
   }
 
   async hasRegistrationsOrPayments(ticketId: string): Promise<boolean> {
-    return false;
+    if (!this.registrationRepo) return false;
+    return Array.from(this.registrationRepo.registrations.values()).some(
+      (r) => r.ticketId === ticketId && r.status !== "cancelled" && r.status !== "rejected"
+    );
   }
 }
 
