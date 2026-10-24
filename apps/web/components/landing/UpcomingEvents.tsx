@@ -1,22 +1,15 @@
 import Link from "next/link";
-import { Calendar, Clock, MapPin, ArrowRight, IndianRupee, Sparkles } from "lucide-react";
-import { createClient } from "@/utils/supabase/server";
-
-
-const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
-  Hackathons: { bg: "#F3F0FF", text: "#7B61FF" },
-  Cultural: { bg: "#FFF0F5", text: "#FF3B7A" },
-  Workshops: { bg: "#FFF3EE", text: "#FF6B35" },
-  Technical: { bg: "#EBF5FF", text: "#cfe467" },
-  Sports: { bg: "#F0FFF4", text: "#34C759" },
-  Seminars: { bg: "#FFF8EE", text: "#FF9500" },
-  Competitions: { bg: "#F8F0FF", text: "#AF52DE" },
-  Music: { bg: "#FFF0F3", text: "#FF2D55" },
-};
+import { Calendar, Clock, MapPin } from "lucide-react";
+import { api } from "@/lib/api";
 
 export default async function UpcomingEvents() {
-  const supabase = await createClient();
-  const { data: upcoming } = await supabase.from('events').select('*').eq('status', 'published').limit(6);
+  let upcoming: any[] = [];
+  try {
+    const res = await api.events.list({ timeFilter: "upcoming", limit: 6 });
+    upcoming = res.items || [];
+  } catch {
+    upcoming = [];
+  }
 
   return (
     <section className="pb-0 pt-0 px-6" id="upcoming">
@@ -45,7 +38,6 @@ export default async function UpcomingEvents() {
                 <article
                   className="relative rounded-xl bg-white overflow-hidden transition-colors duration-300 border border-[#F0F0F0] hover:border-[#D1D1D6]"
                 >
-                  {/* Image & Overlays */}
                   <div className="relative aspect-[16/9] overflow-hidden">
                     <img
                       src={event.image}
@@ -54,7 +46,6 @@ export default async function UpcomingEvents() {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-black/20 opacity-80 group-hover:opacity-100 transition-opacity duration-300" />
 
-                    {/* Free/Paid Badge */}
                     <div className={`absolute top-4 right-4 px-3.5 py-1.5 rounded-[6px] shadow-sm flex items-center justify-center ${event.price === "paid" ? "bg-[#7B61FF]" : "bg-[#cfe467]"}`}>
                       <span className={`text-[12px] font-bold leading-none pt-[1px] ${event.price === "paid" ? "text-white" : "text-[#111111]"}`}>
                         {event.price === "paid" ? "Paid" : "Free"}
@@ -62,9 +53,7 @@ export default async function UpcomingEvents() {
                     </div>
                   </div>
 
-                  {/* Details */}
                   <div className="p-5 flex flex-col gap-6">
-                    {/* Title with left accent border */}
                     <div className="relative pl-4 flex flex-col justify-center min-h-[48px]">
                       <div className="absolute left-0 top-1 bottom-1 w-1 bg-[#cfe467] rounded-full" />
                       {event.organizer && (
@@ -78,18 +67,16 @@ export default async function UpcomingEvents() {
                     </div>
 
                     <div className="flex flex-col gap-4">
-                      {/* Time */}
                       <div className="flex items-start gap-3">
                         <div className="w-10 h-10 rounded-[10px] border border-[#E5E5EA] bg-white flex items-center justify-center shrink-0">
                           <Clock size={16} className="text-[#111111]" strokeWidth={1.5} />
                         </div>
                         <div className="flex flex-col justify-center min-h-[40px]">
                           <span className="text-[12px] font-medium text-[#6E6E73] mb-0.5">Time</span>
-                          <span className="text-[13px] font-medium text-[#111111]">{event.time}</span>
+                          <span className="text-[13px] font-medium text-[#111111]">{event.time || "TBA"}</span>
                         </div>
                       </div>
 
-                      {/* Date */}
                       <div className="flex items-start gap-3">
                         <div className="w-10 h-10 rounded-[10px] border border-[#E5E5EA] bg-white flex items-center justify-center shrink-0">
                           <Calendar size={16} className="text-[#111111]" strokeWidth={1.5} />
@@ -100,7 +87,6 @@ export default async function UpcomingEvents() {
                         </div>
                       </div>
 
-                      {/* Location */}
                       <div className="flex items-start gap-3">
                         <div className="w-10 h-10 rounded-[10px] border border-[#E5E5EA] bg-white flex items-center justify-center shrink-0">
                           <MapPin size={16} className="text-[#111111]" strokeWidth={1.5} />
