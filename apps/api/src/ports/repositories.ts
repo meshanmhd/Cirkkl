@@ -24,6 +24,15 @@ import {
 export interface EventRepo {
   findById(id: string): Promise<Event | null>;
   findBySlug(slug: string): Promise<Event | null>;
+  findPublicByIdOrSlug(idOrSlug: string): Promise<Event | null>;
+  findOrgEvent(id: string, orgId: string): Promise<Event | null>;
+  findPublicEvents(filters: {
+    search?: string;
+    category?: string;
+    timeFilter?: "upcoming" | "past" | "all";
+    cursor?: string;
+    limit?: number;
+  }): Promise<{ items: Event[]; nextCursor: string | null }>;
   findMany(
     filters?: {
       status?: EventStatus;
@@ -36,8 +45,8 @@ export interface EventRepo {
   ): Promise<PaginatedResult<Event>>;
   findOrgEvents(
     orgId: string,
-    pagination?: PaginationOptions
-  ): Promise<PaginatedResult<Event>>;
+    filters?: { search?: string; status?: string; cursor?: string; limit?: number }
+  ): Promise<{ items: Event[]; nextCursor: string | null }>;
   create(data: Omit<Event, "id" | "createdAt" | "updatedAt">): Promise<Event>;
   update(id: string, data: Partial<Event>): Promise<Event>;
   delete(id: string): Promise<void>;
@@ -61,12 +70,18 @@ export interface TicketRepo {
   update(id: string, data: Partial<Ticket>): Promise<Ticket>;
   delete(id: string): Promise<void>;
   decrementAvailable(id: string, quantity: number): Promise<void>;
+  hasRegistrationsOrPayments(ticketId: string): Promise<boolean>;
 }
 
 export interface RegistrationRepo {
   findById(id: string): Promise<Registration | null>;
   findByTicketCode(ticketCode: string): Promise<Registration | null>;
   findByUserAndEvent(userId: string, eventId: string): Promise<Registration | null>;
+  findMine(userId: string, eventId: string): Promise<Registration | null>;
+  lookupTeammate(
+    eventId: string,
+    cklId: string
+  ): Promise<{ id: string; displayName: string; isRegistered: boolean; isInTeam: boolean } | null>;
   findByEvent(
     eventId: string,
     filters?: { status?: RegistrationStatus; search?: string },
@@ -172,4 +187,16 @@ export interface PaymentRepo {
     status: PaymentStatus,
     transactionId?: string
   ): Promise<Payment>;
+}
+
+export interface UnitOfWork {
+  eventRepo: EventRepo;
+  ticketRepo: TicketRepo;
+  registrationRepo: RegistrationRepo;
+  teamRepo: TeamRepo;
+  notificationRepo: NotificationRepo;
+}
+
+export interface TransactionRunner {
+  run<T>(fn: (uow: UnitOfWork) => Promise<T>): Promise<T>;
 }

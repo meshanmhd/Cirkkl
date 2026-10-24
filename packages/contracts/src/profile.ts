@@ -78,26 +78,6 @@ export const SearchCollegesOutputSchema = z.object({
 });
 export type SearchCollegesOutput = z.infer<typeof SearchCollegesOutputSchema>;
 
-export const SearchByCklIdInputSchema = z.object({
-  cklId: z.string().min(1),
-  eventId: z.string().uuid(),
-});
-export type SearchByCklIdInput = z.infer<typeof SearchByCklIdInputSchema>;
-
-export const SearchByCklIdOutputSchema = z.object({
-  found: z.boolean(),
-  user: z.object({
-    id: z.string().uuid(),
-    fullName: z.string(),
-    cklId: z.string(),
-    avatarUrl: z.string().nullable().optional(),
-    college: z.string().nullable().optional(),
-  }).nullable(),
-  isEligible: z.boolean(),
-  ineligibilityReason: z.string().nullable().optional(),
-});
-export type SearchByCklIdOutput = z.infer<typeof SearchByCklIdOutputSchema>;
-
 export const getProfileOperation: Operation<typeof GetProfileInputSchema, typeof GetProfileOutputSchema> = {
   name: "profile.get",
   method: "GET",
@@ -136,14 +116,4 @@ export const searchCollegesOperation: Operation<typeof SearchCollegesInputSchema
   input: SearchCollegesInputSchema,
   output: SearchCollegesOutputSchema,
   errorCodes: ["BAD_REQUEST", "INTERNAL_SERVER_ERROR"],
-};
-
-export const searchByCklIdOperation: Operation<typeof SearchByCklIdInputSchema, typeof SearchByCklIdOutputSchema> = {
-  name: "profile.searchByCklId",
-  method: "GET",
-  path: "/api/v1/users/search-ckl",
-  auth: "user",
-  input: SearchByCklIdInputSchema,
-  output: SearchByCklIdOutputSchema,
-  errorCodes: ["BAD_REQUEST", "UNAUTHORIZED", "NOT_FOUND", "INTERNAL_SERVER_ERROR"],
 };

@@ -68,21 +68,34 @@ export const MyTicketsOutputSchema = z.object({
 });
 export type MyTicketsOutput = z.infer<typeof MyTicketsOutputSchema>;
 
-export const MyEventRegistrationInputSchema = z.object({
+export const GetMineRegistrationInputSchema = z.object({
   eventId: z.string().uuid(),
 });
-export type MyEventRegistrationInput = z.infer<typeof MyEventRegistrationInputSchema>;
+export type GetMineRegistrationInput = z.infer<typeof GetMineRegistrationInputSchema>;
 
-export const MyEventRegistrationOutputSchema = z.object({
+export const GetMineRegistrationOutputSchema = z.object({
   registration: z.object({
     id: z.string().uuid(),
     status: RegistrationStatusSchema,
     attended: z.boolean(),
     ticketCode: z.string(),
     teamId: z.string().uuid().nullable().optional(),
+    ticketTierId: z.string().uuid().nullable().optional(),
   }).nullable(),
 });
-export type MyEventRegistrationOutput = z.infer<typeof MyEventRegistrationOutputSchema>;
+export type GetMineRegistrationOutput = z.infer<typeof GetMineRegistrationOutputSchema>;
+
+export const LookupTeammateInputSchema = z.object({
+  eventId: z.string().uuid(),
+  cklId: z.string().min(1),
+});
+export type LookupTeammateInput = z.infer<typeof LookupTeammateInputSchema>;
+
+export const LookupTeammateOutputSchema = z.object({
+  id: z.string().uuid(),
+  displayName: z.string(),
+});
+export type LookupTeammateOutput = z.infer<typeof LookupTeammateOutputSchema>;
 
 export const registerForEventOperation: Operation<typeof RegisterForEventInputSchema, typeof RegisterForEventOutputSchema> = {
   name: "registrations.register",
@@ -124,12 +137,22 @@ export const myTicketsOperation: Operation<typeof MyTicketsInputSchema, typeof M
   errorCodes: ["UNAUTHORIZED", "INTERNAL_SERVER_ERROR"],
 };
 
-export const myRegistrationOperation: Operation<typeof MyEventRegistrationInputSchema, typeof MyEventRegistrationOutputSchema> = {
-  name: "registrations.myRegistration",
+export const getMineRegistrationOperation: Operation<typeof GetMineRegistrationInputSchema, typeof GetMineRegistrationOutputSchema> = {
+  name: "registrations.getMine",
   method: "GET",
   path: "/api/v1/events/:eventId/my-registration",
   auth: "user",
-  input: MyEventRegistrationInputSchema,
-  output: MyEventRegistrationOutputSchema,
+  input: GetMineRegistrationInputSchema,
+  output: GetMineRegistrationOutputSchema,
   errorCodes: ["UNAUTHORIZED", "NOT_FOUND", "INTERNAL_SERVER_ERROR"],
+};
+
+export const lookupTeammateOperation: Operation<typeof LookupTeammateInputSchema, typeof LookupTeammateOutputSchema> = {
+  name: "registrations.lookupTeammate",
+  method: "GET",
+  path: "/api/v1/events/:eventId/teammates/lookup",
+  auth: "user",
+  input: LookupTeammateInputSchema,
+  output: LookupTeammateOutputSchema,
+  errorCodes: ["BAD_REQUEST", "UNAUTHORIZED", "NOT_FOUND", "ALREADY_REGISTERED", "ALREADY_IN_TEAM", "INTERNAL_SERVER_ERROR"],
 };

@@ -1,9 +1,5 @@
 import { z } from "zod";
-import {
-  Operation,
-  PaginationQuerySchema,
-  createPaginatedResponseSchema,
-} from "./common";
+import { Operation } from "./common";
 
 export const EventStatusSchema = z.enum(["draft", "published", "cancelled", "completed"]);
 export type EventStatus = z.infer<typeof EventStatusSchema>;
@@ -35,7 +31,7 @@ export const CustomFieldSchema = z.object({
 export type CustomField = z.infer<typeof CustomFieldSchema>;
 
 export const TicketTypeSchema = z.object({
-  id: z.string().optional(),
+  id: z.string().uuid().optional(),
   name: z.string().min(1),
   price: z.number().min(0),
   quantity: z.number().int().min(1).nullable().optional(),
@@ -53,6 +49,7 @@ export type EventHost = z.infer<typeof EventHostSchema>;
 export const EventSummarySchema = z.object({
   id: z.string().uuid(),
   title: z.string(),
+  slug: z.string(),
   tagline: z.string().nullable().optional(),
   category: z.string(),
   organizer: z.string(),
@@ -97,43 +94,56 @@ export const EventDetailSchema = EventSummarySchema.extend({
   ticketTypes: z.array(TicketTypeSchema).default([]),
   totalRegistrations: z.number().int().min(0).default(0),
   isFull: z.boolean().default(false),
-  userRegistration: z.object({
-    id: z.string().uuid(),
-    status: z.string(),
-    attended: z.boolean(),
-  }).nullable().optional(),
 });
 export type EventDetail = z.infer<typeof EventDetailSchema>;
 
-export const ListEventsInputSchema = PaginationQuerySchema.extend({
+export const OrgEventDetailSchema = EventDetailSchema.extend({
+  orgId: z.string().uuid(),
+});
+export type OrgEventDetail = z.infer<typeof OrgEventDetailSchema>;
+
+export const ListEventsInputSchema = z.object({
   search: z.string().optional(),
   category: z.string().optional(),
-  timeFilter: z.enum(["Upcoming", "Past", "All"]).default("Upcoming"),
-  featured: z.coerce.boolean().optional(),
+  timeFilter: z.enum(["upcoming", "past", "all"]).default("upcoming"),
+  cursor: z.string().optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
 });
 export type ListEventsInput = z.infer<typeof ListEventsInputSchema>;
 
-export const ListEventsOutputSchema = createPaginatedResponseSchema(EventSummarySchema);
+export const ListEventsOutputSchema = z.object({
+  items: z.array(EventSummarySchema),
+  nextCursor: z.string().nullable(),
+});
 export type ListEventsOutput = z.infer<typeof ListEventsOutputSchema>;
 
 export const GetEventInputSchema = z.object({
-  id: z.string().uuid(),
+  idOrSlug: z.string().min(1),
 });
 export type GetEventInput = z.infer<typeof GetEventInputSchema>;
 
 export const GetEventOutputSchema = EventDetailSchema;
 export type GetEventOutput = z.infer<typeof GetEventOutputSchema>;
 
+export const GetForOrgInputSchema = z.object({
+  id: z.string().uuid(),
+});
+export type GetForOrgInput = z.infer<typeof GetForOrgInputSchema>;
+
+export const GetForOrgOutputSchema = OrgEventDetailSchema;
+export type GetForOrgOutput = z.infer<typeof GetForOrgOutputSchema>;
+
 export const CreateEventInputSchema = z.object({
   title: z.string().min(1),
+  slug: z.string().optional(),
   tagline: z.string().optional(),
   description: z.string().min(1),
   category: z.string().min(1),
   tags: z.array(z.string()).default([]),
-  hosts: z.array(z.string()).min(1),
+  hosts: z.array(z.string()).default([]),
   speakers: z.array(SpeakerSchema).default([]),
   imageKey: z.string().min(1),
-  posterImageKey: z.string().min(1),
+  posterImageKey: z.string().optional(),
   date: z.string().min(1),
   time: z.string().optional(),
   endDate: z.string().optional(),
@@ -165,9 +175,14 @@ export type CreateEventInput = z.infer<typeof CreateEventInputSchema>;
 export const CreateEventOutputSchema = EventDetailSchema;
 export type CreateEventOutput = z.infer<typeof CreateEventOutputSchema>;
 
+export const UpdateEventBodySchema = CreateEventInputSchema.partial().extend({
+  tickets: z.array(TicketTypeSchema).optional(),
+});
+export type UpdateEventBody = z.infer<typeof UpdateEventBodySchema>;
+
 export const UpdateEventInputSchema = z.object({
   id: z.string().uuid(),
-  body: CreateEventInputSchema.partial(),
+  body: UpdateEventBodySchema,
 });
 export type UpdateEventInput = z.infer<typeof UpdateEventInputSchema>;
 
@@ -196,15 +211,18 @@ export const UpdateEventStatusOutputSchema = z.object({
 });
 export type UpdateEventStatusOutput = z.infer<typeof UpdateEventStatusOutputSchema>;
 
-export const ListOrgEventsInputSchema = PaginationQuerySchema.extend({
+export const ListOrgEventsInputSchema = z.object({
   search: z.string().optional(),
   status: z.string().optional(),
+  cursor: z.string().optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
 });
 export type ListOrgEventsInput = z.infer<typeof ListOrgEventsInputSchema>;
 
 export const OrgEventItemSchema = z.object({
   id: z.string().uuid(),
   title: z.string(),
+  slug: z.string(),
   date: z.string().nullable(),
   category: z.string().nullable(),
   status: EventStatusSchema,
@@ -214,7 +232,10 @@ export const OrgEventItemSchema = z.object({
 });
 export type OrgEventItem = z.infer<typeof OrgEventItemSchema>;
 
-export const ListOrgEventsOutputSchema = createPaginatedResponseSchema(OrgEventItemSchema);
+export const ListOrgEventsOutputSchema = z.object({
+  items: z.array(OrgEventItemSchema),
+  nextCursor: z.string().nullable(),
+});
 export type ListOrgEventsOutput = z.infer<typeof ListOrgEventsOutputSchema>;
 
 export const listEventsOperation: Operation<typeof ListEventsInputSchema, typeof ListEventsOutputSchema> = {
@@ -230,11 +251,21 @@ export const listEventsOperation: Operation<typeof ListEventsInputSchema, typeof
 export const getEventOperation: Operation<typeof GetEventInputSchema, typeof GetEventOutputSchema> = {
   name: "events.get",
   method: "GET",
-  path: "/api/v1/events/:id",
+  path: "/api/v1/events/:idOrSlug",
   auth: "public",
   input: GetEventInputSchema,
   output: GetEventOutputSchema,
   errorCodes: ["NOT_FOUND", "INTERNAL_SERVER_ERROR"],
+};
+
+export const getForOrgOperation: Operation<typeof GetForOrgInputSchema, typeof GetForOrgOutputSchema> = {
+  name: "events.getForOrg",
+  method: "GET",
+  path: "/api/v1/org/events/:id",
+  auth: "org",
+  input: GetForOrgInputSchema,
+  output: GetForOrgOutputSchema,
+  errorCodes: ["UNAUTHORIZED", "FORBIDDEN", "NOT_FOUND", "INTERNAL_SERVER_ERROR"],
 };
 
 export const createEventOperation: Operation<typeof CreateEventInputSchema, typeof CreateEventOutputSchema> = {
@@ -254,7 +285,7 @@ export const updateEventOperation: Operation<typeof UpdateEventInputSchema, type
   auth: "org",
   input: UpdateEventInputSchema,
   output: UpdateEventOutputSchema,
-  errorCodes: ["BAD_REQUEST", "UNAUTHORIZED", "FORBIDDEN", "NOT_FOUND", "INTERNAL_SERVER_ERROR"],
+  errorCodes: ["BAD_REQUEST", "UNAUTHORIZED", "FORBIDDEN", "NOT_FOUND", "CONFLICT", "INTERNAL_SERVER_ERROR"],
 };
 
 export const deleteEventOperation: Operation<typeof DeleteEventInputSchema, typeof DeleteEventOutputSchema> = {

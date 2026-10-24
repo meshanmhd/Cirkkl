@@ -9,6 +9,7 @@ import {
 import {
   listEventsOperation,
   getEventOperation,
+  getForOrgOperation,
   createEventOperation,
   updateEventOperation,
   deleteEventOperation,
@@ -20,7 +21,8 @@ import {
   acceptTeamInviteOperation,
   declineTeamInviteOperation,
   myTicketsOperation,
-  myRegistrationOperation,
+  getMineRegistrationOperation,
+  lookupTeammateOperation,
 } from "./registrations";
 import { createPaymentOperation } from "./payments";
 import {
@@ -50,7 +52,6 @@ import {
   updateProfileOperation,
   updateAvatarOperation,
   searchCollegesOperation,
-  searchByCklIdOperation,
 } from "./profile";
 import { requestUploadOperation } from "./uploads";
 
@@ -62,6 +63,7 @@ export const operations = [
   meOperation,
   listEventsOperation,
   getEventOperation,
+  getForOrgOperation,
   createEventOperation,
   updateEventOperation,
   deleteEventOperation,
@@ -71,7 +73,8 @@ export const operations = [
   acceptTeamInviteOperation,
   declineTeamInviteOperation,
   myTicketsOperation,
-  myRegistrationOperation,
+  getMineRegistrationOperation,
+  lookupTeammateOperation,
   createPaymentOperation,
   getOrgEventRegistrationsOperation,
   approveRegistrationOperation,
@@ -95,7 +98,6 @@ export const operations = [
   updateProfileOperation,
   updateAvatarOperation,
   searchCollegesOperation,
-  searchByCklIdOperation,
   requestUploadOperation,
 ] as const;
 
