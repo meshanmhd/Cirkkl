@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { createContainer } from "../src/container";
 
 describe("API Service Layer Tests", () => {
@@ -642,5 +642,108 @@ describe("API Service Layer Tests", () => {
       expect(refreshRes.refreshToken).toBeDefined();
       expect(refreshRes.expiresAt).toBeGreaterThan(0);
     });
+
+    it("generates a 6-digit org OTP on signup and verifies it within expiry", async () => {
+      const { services, ports } = container;
+
+      const signupRes = await services.authService.signup({
+        email: "org-otp-success@test.com",
+        password: "password123",
+        role: "organisation",
+        orgName: "OTP Test Org",
+      });
+
+      const org = await ports.orgRepo.findById(signupRes.userId!);
+      expect(org).toBeDefined();
+      expect(org!.otp).toMatch(/^\d{6}$/);
+
+      const verified = await services.authService.verifyOrgOtp(signupRes.userId!, org!.otp!);
+      expect(verified).toBe(true);
+
+      const updatedOrg = await ports.orgRepo.findById(signupRes.userId!);
+      expect(updatedOrg!.isOtpVerified).toBe(true);
+      expect(updatedOrg!.otp).toBeNull();
+    });
+
+    it("rejects OTP after 10-minute expiry and requires a new OTP", async () => {
+      vi.useFakeTimers();
+      try {
+        const { services, ports } = container;
+
+        const signupRes = await services.authService.signup({
+          email: "org-otp-expire@test.com",
+          password: "password123",
+          role: "organisation",
+          orgName: "Expire Org",
+        });
+
+        const org = await ports.orgRepo.findById(signupRes.userId!);
+        const originalOtp = org!.otp!;
+
+        vi.advanceTimersByTime(10 * 60 * 1000 + 1000);
+
+        await expect(
+          services.authService.verifyOrgOtp(signupRes.userId!, originalOtp)
+        ).rejects.toThrow("OTP code has expired. Please request a new OTP");
+
+        await services.authService.resendOrgOtp(signupRes.userId!);
+
+        const refreshedOrg = await ports.orgRepo.findById(signupRes.userId!);
+        expect(refreshedOrg!.otp).toMatch(/^\d{6}$/);
+        expect(refreshedOrg!.otp).not.toBeNull();
+
+        const verified = await services.authService.verifyOrgOtp(signupRes.userId!, refreshedOrg!.otp!);
+        expect(verified).toBe(true);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it("enforces max of 10 failed attempts per OTP then requires a new OTP", async () => {
+      vi.useFakeTimers();
+      try {
+        const { services, ports } = container;
+
+        const signupRes = await services.authService.signup({
+          email: "org-otp-attempts@test.com",
+          password: "password123",
+          role: "organisation",
+          orgName: "Attempts Org",
+        });
+
+        const org = await ports.orgRepo.findById(signupRes.userId!);
+        const correctOtp = org!.otp!;
+
+        for (let i = 0; i < 9; i++) {
+          if (i > 0 && i % 4 === 0) {
+            vi.advanceTimersByTime(65000);
+          }
+          await expect(
+            services.authService.verifyOrgOtp(signupRes.userId!, "000000")
+          ).rejects.toThrow("Invalid OTP code");
+        }
+
+        vi.advanceTimersByTime(65000);
+        await expect(
+          services.authService.verifyOrgOtp(signupRes.userId!, "000000")
+        ).rejects.toThrow("Maximum failed attempts exceeded. Please request a new OTP");
+
+        vi.advanceTimersByTime(65000);
+        await expect(
+          services.authService.verifyOrgOtp(signupRes.userId!, correctOtp)
+        ).rejects.toThrow("Maximum failed attempts exceeded. Please request a new OTP");
+
+        await services.authService.resendOrgOtp(signupRes.userId!);
+
+        const refreshedOrg = await ports.orgRepo.findById(signupRes.userId!);
+        expect(refreshedOrg!.otp).toMatch(/^\d{6}$/);
+
+        const verified = await services.authService.verifyOrgOtp(signupRes.userId!, refreshedOrg!.otp!);
+        expect(verified).toBe(true);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
   });
 });
+
