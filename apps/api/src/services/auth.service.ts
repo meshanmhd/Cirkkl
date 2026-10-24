@@ -1,3 +1,4 @@
+import { randomInt } from "crypto";
 import { AuthProvider } from "../ports/auth.provider";
 import { OrganisationRepo, ProfileRepo } from "../ports/repositories";
 import { UserRole } from "../ports/domain";
@@ -11,8 +12,15 @@ export interface CallerContext {
   isOrgApproved?: boolean;
 }
 
+interface OtpState {
+  otp: string;
+  createdAt: number;
+  failedAttempts: number;
+}
+
 export class AuthService {
   private readonly rateLimiter = new RateLimiter();
+  private readonly otpStates = new Map<string, OtpState>();
 
   constructor(
     private readonly authProvider: AuthProvider,
@@ -61,7 +69,7 @@ export class AuthService {
 
     if (normalizedRole === "organisation") {
       try {
-        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const otp = randomInt(100000, 1000000).toString();
         await this.orgRepo.create({
           ownerId: res.userId,
           name: input.orgName || input.name || "Organisation",
@@ -69,6 +77,11 @@ export class AuthService {
           status: "pending",
           isOtpVerified: false,
           otp,
+        });
+        this.otpStates.set(res.userId, {
+          otp,
+          createdAt: Date.now(),
+          failedAttempts: 0,
         });
       } catch (err) {
         await this.authProvider.deleteUser(res.userId);
@@ -169,6 +182,28 @@ export class AuthService {
     await this.authProvider.logout(token);
   }
 
+  async resendOrgOtp(callerId: string, clientIp?: string): Promise<{ success: boolean }> {
+    if (clientIp) {
+      const allowed = this.rateLimiter.check(`ip:resend-otp:${clientIp}`, 5, 60000);
+      if (!allowed) throw tooManyRequests();
+    }
+    const userAllowed = this.rateLimiter.check(`user:resend-otp:${callerId}`, 5, 60000);
+    if (!userAllowed) throw tooManyRequests();
+
+    const org = (await this.orgRepo.findById(callerId)) ?? (await this.orgRepo.findByOwnerId(callerId));
+    if (!org) throw badRequest("Organisation not found");
+    if (org.isOtpVerified) throw badRequest("Organisation is already verified");
+
+    const newOtp = randomInt(100000, 1000000).toString();
+    await this.orgRepo.update(org.id, { otp: newOtp });
+    this.otpStates.set(org.id, {
+      otp: newOtp,
+      createdAt: Date.now(),
+      failedAttempts: 0,
+    });
+    return { success: true };
+  }
+
   async verifyOrgOtp(callerId: string, otp: string, clientIp?: string): Promise<boolean> {
     if (clientIp) {
       const allowed = this.rateLimiter.check(`ip:otp:${clientIp}`, 5, 60000);
@@ -177,10 +212,44 @@ export class AuthService {
     const userAllowed = this.rateLimiter.check(`user:otp:${callerId}`, 5, 60000);
     if (!userAllowed) throw tooManyRequests();
 
-    const verified = await this.orgRepo.verifyOtp(callerId, otp);
-    if (!verified) {
+    const org = (await this.orgRepo.findById(callerId)) ?? (await this.orgRepo.findByOwnerId(callerId));
+    if (!org) {
       throw badRequest("Invalid OTP code");
     }
+
+    if (!org.otp) {
+      throw badRequest("No active OTP. Please request a new OTP");
+    }
+
+    let state = this.otpStates.get(org.id);
+    if (!state || state.otp !== org.otp) {
+      state = {
+        otp: org.otp,
+        createdAt: Date.now(),
+        failedAttempts: 0,
+      };
+      this.otpStates.set(org.id, state);
+    }
+
+    if (state.failedAttempts >= 10) {
+      throw badRequest("Maximum failed attempts exceeded. Please request a new OTP");
+    }
+
+    const OTP_EXPIRY_MS = 10 * 60 * 1000;
+    if (Date.now() - state.createdAt > OTP_EXPIRY_MS) {
+      throw badRequest("OTP code has expired. Please request a new OTP");
+    }
+
+    const verified = await this.orgRepo.verifyOtp(org.id, otp);
+    if (!verified) {
+      state.failedAttempts += 1;
+      if (state.failedAttempts >= 10) {
+        throw badRequest("Maximum failed attempts exceeded. Please request a new OTP");
+      }
+      throw badRequest("Invalid OTP code");
+    }
+
+    this.otpStates.delete(org.id);
     return true;
   }
 

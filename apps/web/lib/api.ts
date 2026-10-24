@@ -249,21 +249,33 @@ async function request<T>(
 
 export const api = {
   auth: {
-    login: async (body: LoginInput): Promise<LoginOutput> => {
+    login: async (body: LoginInput, clientIp?: string): Promise<LoginOutput> => {
+      const headers: Record<string, string> = {};
+      if (clientIp) {
+        headers["x-forwarded-for"] = clientIp;
+        headers["x-real-ip"] = clientIp;
+      }
       return request<LoginOutput>(
         "/api/v1/auth/login",
         {
           method: "POST",
+          headers,
           body: JSON.stringify(body),
         },
         LoginOutputSchema
       );
     },
-    signup: async (body: SignupInput): Promise<SignupOutput> => {
+    signup: async (body: SignupInput, clientIp?: string): Promise<SignupOutput> => {
+      const headers: Record<string, string> = {};
+      if (clientIp) {
+        headers["x-forwarded-for"] = clientIp;
+        headers["x-real-ip"] = clientIp;
+      }
       return request<SignupOutput>(
         "/api/v1/auth/signup",
         {
           method: "POST",
+          headers,
           body: JSON.stringify(body),
         },
         SignupOutputSchema
@@ -288,11 +300,17 @@ export const api = {
         LogoutOutputSchema
       );
     },
-    verifyOrgOtp: async (otpCode: string): Promise<VerifyOrgOtpOutput> => {
+    verifyOrgOtp: async (otpCode: string, clientIp?: string): Promise<VerifyOrgOtpOutput> => {
+      const headers: Record<string, string> = {};
+      if (clientIp) {
+        headers["x-forwarded-for"] = clientIp;
+        headers["x-real-ip"] = clientIp;
+      }
       return request<VerifyOrgOtpOutput>(
         "/api/v1/auth/verify-org-otp",
         {
           method: "POST",
+          headers,
           body: JSON.stringify({ otpCode }),
         },
         VerifyOrgOtpOutputSchema

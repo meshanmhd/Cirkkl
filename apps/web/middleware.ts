@@ -44,9 +44,56 @@ async function fetchMe(token: string) {
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const isAuthPage = path === "/login" || path === "/signup";
+  const isProtectedPage =
+    path.startsWith("/dashboard") ||
+    path === "/profile" ||
+    path === "/notifications" ||
+    path === "/verify-org" ||
+    path === "/pending-approval";
 
   let accessToken = request.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
   const refreshToken = request.cookies.get(REFRESH_TOKEN_COOKIE)?.value;
+
+  const createNextResponse = (tokens: { accessToken: string; refreshToken: string } | null) => {
+    const res = NextResponse.next({
+      request: {
+        headers: request.headers,
+      },
+    });
+    if (tokens) {
+      res.cookies.set(ACCESS_TOKEN_COOKIE, tokens.accessToken, getCookieOptions(false));
+      res.cookies.set(REFRESH_TOKEN_COOKIE, tokens.refreshToken, getCookieOptions(true));
+    }
+    return res;
+  };
+
+  const createRedirectResponse = (
+    url: URL,
+    tokens: { accessToken: string; refreshToken: string } | null
+  ) => {
+    const res = NextResponse.redirect(url);
+    if (tokens) {
+      res.cookies.set(ACCESS_TOKEN_COOKIE, tokens.accessToken, getCookieOptions(false));
+      res.cookies.set(REFRESH_TOKEN_COOKIE, tokens.refreshToken, getCookieOptions(true));
+    }
+    return res;
+  };
+
+  if (!isProtectedPage && !isAuthPage) {
+    if (refreshToken && (!accessToken || isTokenExpired(accessToken))) {
+      const refreshedTokens = await refreshTokens(refreshToken);
+      if (refreshedTokens) {
+        request.cookies.set(ACCESS_TOKEN_COOKIE, refreshedTokens.accessToken);
+        request.cookies.set(REFRESH_TOKEN_COOKIE, refreshedTokens.refreshToken);
+        return createNextResponse(refreshedTokens);
+      }
+      const res = NextResponse.next();
+      res.cookies.delete(ACCESS_TOKEN_COOKIE);
+      res.cookies.delete(REFRESH_TOKEN_COOKIE);
+      return res;
+    }
+    return NextResponse.next();
+  }
 
   if (!accessToken && !refreshToken) {
     if (isAuthPage) {
@@ -63,6 +110,8 @@ export async function middleware(request: NextRequest) {
     refreshedTokens = await refreshTokens(refreshToken);
     if (refreshedTokens) {
       accessToken = refreshedTokens.accessToken;
+      request.cookies.set(ACCESS_TOKEN_COOKIE, refreshedTokens.accessToken);
+      request.cookies.set(REFRESH_TOKEN_COOKIE, refreshedTokens.refreshToken);
     } else {
       if (isAuthPage) {
         const res = NextResponse.next();
@@ -83,6 +132,8 @@ export async function middleware(request: NextRequest) {
     refreshedTokens = await refreshTokens(refreshToken);
     if (refreshedTokens) {
       accessToken = refreshedTokens.accessToken;
+      request.cookies.set(ACCESS_TOKEN_COOKIE, refreshedTokens.accessToken);
+      request.cookies.set(REFRESH_TOKEN_COOKIE, refreshedTokens.refreshToken);
       me = await fetchMe(accessToken);
     }
   }
@@ -100,24 +151,16 @@ export async function middleware(request: NextRequest) {
     return res;
   }
 
-  const applyCookies = (res: NextResponse) => {
-    if (refreshedTokens) {
-      res.cookies.set(ACCESS_TOKEN_COOKIE, refreshedTokens.accessToken, getCookieOptions(false));
-      res.cookies.set(REFRESH_TOKEN_COOKIE, refreshedTokens.refreshToken, getCookieOptions(true));
-    }
-    return res;
-  };
-
   const isOrg = me.role === "organisation" || !!me.org;
 
   if (isOrg) {
     if (me.org && !me.org.isOtpVerified) {
       if (path !== "/verify-org") {
-        return applyCookies(NextResponse.redirect(new URL("/verify-org", request.url)));
+        return createRedirectResponse(new URL("/verify-org", request.url), refreshedTokens);
       }
     } else if (me.org && !me.org.isApproved) {
       if (path !== "/pending-approval") {
-        return applyCookies(NextResponse.redirect(new URL("/pending-approval", request.url)));
+        return createRedirectResponse(new URL("/pending-approval", request.url), refreshedTokens);
       }
     } else {
       if (
@@ -127,30 +170,24 @@ export async function middleware(request: NextRequest) {
         path === "/pending-approval" ||
         path === "/profile"
       ) {
-        return applyCookies(NextResponse.redirect(new URL("/dashboard/events", request.url)));
+        return createRedirectResponse(new URL("/dashboard/events", request.url), refreshedTokens);
       }
     }
   } else {
     if (path.startsWith("/dashboard") || path === "/verify-org" || path === "/pending-approval") {
-      return applyCookies(NextResponse.redirect(new URL("/", request.url)));
+      return createRedirectResponse(new URL("/", request.url), refreshedTokens);
     }
     if (isAuthPage) {
       const redirectTo = request.nextUrl.searchParams.get("redirectTo");
-      return applyCookies(NextResponse.redirect(new URL(redirectTo || "/", request.url)));
+      return createRedirectResponse(new URL(redirectTo || "/", request.url), refreshedTokens);
     }
   }
 
-  return applyCookies(NextResponse.next());
+  return createNextResponse(refreshedTokens);
 }
 
 export const config = {
   matcher: [
-    "/dashboard/:path*",
-    "/profile",
-    "/notifications",
-    "/verify-org",
-    "/pending-approval",
-    "/login",
-    "/signup",
+    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

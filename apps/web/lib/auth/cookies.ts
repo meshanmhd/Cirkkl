@@ -7,6 +7,6 @@ export function getCookieOptions(isRefresh: boolean = false) {
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax" as const,
     path: "/",
-    maxAge: isRefresh ? 30 * 24 * 60 * 60 : 15 * 60,
+    maxAge: 30 * 24 * 60 * 60,
   };
 }

@@ -30,15 +30,46 @@ async function refreshTokens(refreshToken: string): Promise<{ accessToken: strin
 }
 
 async function handleProxy(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
+  if (["POST", "PUT", "PATCH", "DELETE"].includes(req.method)) {
+    const origin = req.headers.get("origin");
+    const host = req.headers.get("host");
+    const siteOrigin = req.nextUrl.origin;
+    const isMatch =
+      origin &&
+      (origin === siteOrigin ||
+        (host && (origin === `http://${host}` || origin === `https://${host}`)));
+    if (!isMatch) {
+      return new NextResponse(
+        JSON.stringify({ error: { code: "FORBIDDEN", message: "Invalid origin" } }),
+        {
+          status: 403,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+  }
+
   const { path } = await params;
   const rawSubpath = path.join("/");
   let targetPath: string;
   if (rawSubpath.startsWith("api/v1/")) {
     targetPath = `/${rawSubpath}`;
+  } else if (rawSubpath.startsWith("v1/")) {
+    targetPath = `/api/${rawSubpath}`;
   } else if (rawSubpath.startsWith("api/")) {
     targetPath = `/${rawSubpath}`;
   } else {
     targetPath = `/api/v1/${rawSubpath}`;
+  }
+
+  if (!targetPath.startsWith("/api/v1/") || targetPath.includes("..")) {
+    return new NextResponse(
+      JSON.stringify({ error: { code: "FORBIDDEN", message: "Path not allowed" } }),
+      {
+        status: 403,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
   }
 
   const baseOrigin = new URL(API_BASE_URL).origin;
@@ -65,6 +96,11 @@ async function handleProxy(req: NextRequest, { params }: { params: Promise<{ pat
     }
   }
 
+  const clientIp =
+    (req as any).ip ||
+    req.headers.get("x-real-ip") ||
+    "127.0.0.1";
+
   const forwardHeaders = new Headers();
   req.headers.forEach((val, key) => {
     const lower = key.toLowerCase();
@@ -75,11 +111,16 @@ async function handleProxy(req: NextRequest, { params }: { params: Promise<{ pat
       lower !== "keep-alive" &&
       lower !== "transfer-encoding" &&
       lower !== "content-length" &&
-      lower !== "authorization"
+      lower !== "authorization" &&
+      lower !== "x-forwarded-for" &&
+      lower !== "x-real-ip"
     ) {
       forwardHeaders.set(key, val);
     }
   });
+
+  forwardHeaders.set("x-forwarded-for", clientIp);
+  forwardHeaders.set("x-real-ip", clientIp);
 
   if (accessToken) {
     forwardHeaders.set("Authorization", `Bearer ${accessToken}`);
