@@ -6,14 +6,13 @@ import { ArrowLeft, CheckCircle2, XCircle, X, AlertTriangle } from "lucide-react
 import { Scanner } from "@yudiel/react-qr-scanner";
 import { processAttendanceScan, confirmAttendance } from "./actions";
 
-export default function AttendanceScanner({ eventId, eventTitle }: { eventId: string; eventTitle: string; orgId?: string }) {
+export default function AttendanceScanner({ eventId, eventTitle }: { eventId: string; eventTitle: string }) {
   const [scanning, setScanning] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [scanResult, setScanResult] = useState<any>(null);
   const [modalState, setModalState] = useState<'none' | 'found' | 'success'>('none');
   const [alertState, setAlertState] = useState<'none' | 'not_found' | 'error' | 'success'>('none');
 
-  // Completely hide the browser scrollbar while on the scanner page
   useEffect(() => {
     document.body.style.overflow = "hidden";
     return () => {
@@ -33,8 +32,8 @@ export default function AttendanceScanner({ eventId, eventTitle }: { eventId: st
     try {
       const result = await processAttendanceScan(eventId, code);
       
-      if (result.error) {
-        setScanResult({ error: result.error, code });
+      if (result.error || !result.registration) {
+        setScanResult({ error: result.error || "Scan failed", code });
         showAlert('not_found');
       } else if (result.registration.attended) {
         setScanResult({ error: "Participant has already checked in.", code });
@@ -56,14 +55,14 @@ export default function AttendanceScanner({ eventId, eventTitle }: { eventId: st
     setTimeout(() => {
       setAlertState('none');
       resetScanner();
-    }, 3000); // Resume scanning after 3 seconds automatically
+    }, 3000);
   };
 
   const markAttendance = async () => {
     if (!scanResult || !scanResult.registration) return;
     setProcessing(true);
     
-    const res = await confirmAttendance(scanResult.registration.id);
+    const res = await confirmAttendance(eventId, scanResult.registration.id);
     setProcessing(false);
     
     if (res.success) {

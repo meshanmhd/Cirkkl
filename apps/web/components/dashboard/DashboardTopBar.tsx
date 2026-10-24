@@ -2,7 +2,7 @@
 
 import { Bell } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/utils/supabase/client";
+import { signOut } from "@/lib/auth/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -11,7 +11,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { User } from "@supabase/supabase-js";
+
+export interface DashboardUser {
+  id: string;
+  email?: string;
+  user_metadata?: {
+    full_name?: string;
+  };
+}
 
 function getInitials(name: string) {
   return (
@@ -25,18 +32,17 @@ function getInitials(name: string) {
 }
 
 interface DashboardTopBarProps {
-  user: User;
+  user: DashboardUser;
 }
 
 export function DashboardTopBar({ user }: DashboardTopBarProps) {
   const router = useRouter();
-  const supabase = createClient();
 
   const fullName = user.user_metadata?.full_name || user.email?.split("@")[0] || "Club Admin";
   const initials = getInitials(fullName);
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    await signOut();
     router.push("/login");
   };
 

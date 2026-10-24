@@ -94,8 +94,8 @@ export function createContainer(adapterOverride?: "supabase" | "memory") {
     realtimeProvider = new MemoryRealtimeProvider();
 
     eventRepo = new MemoryEventRepo();
-    ticketRepo = new MemoryTicketRepo();
     registrationRepo = new MemoryRegistrationRepo();
+    ticketRepo = new MemoryTicketRepo(registrationRepo);
     teamRepo = new MemoryTeamRepo();
     orgRepo = new MemoryOrganisationRepo();
     memberRepo = new MemoryMemberRepo();

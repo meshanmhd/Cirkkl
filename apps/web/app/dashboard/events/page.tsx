@@ -1,18 +1,22 @@
 import { requireOrg } from "@/lib/auth/server";
-import { createClient } from "@/utils/supabase/server";
 import { Plus } from "lucide-react";
 import Link from "next/link";
 import { EventsTable } from "@/components/dashboard/EventsTable";
+import { api } from "@/lib/api";
 
 export default async function EventsDashboardPage() {
-  const { org } = await requireOrg();
-  const supabase = await createClient();
+  await requireOrg();
 
-  const { data: events } = await supabase
-    .from("events")
-    .select("id, title, date, category, status, visibility, price")
-    .eq("org_id", org.id)
-    .order("date", { ascending: false });
+  const res = await api.events.listForOrg();
+  const events = (res.items || []).map((e) => ({
+    id: e.id,
+    title: e.title,
+    date: e.date,
+    category: e.category,
+    status: e.status,
+    visibility: "public",
+    price: e.price,
+  }));
 
   return (
     <div className="flex flex-col gap-6">
@@ -27,7 +31,7 @@ export default async function EventsDashboardPage() {
         </Link>
       </div>
 
-      <EventsTable events={events ?? []} />
+      <EventsTable events={events} />
     </div>
   );
 }

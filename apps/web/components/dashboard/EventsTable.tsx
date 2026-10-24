@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { createClient } from "@/utils/supabase/client";
+import { api, getErrorMessage } from "@/lib/api";
 
 type EventRow = {
   id: string;
@@ -67,10 +67,14 @@ export function EventsTable({ events: initialEvents }: EventsTableProps) {
 
   async function handleDelete(id: string) {
     setDeletingId(id);
-    const supabase = createClient();
-    await supabase.from("events").delete().eq("id", id);
-    setEvents((prev) => prev.filter((e) => e.id !== id));
-    setDeletingId(null);
+    try {
+      await api.events.delete(id);
+      setEvents((prev) => prev.filter((e) => e.id !== id));
+    } catch (err) {
+      alert("Failed to delete event: " + getErrorMessage(err));
+    } finally {
+      setDeletingId(null);
+    }
   }
 
   return (

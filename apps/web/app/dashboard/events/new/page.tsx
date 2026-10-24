@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/utils/supabase/client";
+import { api, getErrorMessage } from "@/lib/api";
 import {
   ArrowLeft, Image as ImageIcon, Plus, X, Loader2,
   Upload, Globe, MapPin, Wifi, Car, UtensilsCrossed,
@@ -234,7 +234,6 @@ const inputCls = "w-full px-4 py-2.5 rounded-xl border border-[#E5E5EA] bg-white
 
 export default function NewEventPage() {
   const router = useRouter();
-  const supabase = createClient();
   const [loading, setLoading] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
   const [error, setError] = useState("");
@@ -279,20 +278,19 @@ export default function NewEventPage() {
 
   useEffect(() => {
     async function fetchMembers() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data, error } = await supabase
-        .from('members')
-        .select('id, name:full_name, avatar_url')
-        .eq('org_id', user.id);
-
-      if (data && !error) {
-        setAvailableMembers(data as Member[]);
+      try {
+        const data = await api.org.listMembers();
+        setAvailableMembers(data.items.map(m => ({
+          id: m.userId,
+          name: m.name || m.email || "Member",
+          avatar_url: m.avatarUrl || undefined,
+        })));
+      } catch (err) {
+        console.error(err);
       }
     }
     fetchMembers();
-  }, [supabase]);
+  }, []);
 
   const [banner, setBanner] = useState<ImageState>({ file: null, preview: null });
   const [poster, setPoster] = useState<ImageState>({ file: null, preview: null });
@@ -343,36 +341,37 @@ export default function NewEventPage() {
     }
   };
 
-  const uploadImage = async (state: ImageState, path: string) => {
-    if (!state.file) return state.preview;
-    const ext = state.file.name.split('.').pop();
-    const fullPath = `${path}.${ext}`;
-    const { error } = await supabase.storage.from('events').upload(fullPath, state.file, { upsert: true });
-    if (error) {
-      console.error("Image upload failed:", error);
-      throw new Error(`Failed to upload image: ${error.message}`);
+  const uploadImageKey = async (file: File): Promise<string> => {
+    const { uploadUrl, key } = await api.uploads.requestUpload({
+      targetType: "event_image",
+      fileName: file.name,
+      contentType: file.type || "image/jpeg",
+      sizeBytes: file.size,
+    });
+    const res = await fetch(uploadUrl, {
+      method: "PUT",
+      headers: { "Content-Type": file.type || "image/jpeg" },
+      body: file,
+    });
+    if (!res.ok) {
+      throw new Error(`Failed to upload image: ${file.name}`);
     }
-    const { data } = supabase.storage.from('events').getPublicUrl(fullPath);
-    return data.publicUrl;
+    return key;
   };
 
   const handleSubmit = async (isDraft = false) => {
     if (isDraft) setSavingDraft(true); else setLoading(true);
     setError("");
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-      const uid = crypto.randomUUID();
       if (!banner.file) throw new Error("A Banner image is required.");
       if (!poster.file) throw new Error("A Poster image is required.");
 
-      const [bannerUrl, posterUrl] = await Promise.all([
-        uploadImage(banner, `${user.id}/${uid}/banner`),
-        uploadImage(poster, `${user.id}/${uid}/poster`),
+      const [bannerKey, posterKey] = await Promise.all([
+        uploadImageKey(banner.file),
+        uploadImageKey(poster.file),
       ]);
 
       const validFields = customFields.filter(f => f.label.trim());
-      const singleTicketPrice = form.price === "paid" && tickets.length === 1 ? parseFloat(tickets[0].price) || 0 : null;
 
       if (form.price === "paid" && tickets.filter(t => t.name.trim()).length === 0) {
         throw new Error("You must add at least one ticket type for a paid event.");
@@ -398,79 +397,60 @@ export default function NewEventPage() {
 
       const uploadedSpeakers = await Promise.all(speakers.map(async (s) => {
         if (s.imageFile) {
-          const url = await uploadImage({ file: s.imageFile, preview: null }, `${user.id}/${uid}/speakers/${s.id}`);
-          return { id: s.id, name: s.name, subtext: s.subtext, imageUrl: url };
+          const key = await uploadImageKey(s.imageFile);
+          return { id: s.id, name: s.name, subtext: s.subtext || undefined, imageUrl: key };
         }
-        return { id: s.id, name: s.name, subtext: s.subtext, imageUrl: s.imageUrl };
+        return { id: s.id, name: s.name, subtext: s.subtext || undefined, imageUrl: s.imageUrl || undefined };
       }));
 
-      const { data: orgRecord } = await supabase
-        .from('organisations')
-        .select('name')
-        .eq('id', user.id)
-        .maybeSingle();
+      const formattedTickets = form.price === "paid" ? tickets.filter(t => t.name.trim()).map(t => ({
+        name: t.name,
+        price: parseFloat(t.price) || 0,
+        quantity: t.unlimited ? null : (parseInt(t.quantity) || null),
+        unlimited: t.unlimited,
+      })) : [];
 
-      const { data: eventData, error: insertError } = await supabase.from("events").insert({
+      await api.events.create({
         title: form.title,
-        tagline: form.tagline,
+        tagline: form.tagline || undefined,
         description: form.description,
         category: form.category,
         tags,
         hosts,
         speakers: uploadedSpeakers,
-        image: bannerUrl,
-        poster_image: posterUrl,
+        imageKey: bannerKey,
+        posterImageKey: posterKey,
         date: form.startDate,
-        time: form.startTime,
-        end_date: form.endDate,
-        end_time: form.endTime,
-        venue: form.venue,
-        location: form.venue || form.city || form.locationLink || form.platform || "TBA",
-        location_link: form.locationLink,
-        city: form.city,
-        location_type: form.locationType,
-        meeting_link: form.meetingLink,
-        platform: form.platform,
-        price: form.price,
-        price_amount: singleTicketPrice,
-        seats: isUnlimitedCapacity ? null : (parseInt(form.capacity) || null),
-        seatsAvailable: isUnlimitedCapacity ? null : (parseInt(form.capacity) || null),
-        approval_required: form.price === "paid" ? true : form.approvalRequired === "true",
-        registration_deadline: form.registrationDeadline || null,
-        registration_end_time: form.registrationEndTime || null,
-        cancellation_policy: form.cancellationPolicy,
-        refund_policy: form.refundPolicy,
-        photography_policy: form.photographyPolicy,
-        visibility: form.visibility,
-        custom_fields: validFields,
-        is_team_event: form.isTeamEvent === "true",
-        team_min_size: parseInt(form.teamMinSize) || 1,
-        team_max_size: parseInt(form.teamMaxSize) || 1,
-        org_id: user.id,
-        status: isDraft ? "draft" : "published",
-        organizer: orgRecord?.name || user.email,
-      }).select('id').single();
+        time: form.startTime || undefined,
+        endDate: form.endDate || undefined,
+        endTime: form.endTime || undefined,
+        venue: form.venue || undefined,
+        locationLink: form.locationLink || undefined,
+        city: form.city || undefined,
+        locationType: form.locationType as any,
+        meetingLink: form.meetingLink || undefined,
+        platform: form.platform || undefined,
+        price: form.price as any,
+        capacity: isUnlimitedCapacity ? null : (parseInt(form.capacity) || null),
+        approvalRequired: form.price === "paid" ? true : form.approvalRequired === "true",
+        registrationDeadline: form.registrationDeadline || undefined,
+        registrationEndTime: form.registrationEndTime || undefined,
+        cancellationPolicy: form.cancellationPolicy || undefined,
+        refundPolicy: form.refundPolicy || undefined,
+        photographyPolicy: form.photographyPolicy || undefined,
+        visibility: form.visibility as any,
+        customFields: validFields as any,
+        isTeamEvent: form.isTeamEvent === "true",
+        teamMinSize: parseInt(form.teamMinSize) || 1,
+        teamMaxSize: parseInt(form.teamMaxSize) || 1,
+        tickets: formattedTickets,
+        isDraft,
+      });
 
-      if (insertError) throw insertError;
-
-      const newEventId = eventData.id;
-
-      if (form.price === "paid" && tickets.filter(t => t.name.trim()).length > 0) {
-        const ticketsToInsert = tickets.filter(t => t.name.trim()).map(t => ({
-          event_id: newEventId,
-          name: t.name,
-          price: parseFloat(t.price) || 0,
-          quantity: t.unlimited ? null : (parseInt(t.quantity) || null),
-          unlimited: t.unlimited,
-        }));
-
-        const { error: ticketError } = await supabase.from('tickets').insert(ticketsToInsert);
-        if (ticketError) throw ticketError;
-      }
       router.push("/dashboard/events");
       router.refresh();
     } catch (err: any) {
-      setError(err.message || "Failed to create event");
+      setError(getErrorMessage(err, "Failed to create event"));
     } finally {
       setLoading(false);
       setSavingDraft(false);

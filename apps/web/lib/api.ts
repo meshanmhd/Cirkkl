@@ -2,25 +2,54 @@ import { z } from "zod";
 import {
   AcceptTeamInviteOutput,
   AcceptTeamInviteOutputSchema,
+  ApproveRegistrationOutput,
+  ApproveRegistrationOutputSchema,
+  CancelRegistrationOutput,
+  CancelRegistrationOutputSchema,
+  ConfirmAttendanceOutput,
+  ConfirmAttendanceOutputSchema,
+  CreateEventInput,
+  CreateEventOutput,
+  CreateEventOutputSchema,
+  CreateEventRoleOutput,
+  CreateEventRoleOutputSchema,
   CreatePaymentInput,
   CreatePaymentOutput,
   CreatePaymentOutputSchema,
   DeclineTeamInviteOutput,
   DeclineTeamInviteOutputSchema,
+  DeleteEventOutput,
+  DeleteEventOutputSchema,
+  DeleteEventRoleOutput,
+  DeleteEventRoleOutputSchema,
   DeleteNotificationOutput,
   DeleteNotificationOutputSchema,
+  EventRoleMember,
+  EventStatus,
   GetEventOutput,
   GetEventOutputSchema,
+  GetEventRolesOutput,
+  GetEventRolesOutputSchema,
+  GetForOrgOutput,
+  GetForOrgOutputSchema,
   GetMineRegistrationOutput,
   GetMineRegistrationOutputSchema,
+  GetOrgEventRegistrationsOutput,
+  GetOrgEventRegistrationsOutputSchema,
   GetProfileOutput,
   GetProfileOutputSchema,
   ListEventsInput,
   ListEventsOutput,
   ListEventsOutputSchema,
+  ListMembersInput,
+  ListMembersOutput,
+  ListMembersOutputSchema,
   ListNotificationsInput,
   ListNotificationsOutput,
   ListNotificationsOutputSchema,
+  ListOrgEventsInput,
+  ListOrgEventsOutput,
+  ListOrgEventsOutputSchema,
   LookupTeammateOutput,
   LookupTeammateOutputSchema,
   MarkAllNotificationsReadOutput,
@@ -30,20 +59,45 @@ import {
   MyTicketsOutput,
   MyTicketsOutputSchema,
   NotificationItem,
+  OrgEventRegistrationItem,
+  OrgMemberItem,
   RegisterForEventInput,
   RegisterForEventOutput,
   RegisterForEventOutputSchema,
+  RegistrationStatus,
+  RejectRegistrationOutput,
+  RejectRegistrationOutputSchema,
   RequestUploadInput,
   RequestUploadOutput,
   RequestUploadOutputSchema,
+  ScanAttendanceOutput,
+  ScanAttendanceOutputSchema,
+  ToggleAttendanceOutput,
+  ToggleAttendanceOutputSchema,
   UnreadNotificationsCountOutput,
   UnreadNotificationsCountOutputSchema,
+  UpdateEventBody,
+  UpdateEventOutput,
+  UpdateEventOutputSchema,
+  UpdateEventStatusOutput,
+  UpdateEventStatusOutputSchema,
+  UpdateMemberRoleOutput,
+  UpdateMemberRoleOutputSchema,
   UpdateProfileInput,
   UpdateProfileOutput,
   UpdateProfileOutputSchema,
 } from "@cirkkl/contracts";
 
-export type { NotificationItem };
+export type {
+  NotificationItem,
+  OrgEventRegistrationItem,
+  OrgMemberItem,
+  EventRoleMember,
+  CreateEventInput,
+  UpdateEventBody,
+  RegistrationStatus,
+  EventStatus,
+};
 
 export class ApiError extends Error {
   constructor(
@@ -80,6 +134,8 @@ export function getErrorMessage(err: unknown, fallback: string = "An error occur
         return err.message || "Requested resource not found.";
       case "BAD_REQUEST":
         return err.message || "Invalid request.";
+      case "CONFLICT":
+        return err.message || "A conflict occurred with existing data.";
       default:
         return err.message || fallback;
     }
@@ -196,6 +252,56 @@ export const api = {
     get: async (idOrSlug: string): Promise<GetEventOutput> => {
       const path = `/api/v1/events/${encodeURIComponent(idOrSlug)}`;
       return request<GetEventOutput>(path, { method: "GET" }, GetEventOutputSchema);
+    },
+    listForOrg: async (params?: Partial<ListOrgEventsInput>): Promise<ListOrgEventsOutput> => {
+      const searchParams = new URLSearchParams();
+      if (params?.status) searchParams.set("status", params.status);
+      if (params?.search) searchParams.set("search", params.search);
+      if (params?.cursor) searchParams.set("cursor", params.cursor);
+      if (params?.limit) searchParams.set("limit", String(params.limit));
+      const query = searchParams.toString();
+      const path = `/api/v1/org/events${query ? `?${query}` : ""}`;
+      return request<ListOrgEventsOutput>(path, { method: "GET" }, ListOrgEventsOutputSchema);
+    },
+    getForOrg: async (id: string): Promise<GetForOrgOutput> => {
+      const path = `/api/v1/org/events/${encodeURIComponent(id)}`;
+      return request<GetForOrgOutput>(path, { method: "GET" }, GetForOrgOutputSchema);
+    },
+    create: async (body: CreateEventInput): Promise<CreateEventOutput> => {
+      return request<CreateEventOutput>(
+        "/api/v1/events",
+        {
+          method: "POST",
+          body: JSON.stringify(body),
+        },
+        CreateEventOutputSchema
+      );
+    },
+    update: async (id: string, body: UpdateEventBody): Promise<UpdateEventOutput> => {
+      const path = `/api/v1/events/${encodeURIComponent(id)}`;
+      return request<UpdateEventOutput>(
+        path,
+        {
+          method: "PUT",
+          body: JSON.stringify(body),
+        },
+        UpdateEventOutputSchema
+      );
+    },
+    delete: async (id: string): Promise<DeleteEventOutput> => {
+      const path = `/api/v1/events/${encodeURIComponent(id)}`;
+      return request<DeleteEventOutput>(path, { method: "DELETE" }, DeleteEventOutputSchema);
+    },
+    updateStatus: async (id: string, status: EventStatus): Promise<UpdateEventStatusOutput> => {
+      const path = `/api/v1/events/${encodeURIComponent(id)}/status`;
+      return request<UpdateEventStatusOutput>(
+        path,
+        {
+          method: "PATCH",
+          body: JSON.stringify({ status }),
+        },
+        UpdateEventStatusOutputSchema
+      );
     },
   },
   registrations: {
@@ -409,6 +515,107 @@ export const api = {
           body: JSON.stringify(body),
         },
         UpdateProfileOutputSchema
+      );
+    },
+  },
+  org: {
+    getEventRegistrations: async (
+      eventId: string,
+      params?: { status?: RegistrationStatus; search?: string; page?: number; limit?: number }
+    ): Promise<GetOrgEventRegistrationsOutput> => {
+      const searchParams = new URLSearchParams();
+      if (params?.status) searchParams.set("status", params.status);
+      if (params?.search) searchParams.set("search", params.search);
+      if (params?.page) searchParams.set("page", String(params.page));
+      if (params?.limit) searchParams.set("limit", String(params.limit));
+      const query = searchParams.toString();
+      const path = `/api/v1/org/events/${encodeURIComponent(eventId)}/registrations${query ? `?${query}` : ""}`;
+      return request<GetOrgEventRegistrationsOutput>(path, { method: "GET" }, GetOrgEventRegistrationsOutputSchema);
+    },
+    approveRegistration: async (eventId: string, registrationId: string): Promise<ApproveRegistrationOutput> => {
+      const path = `/api/v1/org/events/${encodeURIComponent(eventId)}/registrations/${encodeURIComponent(registrationId)}/approve`;
+      return request<ApproveRegistrationOutput>(path, { method: "POST" }, ApproveRegistrationOutputSchema);
+    },
+    rejectRegistration: async (eventId: string, registrationId: string): Promise<RejectRegistrationOutput> => {
+      const path = `/api/v1/org/events/${encodeURIComponent(eventId)}/registrations/${encodeURIComponent(registrationId)}/reject`;
+      return request<RejectRegistrationOutput>(path, { method: "POST" }, RejectRegistrationOutputSchema);
+    },
+    cancelRegistration: async (eventId: string, registrationId: string): Promise<CancelRegistrationOutput> => {
+      const path = `/api/v1/org/events/${encodeURIComponent(eventId)}/registrations/${encodeURIComponent(registrationId)}/cancel`;
+      return request<CancelRegistrationOutput>(path, { method: "POST" }, CancelRegistrationOutputSchema);
+    },
+    toggleAttendance: async (eventId: string, registrationId: string, attended: boolean): Promise<ToggleAttendanceOutput> => {
+      const path = `/api/v1/org/events/${encodeURIComponent(eventId)}/registrations/${encodeURIComponent(registrationId)}/attendance`;
+      return request<ToggleAttendanceOutput>(
+        path,
+        {
+          method: "PATCH",
+          body: JSON.stringify({ attended }),
+        },
+        ToggleAttendanceOutputSchema
+      );
+    },
+    getEventRoles: async (eventId: string): Promise<GetEventRolesOutput> => {
+      const path = `/api/v1/org/events/${encodeURIComponent(eventId)}/roles`;
+      return request<GetEventRolesOutput>(path, { method: "GET" }, GetEventRolesOutputSchema);
+    },
+    createEventRole: async (eventId: string, userId: string, role: string): Promise<CreateEventRoleOutput> => {
+      const path = `/api/v1/org/events/${encodeURIComponent(eventId)}/roles`;
+      return request<CreateEventRoleOutput>(
+        path,
+        {
+          method: "POST",
+          body: JSON.stringify({ userId, role }),
+        },
+        CreateEventRoleOutputSchema
+      );
+    },
+    deleteEventRole: async (eventId: string, roleId: string): Promise<DeleteEventRoleOutput> => {
+      const path = `/api/v1/org/events/${encodeURIComponent(eventId)}/roles/${encodeURIComponent(roleId)}`;
+      return request<DeleteEventRoleOutput>(path, { method: "DELETE" }, DeleteEventRoleOutputSchema);
+    },
+    listMembers: async (params?: Partial<ListMembersInput>): Promise<ListMembersOutput> => {
+      const searchParams = new URLSearchParams();
+      if (params?.search) searchParams.set("search", params.search);
+      if (params?.department) searchParams.set("department", params.department);
+      if (params?.role) searchParams.set("role", params.role);
+      if (params?.page) searchParams.set("page", String(params.page));
+      if (params?.limit) searchParams.set("limit", String(params.limit));
+      const query = searchParams.toString();
+      const path = `/api/v1/org/members${query ? `?${query}` : ""}`;
+      return request<ListMembersOutput>(path, { method: "GET" }, ListMembersOutputSchema);
+    },
+    updateMemberRole: async (memberId: string, role: string): Promise<UpdateMemberRoleOutput> => {
+      const path = `/api/v1/org/members/${encodeURIComponent(memberId)}/role`;
+      return request<UpdateMemberRoleOutput>(
+        path,
+        {
+          method: "PATCH",
+          body: JSON.stringify({ role }),
+        },
+        UpdateMemberRoleOutputSchema
+      );
+    },
+    scanAttendance: async (eventId: string, ticketCode: string): Promise<ScanAttendanceOutput> => {
+      const path = `/api/v1/org/events/${encodeURIComponent(eventId)}/attendance/scan`;
+      return request<ScanAttendanceOutput>(
+        path,
+        {
+          method: "POST",
+          body: JSON.stringify({ ticketCode }),
+        },
+        ScanAttendanceOutputSchema
+      );
+    },
+    confirmAttendance: async (eventId: string, registrationId: string): Promise<ConfirmAttendanceOutput> => {
+      const path = `/api/v1/org/events/${encodeURIComponent(eventId)}/attendance/confirm`;
+      return request<ConfirmAttendanceOutput>(
+        path,
+        {
+          method: "POST",
+          body: JSON.stringify({ registrationId }),
+        },
+        ConfirmAttendanceOutputSchema
       );
     },
   },

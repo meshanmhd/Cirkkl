@@ -314,8 +314,29 @@ describe("API Service Layer Tests", () => {
         isOrgApproved: true,
       };
 
+      const reg = await ports.registrationRepo.create({
+        eventId: event.id,
+        userId: "target-user",
+        ticketCode: "CRK-RESTRICTED-1",
+        status: "pending",
+        attended: false,
+        isTeam: false,
+      });
+
       await expect(
         services.eventService.deleteEvent(event.id, wrongOrgCaller)
+      ).rejects.toThrow("You do not own this event");
+
+      await expect(
+        services.orgService.approveRegistration(event.id, reg.id, wrongOrgCaller)
+      ).rejects.toThrow("You do not own this event");
+
+      await expect(
+        services.orgService.rejectRegistration(event.id, reg.id, wrongOrgCaller)
+      ).rejects.toThrow("You do not own this event");
+
+      await expect(
+        services.orgService.scanAttendance(event.id, "CRK-RESTRICTED-1", wrongOrgCaller)
       ).rejects.toThrow("You do not own this event");
 
       const attendeeCaller = {
@@ -335,6 +356,134 @@ describe("API Service Layer Tests", () => {
           attendeeCaller
         )
       ).rejects.toThrow("Approved organisation required to create events");
+    });
+
+    it("approving twice is safe (idempotent)", async () => {
+      const { services, ports } = container;
+
+      const org = await ports.orgRepo.create({
+        ownerId: "owner-idemp",
+        name: "Idemp Org",
+        email: "idemp@org.com",
+        status: "approved",
+        isOtpVerified: true,
+      });
+
+      const event = await ports.eventRepo.create({
+        organisationId: org.id,
+        title: "Idemp Event",
+        slug: "idemp-event",
+        description: "Testing idempotency",
+        startDate: new Date(),
+        status: "published",
+        visibility: "public",
+        isFeatured: false,
+        isPaid: false,
+        isTeamEvent: false,
+      });
+
+      const reg = await ports.registrationRepo.create({
+        eventId: event.id,
+        userId: "user-idemp",
+        ticketCode: "CRK-IDEMP-1",
+        status: "pending",
+        attended: false,
+        isTeam: false,
+      });
+
+      const orgCaller = {
+        userId: org.ownerId,
+        role: "organiser" as const,
+        orgId: org.id,
+        isOrgApproved: true,
+      };
+
+      const firstApprove = await services.orgService.approveRegistration(event.id, reg.id, orgCaller);
+      expect(firstApprove.status).toBe("approved");
+
+      const secondApprove = await services.orgService.approveRegistration(event.id, reg.id, orgCaller);
+      expect(secondApprove.status).toBe("approved");
+
+      const notifications = await ports.notificationRepo.findByUser("user-idemp");
+      expect(notifications.items.length).toBe(1);
+    });
+
+    it("ticket-tier diff handles adding, modifying and deleting tiers with and without registrations", async () => {
+      const { services, ports } = container;
+
+      const org = await ports.orgRepo.create({
+        ownerId: "owner-diff",
+        name: "Diff Org",
+        email: "diff@org.com",
+        status: "approved",
+        isOtpVerified: true,
+      });
+
+      const orgCaller = {
+        userId: org.ownerId,
+        role: "organiser" as const,
+        orgId: org.id,
+        isOrgApproved: true,
+      };
+
+      const created = await services.eventService.createEvent(
+        {
+          title: "Tier Event",
+          description: "Tier diff test",
+          date: new Date().toISOString(),
+          price: "paid",
+          tickets: [
+            { name: "Early Bird", price: 100, quantity: 50 },
+            { name: "Regular", price: 200, quantity: 100 },
+          ],
+        },
+        orgCaller
+      );
+
+      const initialTickets = await ports.ticketRepo.findByEventId(created.id);
+      expect(initialTickets.length).toBe(2);
+      const earlyBird = initialTickets.find((t) => t.name === "Early Bird")!;
+      const regular = initialTickets.find((t) => t.name === "Regular")!;
+
+      const updateRes1 = await services.eventService.updateEvent(
+        created.id,
+        {
+          tickets: [
+            { id: earlyBird.id, name: "Early Bird VIP", price: 120, quantity: 40 },
+            { name: "Student", price: 50, quantity: 30 },
+          ],
+        },
+        orgCaller
+      );
+
+      const afterDiff1 = await ports.ticketRepo.findByEventId(created.id);
+      expect(afterDiff1.length).toBe(2);
+      expect(afterDiff1.some((t) => t.name === "Early Bird VIP")).toBe(true);
+      expect(afterDiff1.some((t) => t.name === "Student")).toBe(true);
+      expect(afterDiff1.some((t) => t.id === regular.id)).toBe(false);
+
+      const studentTicket = afterDiff1.find((t) => t.name === "Student")!;
+      await ports.registrationRepo.create({
+        eventId: created.id,
+        userId: "student-user",
+        ticketCode: "CRK-STUDENT-1",
+        ticketId: studentTicket.id,
+        status: "approved",
+        attended: false,
+        isTeam: false,
+      });
+
+      await expect(
+        services.eventService.updateEvent(
+          created.id,
+          {
+            tickets: [
+              { id: earlyBird.id, name: "Early Bird VIP", price: 120, quantity: 40 },
+            ],
+          },
+          orgCaller
+        )
+      ).rejects.toThrow(`Cannot delete ticket tier 'Student' as it has existing registrations or payments`);
     });
   });
 

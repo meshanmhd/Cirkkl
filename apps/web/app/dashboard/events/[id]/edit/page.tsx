@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { createClient } from "@/utils/supabase/client";
+import { api, getErrorMessage } from "@/lib/api";
 import {
   ArrowLeft, Image as ImageIcon, Plus, X, Loader2,
   Upload, Globe, MapPin, Wifi, Car, UtensilsCrossed,
@@ -236,7 +236,6 @@ export default function EditEventPage() {
   const router = useRouter();
   const params = useParams();
   const eventId = params.id as string;
-  const supabase = createClient();
   const [loading, setLoading] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
@@ -282,20 +281,19 @@ export default function EditEventPage() {
 
   useEffect(() => {
     async function fetchMembers() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data, error } = await supabase
-        .from('members')
-        .select('id, name:full_name, avatar_url')
-        .eq('org_id', user.id);
-
-      if (data && !error) {
-        setAvailableMembers(data as Member[]);
+      try {
+        const data = await api.org.listMembers();
+        setAvailableMembers(data.items.map(m => ({
+          id: m.userId,
+          name: m.name || m.email || "Member",
+          avatar_url: m.avatarUrl || undefined,
+        })));
+      } catch (err) {
+        console.error(err);
       }
     }
     fetchMembers();
-  }, [supabase]);
+  }, []);
 
   const [banner, setBanner] = useState<ImageState>({ file: null, preview: null });
   const [poster, setPoster] = useState<ImageState>({ file: null, preview: null });
@@ -346,80 +344,106 @@ export default function EditEventPage() {
     }
   };
 
-  const uploadImage = async (state: ImageState, path: string) => {
-    if (!state.file) return state.preview;
-    const ext = state.file.name.split('.').pop();
-    const fullPath = `${path}.${ext}`;
-    const { error } = await supabase.storage.from('events').upload(fullPath, state.file, { upsert: true });
-    if (error) {
-      console.error("Image upload failed:", error);
-      throw new Error(`Failed to upload image: ${error.message}`);
+  const uploadImageKey = async (file: File): Promise<string> => {
+    const { uploadUrl, key } = await api.uploads.requestUpload({
+      targetType: "event_image",
+      fileName: file.name,
+      contentType: file.type || "image/jpeg",
+      sizeBytes: file.size,
+    });
+    const res = await fetch(uploadUrl, {
+      method: "PUT",
+      headers: { "Content-Type": file.type || "image/jpeg" },
+      body: file,
+    });
+    if (!res.ok) {
+      throw new Error(`Failed to upload image: ${file.name}`);
     }
-    const { data } = supabase.storage.from('events').getPublicUrl(fullPath);
-    return data.publicUrl;
+    return key;
   };
 
   useEffect(() => {
     if (!eventId) return;
     async function loadEvent() {
-      const { data, error } = await supabase.from("events").select("*").eq("id", eventId).single();
-      if (error || !data) {
-        setError("Failed to load event data");
-        return;
+      try {
+        const data = await api.events.getForOrg(eventId);
+        setForm({
+          title: data.title || "",
+          tagline: data.tagline || "",
+          description: data.description || "",
+          category: data.category || "General",
+          startDate: data.date || "",
+          startTime: data.time || "",
+          endDate: data.endDate || "",
+          endTime: data.endTime || "",
+          locationType: data.locationType || "physical",
+          venue: data.venue || "",
+          locationLink: data.locationLink || "",
+          city: data.city || "",
+          meetingLink: data.meetingLink || "",
+          platform: data.platform || "",
+          price: data.price || "free",
+          capacity: data.seats ? data.seats.toString() : "",
+          approvalRequired: data.approvalRequired ? "true" : "false",
+          registrationDeadline: data.registrationDeadline || "",
+          registrationEndTime: data.registrationEndTime || "",
+          cancellationPolicy: data.cancellationPolicy || "",
+          refundPolicy: data.refundPolicy || "",
+          photographyPolicy: data.photographyPolicy || "",
+          visibility: data.visibility || "public",
+          isTeamEvent: data.isTeamEvent ? "true" : "false",
+          teamMinSize: data.teamMinSize ? data.teamMinSize.toString() : "1",
+          teamMaxSize: data.teamMaxSize ? data.teamMaxSize.toString() : "1",
+        });
+        setIsUnlimitedCapacity(data.seats === null || data.seats === undefined);
+        if (data.image) setBanner({ file: null, preview: data.image });
+        if (data.posterImage) setPoster({ file: null, preview: data.posterImage });
+        if (data.tags) setTags(data.tags);
+        if (data.hosts) setHosts(data.hosts.map(h => typeof h === "string" ? h : h.id));
+        if (data.ticketTypes) {
+          setTickets(data.ticketTypes.map((t: any) => ({
+            id: t.id,
+            name: t.name || "",
+            price: t.price?.toString() || "0",
+            quantity: t.quantity ? t.quantity.toString() : "",
+            unlimited: t.quantity === null || t.unlimited,
+          })));
+        }
+        if (data.customFields) setCustomFields(data.customFields as any);
+        if (data.speakers) {
+          setSpeakers(data.speakers.map((s: any) => ({
+            id: s.id,
+            name: s.name,
+            subtext: s.subtext || "",
+            imageFile: null,
+            imageUrl: s.imageUrl || "",
+          })));
+        }
+        setIsDataLoaded(true);
+      } catch (err: any) {
+        setError(getErrorMessage(err, "Failed to load event data"));
       }
-
-      setForm({
-        title: data.title || "", tagline: data.tagline || "", description: data.description || "", category: data.category || "General",
-        startDate: data.date || "", startTime: data.time || "", endDate: data.end_date || "", endTime: data.end_time || "",
-        locationType: data.location_type || "physical", venue: data.venue || "", locationLink: data.location_link || "", city: data.city || "",
-        meetingLink: data.meeting_link || "", platform: data.platform || "",
-        price: data.price || "free", capacity: data.seats ? data.seats.toString() : "", approvalRequired: data.approval_required ? "true" : "false",
-        registrationDeadline: data.registration_deadline || "", registrationEndTime: data.registration_end_time || "",
-        cancellationPolicy: data.cancellation_policy || "", refundPolicy: data.refund_policy || "", photographyPolicy: data.photography_policy || "",
-        visibility: data.visibility || "public",
-        isTeamEvent: data.is_team_event ? "true" : "false",
-        teamMinSize: data.team_min_size ? data.team_min_size.toString() : "1",
-        teamMaxSize: data.team_max_size ? data.team_max_size.toString() : "1",
-      });
-      setIsUnlimitedCapacity(data.seats === null);
-      if (data.image) setBanner({ file: null, preview: data.image });
-      if (data.poster_image) setPoster({ file: null, preview: data.poster_image });
-      if (data.tags) setTags(data.tags);
-      if (data.hosts) setHosts(data.hosts);
-      if (data.ticket_types) {
-        setTickets(data.ticket_types.map((t: any) => ({
-          id: t.id || Date.now().toString(), name: t.name || "", price: t.price?.toString() || "0",
-          quantity: t.quantity ? t.quantity.toString() : "", unlimited: t.quantity === null || t.unlimited
-        })));
-      }
-      if (data.custom_fields) setCustomFields(data.custom_fields);
-      if (data.speakers) {
-        setSpeakers(data.speakers.map((s: any) => ({
-          id: s.id || Date.now().toString(), name: s.name, subtext: s.subtext, imageFile: null, imageUrl: s.imageUrl
-        })));
-      }
-      setIsDataLoaded(true);
     }
     loadEvent();
-  }, [eventId, supabase]);
+  }, [eventId]);
 
   const handleSubmit = async (isDraft = false) => {
     if (isDraft) setSavingDraft(true); else setLoading(true);
     setError("");
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-      const uid = crypto.randomUUID();
       if (!banner.file && !banner.preview) throw new Error("A Banner image is required.");
       if (!poster.file && !poster.preview) throw new Error("A Poster image is required.");
 
-      const [bannerUrl, posterUrl] = await Promise.all([
-        uploadImage(banner, `${user.id}/${uid}/banner`),
-        uploadImage(poster, `${user.id}/${uid}/poster`),
-      ]);
+      let bannerKey: string | undefined = undefined;
+      if (banner.file) {
+        bannerKey = await uploadImageKey(banner.file);
+      }
+      let posterKey: string | undefined = undefined;
+      if (poster.file) {
+        posterKey = await uploadImageKey(poster.file);
+      }
 
       const validFields = customFields.filter(f => f.label.trim());
-      const singleTicketPrice = form.price === "paid" && tickets.length === 1 ? parseFloat(tickets[0].price) || 0 : null;
 
       if (form.price === "paid" && tickets.filter(t => t.name.trim()).length === 0) {
         throw new Error("You must add at least one ticket type for a paid event.");
@@ -445,77 +469,62 @@ export default function EditEventPage() {
 
       const uploadedSpeakers = await Promise.all(speakers.map(async (s) => {
         if (s.imageFile) {
-          const url = await uploadImage({ file: s.imageFile, preview: null }, `${user.id}/${uid}/speakers/${s.id}`);
-          return { id: s.id, name: s.name, subtext: s.subtext, imageUrl: url };
+          const key = await uploadImageKey(s.imageFile);
+          return { id: s.id, name: s.name, subtext: s.subtext || undefined, imageUrl: key };
         }
-        return { id: s.id, name: s.name, subtext: s.subtext, imageUrl: s.imageUrl };
+        return { id: s.id, name: s.name, subtext: s.subtext || undefined, imageUrl: s.imageUrl || undefined };
       }));
 
-      const { error: updateError } = await supabase.from("events").update({
+      const isUUID = (str?: string) => !!str && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+      const formattedTickets = form.price === "paid" ? tickets.filter(t => t.name.trim()).map(t => ({
+        id: isUUID(t.id) ? t.id : undefined,
+        name: t.name,
+        price: parseFloat(t.price) || 0,
+        quantity: t.unlimited ? null : (parseInt(t.quantity) || null),
+        unlimited: t.unlimited,
+      })) : [];
+
+      await api.events.update(eventId, {
         title: form.title,
-        tagline: form.tagline,
+        tagline: form.tagline || undefined,
         description: form.description,
         category: form.category,
         tags,
         hosts,
         speakers: uploadedSpeakers,
-        image: bannerUrl,
-        poster_image: posterUrl,
+        ...(bannerKey ? { imageKey: bannerKey } : {}),
+        ...(posterKey ? { posterImageKey: posterKey } : {}),
         date: form.startDate,
-        time: form.startTime,
-        end_date: form.endDate,
-        end_time: form.endTime,
-        venue: form.venue,
-        location: form.venue || form.city || form.locationLink || form.platform || "TBA",
-        location_link: form.locationLink,
-        city: form.city,
-        location_type: form.locationType,
-        meeting_link: form.meetingLink,
-        platform: form.platform,
-        price: form.price,
-        price_amount: singleTicketPrice,
-        seats: isUnlimitedCapacity ? null : (parseInt(form.capacity) || null),
-        approval_required: form.price === "paid" ? true : form.approvalRequired === "true",
-        registration_deadline: form.registrationDeadline || null,
-        registration_end_time: form.registrationEndTime || null,
-        cancellation_policy: form.cancellationPolicy,
-        refund_policy: form.refundPolicy,
-        photography_policy: form.photographyPolicy,
-        visibility: form.visibility,
-        custom_fields: validFields,
-        is_team_event: form.isTeamEvent === "true",
-        team_min_size: parseInt(form.teamMinSize) || 1,
-        team_max_size: parseInt(form.teamMaxSize) || 1,
-        status: isDraft ? "draft" : "published",
-      }).eq("id", eventId).eq("org_id", user.id);
+        time: form.startTime || undefined,
+        endDate: form.endDate || undefined,
+        endTime: form.endTime || undefined,
+        venue: form.venue || undefined,
+        locationLink: form.locationLink || undefined,
+        city: form.city || undefined,
+        locationType: form.locationType as any,
+        meetingLink: form.meetingLink || undefined,
+        platform: form.platform || undefined,
+        price: form.price as any,
+        capacity: isUnlimitedCapacity ? null : (parseInt(form.capacity) || null),
+        approvalRequired: form.price === "paid" ? true : form.approvalRequired === "true",
+        registrationDeadline: form.registrationDeadline || undefined,
+        registrationEndTime: form.registrationEndTime || undefined,
+        cancellationPolicy: form.cancellationPolicy || undefined,
+        refundPolicy: form.refundPolicy || undefined,
+        photographyPolicy: form.photographyPolicy || undefined,
+        visibility: form.visibility as any,
+        customFields: validFields as any,
+        isTeamEvent: form.isTeamEvent === "true",
+        teamMinSize: parseInt(form.teamMinSize) || 1,
+        teamMaxSize: parseInt(form.teamMaxSize) || 1,
+        tickets: formattedTickets,
+        isDraft,
+      });
 
-      if (updateError) throw updateError;
-
-      // Update tickets
-      if (form.price === "paid") {
-        const validTickets = tickets.filter(t => t.name.trim());
-
-        // Delete all old tickets
-        await supabase.from('tickets').delete().eq('event_id', eventId);
-
-        // Insert new tickets
-        if (validTickets.length > 0) {
-          const ticketsToInsert = validTickets.map(t => ({
-            event_id: eventId,
-            name: t.name,
-            price: parseFloat(t.price) || 0,
-            quantity: t.unlimited ? null : (parseInt(t.quantity) || null),
-            unlimited: t.unlimited,
-          }));
-
-          const { error: ticketError } = await supabase.from('tickets').insert(ticketsToInsert);
-          if (ticketError) throw ticketError;
-        }
-      }
       router.push(`/dashboard/events/${eventId}`);
       router.refresh();
     } catch (err: any) {
-      setError(err.message || "Failed to save event edits");
+      setError(getErrorMessage(err, "Failed to save event edits"));
     } finally {
       setLoading(false);
       setSavingDraft(false);
