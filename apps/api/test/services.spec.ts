@@ -1,8 +1,19 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
+import { createHmac } from "crypto";
 import { createContainer } from "../src/container";
 import { AuthService } from "../src/services/auth.service";
-import { hashOtp } from "../src/crypto";
+import { encryptOtp, decryptOtp, verifyLegacyHmac, getOtpSecret } from "../src/crypto";
+import { validateProductionSecrets } from "../src/config/env";
 import { createAuthRoutes } from "../src/routes/auth.routes";
+
+function hasKeyRecursive(obj: unknown, key: string): boolean {
+  if (!obj || typeof obj !== "object") return false;
+  if (Object.prototype.hasOwnProperty.call(obj, key)) return true;
+  for (const value of Object.values(obj)) {
+    if (hasKeyRecursive(value, key)) return true;
+  }
+  return false;
+}
 
 describe("API Service Layer Tests", () => {
   let container: ReturnType<typeof createContainer>;
@@ -646,7 +657,7 @@ describe("API Service Layer Tests", () => {
       expect(refreshRes.expiresAt).toBeGreaterThan(0);
     });
 
-    it("generates a 6-digit org OTP on signup, stores it hashed in DB, and verifies it within expiry", async () => {
+    it("generates a 6-digit org OTP on signup, stores it encrypted in DB without leaking in return values, and verifies it", async () => {
       const { services, ports } = container;
 
       const signupRes = await services.authService.signup({
@@ -656,16 +667,19 @@ describe("API Service Layer Tests", () => {
         orgName: "OTP Test Org",
       });
 
-      expect(signupRes.otp).toMatch(/^\d{6}$/);
+      expect(hasKeyRecursive(signupRes, "otp")).toBe(false);
 
       const org = await ports.orgRepo.findById(signupRes.userId!);
       expect(org).toBeDefined();
-      expect(org!.otp).toBe(hashOtp(signupRes.otp!));
+      expect(org!.otp?.startsWith("v1:")).toBe(true);
       expect(org!.otpExpiresAt).toBeDefined();
       expect(org!.otpFailedAttempts).toBe(0);
 
+      const code = decryptOtp(org!.otp!);
+      expect(code).toMatch(/^\d{6}$/);
+
       const freshAuthService = new AuthService(ports.authProvider, ports.orgRepo, ports.profileRepo);
-      const verified = await freshAuthService.verifyOrgOtp(signupRes.userId!, signupRes.otp!);
+      const verified = await freshAuthService.verifyOrgOtp(signupRes.userId!, code);
       expect(verified).toBe(true);
 
       const updatedOrg = await ports.orgRepo.findById(signupRes.userId!);
@@ -687,7 +701,8 @@ describe("API Service Layer Tests", () => {
           orgName: "Expire Org",
         });
 
-        const rawOtp = signupRes.otp!;
+        const org = await ports.orgRepo.findById(signupRes.userId!);
+        const rawOtp = decryptOtp(org!.otp!);
 
         vi.advanceTimersByTime(10 * 60 * 1000 + 1000);
 
@@ -698,14 +713,15 @@ describe("API Service Layer Tests", () => {
 
         const resendRes = await freshAuthService.resendOrgOtp(signupRes.userId!);
         expect(resendRes.success).toBe(true);
-        expect(resendRes.otp).toMatch(/^\d{6}$/);
+        expect(hasKeyRecursive(resendRes, "otp")).toBe(false);
 
         const refreshedOrg = await ports.orgRepo.findById(signupRes.userId!);
-        expect(refreshedOrg!.otp).toBe(hashOtp(resendRes.otp!));
+        expect(refreshedOrg!.otp?.startsWith("v1:")).toBe(true);
         expect(refreshedOrg!.otpFailedAttempts).toBe(0);
+        const newCode = decryptOtp(refreshedOrg!.otp!);
 
         const restartAuthService = new AuthService(ports.authProvider, ports.orgRepo, ports.profileRepo);
-        const verified = await restartAuthService.verifyOrgOtp(signupRes.userId!, resendRes.otp!);
+        const verified = await restartAuthService.verifyOrgOtp(signupRes.userId!, newCode);
         expect(verified).toBe(true);
       } finally {
         vi.useRealTimers();
@@ -724,7 +740,8 @@ describe("API Service Layer Tests", () => {
           orgName: "Attempts Org",
         });
 
-        const correctOtp = signupRes.otp!;
+        const org = await ports.orgRepo.findById(signupRes.userId!);
+        const correctOtp = decryptOtp(org!.otp!);
 
         for (let i = 0; i < 9; i++) {
           if (i > 0 && i % 4 === 0) {
@@ -749,17 +766,249 @@ describe("API Service Layer Tests", () => {
         ).rejects.toThrow("Maximum failed attempts exceeded. Please request a new OTP");
 
         const resendRes = await freshInstance.resendOrgOtp(signupRes.userId!);
-        expect(resendRes.otp).toMatch(/^\d{6}$/);
+        expect(resendRes.success).toBe(true);
+        expect(hasKeyRecursive(resendRes, "otp")).toBe(false);
 
         const refreshedOrg = await ports.orgRepo.findById(signupRes.userId!);
         expect(refreshedOrg!.otpFailedAttempts).toBe(0);
+        const newOtp = decryptOtp(refreshedOrg!.otp!);
 
         const anotherInstance = new AuthService(ports.authProvider, ports.orgRepo, ports.profileRepo);
-        const verified = await anotherInstance.verifyOrgOtp(signupRes.userId!, resendRes.otp!);
+        const verified = await anotherInstance.verifyOrgOtp(signupRes.userId!, newOtp);
         expect(verified).toBe(true);
       } finally {
         vi.useRealTimers();
       }
+    });
+
+    it("crypto round-trips correctly, rejects tampered ciphertext and wrong key, and verifies legacy HMAC", async () => {
+      const plain = "738291";
+      const encrypted = encryptOtp(plain);
+      expect(encrypted.startsWith("v1:")).toBe(true);
+      expect(decryptOtp(encrypted)).toBe(plain);
+
+      const parts = encrypted.split(":");
+      const tampered = `${parts[0]}:${parts[1]}:${parts[2]}:${Buffer.from("tampered").toString("base64")}`;
+      expect(() => decryptOtp(tampered)).toThrow();
+
+      const wrongSecret = "another-secret-at-least-32-chars-long";
+      expect(() => decryptOtp(encrypted, wrongSecret)).toThrow();
+
+      const secret = getOtpSecret();
+      const legacyHmac = createHmac("sha256", secret).update("123456").digest("hex");
+      expect(verifyLegacyHmac("123456", legacyHmac)).toBe(true);
+      expect(verifyLegacyHmac("654321", legacyHmac)).toBe(false);
+
+      const { ports } = container;
+      const legacyOrg = await ports.orgRepo.create({
+        ownerId: "legacy-org-user",
+        name: "Legacy Org",
+        email: "legacy@org.com",
+        status: "pending",
+        isOtpVerified: false,
+        otp: legacyHmac,
+        otpExpiresAt: new Date(Date.now() + 600000),
+        otpFailedAttempts: 0,
+      });
+
+      const verifyRes = await ports.orgRepo.verifyOtp(legacyOrg.id, "123456");
+      expect(verifyRes.success).toBe(true);
+    });
+
+    it("ensures signup and resend routes never contain otp field in JSON body", async () => {
+      const app = container.app;
+      const signupRes = await app.request("/api/v1/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: "no-leak-org@test.com",
+          password: "password123",
+          name: "No Leak",
+          orgName: "No Leak Org",
+          role: "organisation",
+        }),
+      });
+
+      expect(signupRes.status).toBe(201);
+      const signupBody = await signupRes.json();
+      expect(hasKeyRecursive(signupBody, "otp")).toBe(false);
+
+      const token = signupBody.accessToken;
+      const resendRes = await app.request("/api/v1/auth/resend-org-otp", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      expect(resendRes.status).toBe(200);
+      const resendBody = await resendRes.json();
+      expect(hasKeyRecursive(resendBody, "otp")).toBe(false);
+    });
+
+    it("resend resets attempts and expiry, rejects verified orgs, and enforces rate limit", async () => {
+      const { services, ports } = container;
+      const signupRes = await services.authService.signup({
+        email: "resend-test@org.com",
+        password: "password123",
+        role: "organisation",
+        orgName: "Resend Test Org",
+      });
+
+      const orgId = signupRes.userId!;
+      await ports.orgRepo.update(orgId, { otpFailedAttempts: 8 });
+
+      const resendRes = await services.authService.resendOrgOtp(orgId);
+      expect(resendRes.success).toBe(true);
+
+      const refreshed = await ports.orgRepo.findById(orgId);
+      expect(refreshed!.otpFailedAttempts).toBe(0);
+      expect(refreshed!.otpExpiresAt!.getTime()).toBeGreaterThan(Date.now());
+
+      await ports.orgRepo.update(orgId, { isOtpVerified: true });
+      await expect(services.authService.resendOrgOtp(orgId)).rejects.toThrow("Organisation is already verified");
+
+      const unverified = await services.authService.signup({
+        email: "rate-resend@org.com",
+        password: "password123",
+        role: "organisation",
+        orgName: "Rate Org",
+      });
+
+      for (let i = 0; i < 5; i++) {
+        await services.authService.resendOrgOtp(unverified.userId!);
+      }
+      await expect(services.authService.resendOrgOtp(unverified.userId!)).rejects.toThrow();
+    });
+
+    it("admin endpoint enforces auth levels, audit logging, unverified-only, and legacy message", async () => {
+      const app = container.app;
+      const { ports, services } = container;
+
+      const orgSignup = await services.authService.signup({
+        email: "admin-view@org.com",
+        password: "password123",
+        role: "organisation",
+        orgName: "Admin View Org",
+      });
+      const orgId = orgSignup.userId!;
+      const orgToken = orgSignup.accessToken!;
+
+      const memberSignup = await services.authService.signup({
+        email: "regular-member@test.com",
+        password: "password123",
+        role: "member",
+        name: "Member User",
+      });
+      const memberToken = memberSignup.accessToken!;
+
+      const unauthRes = await app.request(`/api/v1/admin/organisations/${orgId}/otp`);
+      expect(unauthRes.status).toBe(401);
+
+      const memberRes = await app.request(`/api/v1/admin/organisations/${orgId}/otp`, {
+        headers: { Authorization: `Bearer ${memberToken}` },
+      });
+      expect(memberRes.status).toBe(403);
+
+      const orgRes = await app.request(`/api/v1/admin/organisations/${orgId}/otp`, {
+        headers: { Authorization: `Bearer ${orgToken}` },
+      });
+      expect(orgRes.status).toBe(403);
+
+      const adminUser = await ports.authProvider.signup({
+        email: "superadmin@platform.com",
+        password: "password123",
+        role: "attendee",
+      });
+      await ports.adminRepo.addPlatformAdmin(adminUser.userId);
+
+      const adminLogin = await services.authService.login({
+        email: "superadmin@platform.com",
+        password: "password123",
+      });
+      const adminToken = adminLogin.accessToken;
+
+      const successRes = await app.request(`/api/v1/admin/organisations/${orgId}/otp`, {
+        headers: { Authorization: `Bearer ${adminToken}` },
+      });
+      expect(successRes.status).toBe(200);
+      const data = await successRes.json();
+      expect(data.code).toMatch(/^\d{6}$/);
+      expect(data.legacy).toBe(false);
+
+      expect(ports.adminRepo.auditLogs.length).toBeGreaterThan(0);
+      const audit = ports.adminRepo.auditLogs[ports.adminRepo.auditLogs.length - 1];
+      expect(audit.action).toBe("get_org_otp");
+      expect(audit.targetOrgId).toBe(orgId);
+      expect(audit.adminUserId).toBe(adminUser.userId);
+
+      const legacyOrg = await ports.orgRepo.create({
+        ownerId: "legacy-admin-org",
+        name: "Legacy Admin Org",
+        email: "legacyadmin@org.com",
+        status: "pending",
+        isOtpVerified: false,
+        otp: "a".repeat(64),
+        otpExpiresAt: new Date(Date.now() + 600000),
+        otpFailedAttempts: 0,
+      });
+
+      const legacyRes = await app.request(`/api/v1/admin/organisations/${legacyOrg.id}/otp`, {
+        headers: { Authorization: `Bearer ${adminToken}` },
+      });
+      expect(legacyRes.status).toBe(200);
+      const legacyData = await legacyRes.json();
+      expect(legacyData.legacy).toBe(true);
+      expect(legacyData.message).toBe("legacy code, ask the org to request a new one");
+
+      await ports.orgRepo.update(orgId, { isOtpVerified: true });
+      const verifiedRes = await app.request(`/api/v1/admin/organisations/${orgId}/otp`, {
+        headers: { Authorization: `Bearer ${adminToken}` },
+      });
+      expect(verifiedRes.status).toBe(400);
+    });
+
+    it("fails production startup validation without strong secrets", () => {
+      expect(() =>
+        validateProductionSecrets({
+          NODE_ENV: "production",
+          OTP_SECRET: undefined,
+          INTERNAL_PROXY_SECRET: "strong-proxy-secret-with-more-than-32-chars",
+        })
+      ).toThrow();
+
+      expect(() =>
+        validateProductionSecrets({
+          NODE_ENV: "production",
+          OTP_SECRET: "short",
+          INTERNAL_PROXY_SECRET: "strong-proxy-secret-with-more-than-32-chars",
+        })
+      ).toThrow();
+
+      expect(() =>
+        validateProductionSecrets({
+          NODE_ENV: "production",
+          OTP_SECRET: "cirkkl-otp-hmac-secret-min-32-chars",
+          INTERNAL_PROXY_SECRET: "strong-proxy-secret-with-more-than-32-chars",
+        })
+      ).toThrow();
+
+      expect(() =>
+        validateProductionSecrets({
+          NODE_ENV: "production",
+          OTP_SECRET: "valid-production-secret-with-over-32-characters",
+          INTERNAL_PROXY_SECRET: "cirkkl-shared-proxy-secret",
+        })
+      ).toThrow();
+
+      expect(() =>
+        validateProductionSecrets({
+          NODE_ENV: "production",
+          OTP_SECRET: "valid-production-secret-with-over-32-characters",
+          INTERNAL_PROXY_SECRET: "valid-proxy-secret-with-over-32-characters",
+        })
+      ).not.toThrow();
     });
 
     it("accepts client IP only with valid INTERNAL_PROXY_SECRET and uses last entry", async () => {

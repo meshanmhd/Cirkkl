@@ -40,7 +40,20 @@ Key environment variables:
 - `NEXT_PUBLIC_API_URL`: Base URL for the Cirkkl API (default: `http://localhost:3001`).
 - `SITE_URL`: Canonical origin for web app CSRF validation (e.g. `http://localhost:3000` or production domain).
 - `TRUSTED_IP_HEADER`: Configurable trusted client IP header from reverse proxies / edge (default: `x-real-ip`; use `x-vercel-forwarded-for` on Vercel, `cf-connecting-ip` on Cloudflare). Takes the last entry if a comma-separated list is provided.
-- `INTERNAL_PROXY_SECRET`: Shared secret header between web app proxy and API to validate forwarded client IP headers.
+- `INTERNAL_PROXY_SECRET`: Shared secret header between web app proxy and API to validate forwarded client IP headers. In production, required to be >= 32 characters.
+- `OTP_SECRET`: 32-byte secret used to encrypt/decrypt organisation OTP codes using AES-256-GCM. Generate with `openssl rand -hex 32`. In production, required to be >= 32 characters. Note: changing `OTP_SECRET` makes existing stored codes unreadable, so organisations must request new ones.
+
+### Platform Administration CLI
+
+The platform admin CLI allows managing platform admins and retrieving organisation verification codes:
+
+```bash
+# Grant super admin privileges to a user
+pnpm --filter api admin:grant <user-email>
+
+# Read decrypted OTP code for an unverified organisation (outputs to stdout and records audit entry)
+pnpm --filter api admin:otp <org-email>
+```
 
 ### Development
 

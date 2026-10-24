@@ -107,3 +107,16 @@ export async function verifyOrgOtpAction(otpCode: string) {
     return { error: getErrorMessage(err, 'Failed to verify code.') }
   }
 }
+
+export async function resendOrgOtpAction() {
+  try {
+    const clientIp = await resolveClientIp()
+    await api.auth.resendOrgOtp(clientIp)
+    return { success: true }
+  } catch (err: unknown) {
+    if (err && typeof err === 'object' && 'digest' in err) {
+      throw err
+    }
+    return { error: getErrorMessage(err, 'Failed to request new code.') }
+  }
+}

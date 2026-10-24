@@ -1,8 +1,9 @@
+import { timingSafeEqual } from "crypto";
 import { Kysely } from "kysely";
 import { Database } from "./database";
 import { OrganisationRepo, VerifyOtpResult } from "../../ports/repositories";
 import { Organisation, OrgStatus } from "../../ports/domain";
-import { verifyOtpHash } from "../../crypto";
+import { decryptOtp, verifyLegacyHmac } from "../../crypto";
 
 export class KyselyOrganisationRepo implements OrganisationRepo {
   constructor(private readonly db: Kysely<Database>) {}
@@ -102,7 +103,21 @@ export class KyselyOrganisationRepo implements OrganisationRepo {
         return { success: false, reason: "expired" };
       }
 
-      const isMatch = verifyOtpHash(otp, row.org_otp);
+      let isMatch = false;
+      if (row.org_otp.startsWith("v1:")) {
+        try {
+          const decrypted = decryptOtp(row.org_otp);
+          const decBuf = Buffer.from(decrypted, "utf8");
+          const inBuf = Buffer.from(otp, "utf8");
+          if (decBuf.length === inBuf.length) {
+            isMatch = timingSafeEqual(decBuf, inBuf);
+          }
+        } catch {
+          isMatch = false;
+        }
+      } else {
+        isMatch = verifyLegacyHmac(otp, row.org_otp);
+      }
       if (isMatch) {
         await trx
           .updateTable("organisations")

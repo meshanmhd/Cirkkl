@@ -163,3 +163,21 @@ export const meOperation: Operation<typeof MeInputSchema, typeof MeOutputSchema>
   output: MeOutputSchema,
   errorCodes: ["UNAUTHORIZED", "INTERNAL_SERVER_ERROR"],
 };
+
+export const ResendOrgOtpInputSchema = z.object({});
+export type ResendOrgOtpInput = z.infer<typeof ResendOrgOtpInputSchema>;
+
+export const ResendOrgOtpOutputSchema = z.object({
+  success: z.boolean(),
+});
+export type ResendOrgOtpOutput = z.infer<typeof ResendOrgOtpOutputSchema>;
+
+export const resendOrgOtpOperation: Operation<typeof ResendOrgOtpInputSchema, typeof ResendOrgOtpOutputSchema> = {
+  name: "auth.resendOrgOtp",
+  method: "POST",
+  path: "/api/v1/auth/resend-org-otp",
+  auth: "user",
+  input: ResendOrgOtpInputSchema,
+  output: ResendOrgOtpOutputSchema,
+  errorCodes: ["UNAUTHORIZED", "FORBIDDEN", "NOT_FOUND", "TOO_MANY_REQUESTS", "INTERNAL_SERVER_ERROR"],
+};

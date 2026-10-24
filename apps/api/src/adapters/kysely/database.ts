@@ -161,6 +161,19 @@ export interface MerchantSettingsTable {
   merchant_name: string;
 }
 
+export interface PlatformAdminsTable {
+  user_id: string;
+  created_at: Generated<Date>;
+}
+
+export interface AdminAuditLogTable {
+  id: Generated<string>;
+  admin_user_id: string | null;
+  action: string;
+  target_org_id: string | null;
+  created_at: Generated<Date>;
+}
+
 export interface Database {
   users: UsersTable;
   organisations: OrganisationsTable;
@@ -175,6 +188,8 @@ export interface Database {
   notifications: NotificationsTable;
   payments: PaymentsTable;
   merchant_settings: MerchantSettingsTable;
+  platform_admins: PlatformAdminsTable;
+  admin_audit_log: AdminAuditLogTable;
 }
 
 export function createKyselyDatabase(connectionString: string): Kysely<Database> {

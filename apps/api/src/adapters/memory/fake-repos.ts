@@ -27,6 +27,7 @@ import {
   OrganisationRepo,
   PaymentRepo,
   ProfileRepo,
+  AdminRepo,
   RegistrationRepo,
   TeamRepo,
   TicketRepo,
@@ -34,7 +35,8 @@ import {
   UnitOfWork,
   VerifyOtpResult,
 } from "../../ports/repositories";
-import { verifyOtpHash } from "../../crypto";
+import { timingSafeEqual } from "crypto";
+import { decryptOtp, verifyLegacyHmac } from "../../crypto";
 
 export class MemoryEventRepo implements EventRepo {
   events: Map<string, Event> = new Map();
@@ -504,7 +506,21 @@ export class MemoryOrganisationRepo implements OrganisationRepo {
     if (org.otpExpiresAt && org.otpExpiresAt.getTime() < Date.now()) {
       return { success: false, reason: "expired" };
     }
-    const isMatch = verifyOtpHash(otp, org.otp);
+    let isMatch = false;
+    if (org.otp.startsWith("v1:")) {
+      try {
+        const decrypted = decryptOtp(org.otp);
+        const decBuf = Buffer.from(decrypted, "utf8");
+        const inBuf = Buffer.from(otp, "utf8");
+        if (decBuf.length === inBuf.length) {
+          isMatch = timingSafeEqual(decBuf, inBuf);
+        }
+      } catch {
+        isMatch = false;
+      }
+    } else {
+      isMatch = verifyLegacyHmac(otp, org.otp);
+    }
     if (isMatch) {
       org.isOtpVerified = true;
       org.otp = null;
@@ -753,5 +769,32 @@ export class MemoryTransactionRunner implements TransactionRunner {
 
   async run<T>(fn: (uow: UnitOfWork) => Promise<T>): Promise<T> {
     return fn(this.uow);
+  }
+}
+
+export class MemoryAdminRepo implements AdminRepo {
+  adminSet: Set<string> = new Set();
+  auditLogs: Array<{ id: string; adminUserId: string | null; action: string; targetOrgId?: string | null; createdAt: Date }> = [];
+
+  async isSuperAdmin(userId: string): Promise<boolean> {
+    return this.adminSet.has(userId);
+  }
+
+  async logAudit(entry: {
+    adminUserId: string | null;
+    action: string;
+    targetOrgId?: string | null;
+  }): Promise<void> {
+    this.auditLogs.push({
+      id: crypto.randomUUID(),
+      adminUserId: entry.adminUserId,
+      action: entry.action,
+      targetOrgId: entry.targetOrgId,
+      createdAt: new Date(),
+    });
+  }
+
+  async addPlatformAdmin(userId: string): Promise<void> {
+    this.adminSet.add(userId);
   }
 }

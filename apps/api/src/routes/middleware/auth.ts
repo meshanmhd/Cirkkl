@@ -1,5 +1,6 @@
 import { Context, Next } from "hono";
 import { AuthService, CallerContext } from "../../services/auth.service";
+import { AdminRepo } from "../../ports/repositories";
 import { forbidden, unauthorized } from "../../errors";
 
 declare module "hono" {
@@ -44,6 +45,20 @@ export function requireOrg() {
     }
     if (!caller.isOrgApproved) {
       throw forbidden("Organisation is pending approval or OTP verification");
+    }
+    await next();
+  };
+}
+
+export function requireSuperAdmin(adminRepo: AdminRepo) {
+  return async (c: Context, next: Next) => {
+    const caller = c.get("caller");
+    if (!caller) {
+      throw unauthorized("Authentication required");
+    }
+    const isAdmin = await adminRepo.isSuperAdmin(caller.userId);
+    if (!isAdmin) {
+      throw forbidden("Super admin access required");
     }
     await next();
   };

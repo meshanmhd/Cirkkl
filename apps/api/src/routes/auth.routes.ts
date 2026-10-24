@@ -7,6 +7,7 @@ import {
 } from "@cirkkl/contracts";
 import { AuthService } from "../services/auth.service";
 import { requireUser } from "./middleware/auth";
+import { forbidden } from "../errors";
 
 export function createAuthRoutes(authService: AuthService) {
   const router = new Hono();
@@ -67,6 +68,16 @@ export function createAuthRoutes(authService: AuthService) {
     const clientIp = getClientIp(c);
     await authService.verifyOrgOtp(caller.userId, parsed.otpCode, clientIp);
     return c.json({ success: true, isOtpVerified: true, isApproved: false }, 200);
+  });
+
+  router.post("/resend-org-otp", requireUser(), async (c) => {
+    const caller = c.get("caller");
+    if (!caller.orgId) {
+      throw forbidden("Organisation account required");
+    }
+    const clientIp = getClientIp(c);
+    const result = await authService.resendOrgOtp(caller.userId, clientIp);
+    return c.json(result, 200);
   });
 
   router.get("/me", requireUser(), async (c) => {
