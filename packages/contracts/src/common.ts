@@ -3,7 +3,7 @@ import { z } from "zod";
 export const HttpMethodSchema = z.enum(["GET", "POST", "PUT", "PATCH", "DELETE"]);
 export type HttpMethod = z.infer<typeof HttpMethodSchema>;
 
-export const AuthRequirementSchema = z.enum(["public", "user", "org"]);
+export const AuthRequirementSchema = z.enum(["public", "user", "org", "super_admin"]);
 export type AuthRequirement = z.infer<typeof AuthRequirementSchema>;
 
 export const ErrorCodeSchema = z.enum([

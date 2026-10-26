@@ -17,10 +17,12 @@ import { KyselyNotificationRepo } from "./adapters/kysely/notification.repo";
 import { KyselyProfileRepo } from "./adapters/kysely/profile.repo";
 import { KyselyPaymentRepo } from "./adapters/kysely/payment.repo";
 import { KyselyTransactionRunner } from "./adapters/kysely/transaction.runner";
+import { KyselyAdminRepo } from "./adapters/kysely/admin.repo";
 import { MemoryAuthProvider } from "./adapters/memory/fake-auth.provider";
 import { MemoryStorageProvider } from "./adapters/memory/fake-storage.provider";
 import { MemoryRealtimeProvider } from "./adapters/memory/fake-realtime.provider";
 import {
+  MemoryAdminRepo,
   MemoryEventRepo,
   MemoryMemberRepo,
   MemoryNotificationRepo,
@@ -40,6 +42,7 @@ import { NotificationService } from "./services/notification.service";
 import { ProfileService } from "./services/profile.service";
 import { PaymentService } from "./services/payment.service";
 import { UploadService } from "./services/upload.service";
+import { AdminService } from "./services/admin.service";
 import { createAuthRoutes } from "./routes/auth.routes";
 import { createEventsRoutes, createOrgEventsRoutes } from "./routes/events.routes";
 import { createRegistrationsRoutes } from "./routes/registrations.routes";
@@ -48,6 +51,7 @@ import { createNotificationsRoutes } from "./routes/notifications.routes";
 import { createCollegeRoutes, createProfileRoutes } from "./routes/profile.routes";
 import { createPaymentsRoutes } from "./routes/payments.routes";
 import { createUploadsRoutes } from "./routes/uploads.routes";
+import { createAdminRoutes } from "./routes/admin.routes";
 
 export function createContainer(adapterOverride?: "supabase" | "memory") {
   const adapter = adapterOverride || env.BACKEND_ADAPTER;
@@ -65,6 +69,7 @@ export function createContainer(adapterOverride?: "supabase" | "memory") {
   let profileRepo: any;
   let paymentRepo: any;
   let transactionRunner: any;
+  let adminRepo: any;
 
   if (adapter === "supabase") {
     authProvider = new SupabaseAuthProvider(
@@ -88,6 +93,7 @@ export function createContainer(adapterOverride?: "supabase" | "memory") {
     profileRepo = new KyselyProfileRepo(db);
     paymentRepo = new KyselyPaymentRepo(db);
     transactionRunner = new KyselyTransactionRunner(db);
+    adminRepo = new KyselyAdminRepo(db);
   } else {
     authProvider = new MemoryAuthProvider();
     storageProvider = new MemoryStorageProvider();
@@ -102,6 +108,7 @@ export function createContainer(adapterOverride?: "supabase" | "memory") {
     notificationRepo = new MemoryNotificationRepo();
     profileRepo = new MemoryProfileRepo();
     paymentRepo = new MemoryPaymentRepo();
+    adminRepo = new MemoryAdminRepo();
 
     transactionRunner = new MemoryTransactionRunner({
       eventRepo,
@@ -136,6 +143,7 @@ export function createContainer(adapterOverride?: "supabase" | "memory") {
   const profileService = new ProfileService(profileRepo, storageProvider);
   const paymentService = new PaymentService(paymentRepo, ticketRepo);
   const uploadService = new UploadService(storageProvider);
+  const adminService = new AdminService(adminRepo, orgRepo);
 
   const app = new Hono();
 
@@ -171,6 +179,7 @@ export function createContainer(adapterOverride?: "supabase" | "memory") {
   v1.route("/colleges", createCollegeRoutes(profileService));
   v1.route("/payments", createPaymentsRoutes(paymentService));
   v1.route("/uploads", createUploadsRoutes(uploadService));
+  v1.route("/admin", createAdminRoutes(adminService, adminRepo));
 
   app.route("/api/v1", v1);
 
@@ -185,6 +194,7 @@ export function createContainer(adapterOverride?: "supabase" | "memory") {
       profileService,
       paymentService,
       uploadService,
+      adminService,
     },
     ports: {
       authProvider,
@@ -200,6 +210,7 @@ export function createContainer(adapterOverride?: "supabase" | "memory") {
       profileRepo,
       paymentRepo,
       transactionRunner,
+      adminRepo,
     },
   };
 }

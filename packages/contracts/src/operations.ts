@@ -5,7 +5,9 @@ import {
   logoutOperation,
   verifyOrgOtpOperation,
   meOperation,
+  resendOrgOtpOperation,
 } from "./auth";
+import { getOrgOtpOperation } from "./admin";
 import {
   listEventsOperation,
   getEventOperation,
@@ -60,6 +62,7 @@ export const operations = [
   loginOperation,
   logoutOperation,
   verifyOrgOtpOperation,
+  resendOrgOtpOperation,
   meOperation,
   listEventsOperation,
   getEventOperation,
@@ -99,6 +102,7 @@ export const operations = [
   updateAvatarOperation,
   searchCollegesOperation,
   requestUploadOperation,
+  getOrgOtpOperation,
 ] as const;
 
 export const operationsMap: Record<string, Operation> = Object.fromEntries(

@@ -4,7 +4,7 @@ import { OrganisationRepo, ProfileRepo } from "../ports/repositories";
 import { UserRole } from "../ports/domain";
 import { badRequest, tooManyRequests } from "../errors";
 import { RateLimiter } from "./rate-limiter";
-import { hashOtp } from "../crypto";
+import { encryptOtp } from "../crypto";
 
 export interface CallerContext {
   userId: string;
@@ -42,7 +42,6 @@ export class AuthService {
       role: "member" | "organisation";
     };
     requiresEmailVerification: boolean;
-    otp?: string;
   }> {
     if (input.clientIp) {
       const allowed = this.rateLimiter.check(`ip:signup:${input.clientIp}`, 5, 60000);
@@ -62,13 +61,10 @@ export class AuthService {
       },
     });
 
-    let generatedOtp: string | undefined = undefined;
-
     if (normalizedRole === "organisation") {
       try {
         const otp = randomInt(100000, 1000000).toString();
-        generatedOtp = otp;
-        const hashedOtp = hashOtp(otp);
+        const encryptedOtp = encryptOtp(otp);
         const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
         await this.orgRepo.create({
           ownerId: res.userId,
@@ -76,7 +72,7 @@ export class AuthService {
           email: input.email,
           status: "pending",
           isOtpVerified: false,
-          otp: hashedOtp,
+          otp: encryptedOtp,
           otpExpiresAt: expiresAt,
           otpFailedAttempts: 0,
         });
@@ -108,7 +104,6 @@ export class AuthService {
         role: normalizedRole,
       },
       requiresEmailVerification: !res.accessToken,
-      otp: generatedOtp,
     };
   }
 
@@ -180,7 +175,7 @@ export class AuthService {
     await this.authProvider.logout(token);
   }
 
-  async resendOrgOtp(callerId: string, clientIp?: string): Promise<{ success: boolean; otp?: string }> {
+  async resendOrgOtp(callerId: string, clientIp?: string): Promise<{ success: boolean }> {
     if (clientIp) {
       const allowed = this.rateLimiter.check(`ip:resend-otp:${clientIp}`, 5, 60000);
       if (!allowed) throw tooManyRequests();
@@ -193,16 +188,16 @@ export class AuthService {
     if (org.isOtpVerified) throw badRequest("Organisation is already verified");
 
     const newOtp = randomInt(100000, 1000000).toString();
-    const hashedOtp = hashOtp(newOtp);
+    const encryptedOtp = encryptOtp(newOtp);
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
     await this.orgRepo.update(org.id, {
-      otp: hashedOtp,
+      otp: encryptedOtp,
       otpExpiresAt: expiresAt,
       otpFailedAttempts: 0,
     });
 
-    return { success: true, otp: newOtp };
+    return { success: true };
   }
 
   async verifyOrgOtp(callerId: string, otp: string, clientIp?: string): Promise<boolean> {

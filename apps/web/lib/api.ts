@@ -79,6 +79,8 @@ import {
   RequestUploadInput,
   RequestUploadOutput,
   RequestUploadOutputSchema,
+  ResendOrgOtpOutput,
+  ResendOrgOtpOutputSchema,
   ScanAttendanceOutput,
   ScanAttendanceOutputSchema,
   SignupInput,
@@ -327,6 +329,21 @@ export const api = {
           body: JSON.stringify({ otpCode }),
         },
         VerifyOrgOtpOutputSchema
+      );
+    },
+    resendOrgOtp: async (clientIp?: string): Promise<ResendOrgOtpOutput> => {
+      const headers: Record<string, string> = {};
+      if (clientIp) {
+        headers["x-forwarded-for"] = clientIp;
+        headers["x-real-ip"] = clientIp;
+      }
+      return request<ResendOrgOtpOutput>(
+        "/api/v1/auth/resend-org-otp",
+        {
+          method: "POST",
+          headers,
+        },
+        ResendOrgOtpOutputSchema
       );
     },
     me: async (): Promise<MeOutput> => {

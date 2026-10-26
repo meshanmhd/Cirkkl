@@ -207,3 +207,13 @@ export interface UnitOfWork {
 export interface TransactionRunner {
   run<T>(fn: (uow: UnitOfWork) => Promise<T>): Promise<T>;
 }
+
+export interface AdminRepo {
+  isSuperAdmin(userId: string): Promise<boolean>;
+  logAudit(entry: {
+    adminUserId: string | null;
+    action: string;
+    targetOrgId?: string | null;
+  }): Promise<void>;
+  addPlatformAdmin(userId: string): Promise<void>;
+}

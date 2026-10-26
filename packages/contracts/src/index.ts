@@ -7,4 +7,5 @@ export * from "./org";
 export * from "./notifications";
 export * from "./profile";
 export * from "./uploads";
+export * from "./admin";
 export * from "./operations";
