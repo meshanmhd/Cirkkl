@@ -88,9 +88,11 @@ export function ProfileMenu({ initialUser = null, initialRole = "user", initialQ
     let mounted = true;
     let unsubStream: (() => void) | undefined;
 
-    if (authUser) {
+    if (authUser && !authLoading) {
+      // User is authenticated and loading is complete
       setUser(authUser);
       if (authRole) setRole(authRole);
+      
       Promise.all([
         fetchRole(),
         fetchMyEvents(),
@@ -98,15 +100,20 @@ export function ProfileMenu({ initialUser = null, initialRole = "user", initialQ
       ]).finally(() => {
         if (mounted) setLoading(false);
       });
+
       unsubStream = api.notifications.stream(() => {
         if (mounted) fetchUnreadCount();
       });
-    } else if (!authLoading) {
+    } else if (!authLoading && !authUser) {
+      // Loading is complete and user is NOT authenticated
       setUser(null);
       setRole("user");
       setMyEvents([]);
       setUnreadNotifications(0);
       setLoading(false);
+    } else if (authLoading) {
+      // Still loading, show loading state
+      setLoading(true);
     }
 
     return () => {

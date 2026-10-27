@@ -90,13 +90,9 @@ export async function requireOrg(): Promise<{ userId: string; user: AuthUserReco
     redirect('/')
   }
 
-  if (!ctx.org.is_otp_verified) {
-    redirect('/verify-org')
-  }
-
-  if (!ctx.org.is_approved) {
-    redirect('/pending-approval')
-  }
+  // NOTE: OTP and approval redirects are handled by middleware to avoid cascading redirects.
+  // The layout should not perform redirects that middleware already handles.
+  // This prevents the "too many attempts to navigate" error.
 
   return {
     userId: ctx.userId!,

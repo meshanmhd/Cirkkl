@@ -39,6 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshAuth = useCallback(async () => {
     try {
+      setLoading(true);
       const me = await api.auth.me();
       setUser({
         id: me.userId,
@@ -62,8 +63,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let ignore = false;
-    api.auth.me()
-      .then((me) => {
+    
+    const initializeAuth = async () => {
+      try {
+        const me = await api.auth.me();
         if (ignore) return;
         setUser({
           id: me.userId,
@@ -76,17 +79,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
         setRole(me.role);
         setOrg(me.org || null);
-      })
-      .catch(() => {
+      } catch (error) {
         if (ignore) return;
+        // Silently fail - user is not authenticated
         setUser(null);
         setRole(null);
         setOrg(null);
-      })
-      .finally(() => {
-        if (ignore) return;
-        setLoading(false);
-      });
+      } finally {
+        if (!ignore) {
+          setLoading(false);
+        }
+      }
+    };
+
+    initializeAuth();
 
     return () => {
       ignore = true;
