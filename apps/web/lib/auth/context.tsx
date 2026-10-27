@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { usePathname } from "next/navigation";
 import { api } from "@/lib/api";
 
 export interface AuthUserRecord {
@@ -36,11 +37,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [role, setRole] = useState<string | null>(null);
   const [org, setOrg] = useState<{ isOtpVerified: boolean; isApproved: boolean } | null>(null);
   const [loading, setLoading] = useState(true);
+  const pathname = usePathname();
 
   const refreshAuth = useCallback(async () => {
     try {
-      setLoading(true);
       const me = await api.auth.me();
+      if (!me) {
+        setUser(null);
+        setRole(null);
+        setOrg(null);
+        return;
+      }
       setUser({
         id: me.userId,
         role: me.role,
@@ -63,21 +70,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let ignore = false;
-    
-    const initializeAuth = async () => {
-      // Skip auth fetch on protected routes - server components handle auth
-      // This prevents redundant API calls and potential race conditions
-      const protectedPaths = ['/dashboard', '/verify-org', '/pending-approval', '/profile'];
-      const isProtectedPath = protectedPaths.some(path => window.location.pathname.startsWith(path));
-      
-      if (isProtectedPath) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const me = await api.auth.me();
+    api.auth
+      .me()
+      .then((me) => {
         if (ignore) return;
+        if (!me) {
+          setUser(null);
+          setRole(null);
+          setOrg(null);
+          return;
+        }
         setUser({
           id: me.userId,
           role: me.role,
@@ -89,25 +91,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
         setRole(me.role);
         setOrg(me.org || null);
-      } catch (error) {
+      })
+      .catch(() => {
         if (ignore) return;
-        // Silently fail - user is not authenticated
         setUser(null);
         setRole(null);
         setOrg(null);
-      } finally {
+      })
+      .finally(() => {
         if (!ignore) {
           setLoading(false);
         }
-      }
-    };
-
-    initializeAuth();
+      });
 
     return () => {
       ignore = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!user && !loading) {
+      refreshAuth();
+    }
+  }, [pathname, user, loading, refreshAuth]);
+
+  useEffect(() => {
+    const handleFocus = () => {
+      if (!user && !loading) {
+        refreshAuth();
+      }
+    };
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, [user, loading, refreshAuth]);
 
   return (
     <AuthContext.Provider value={{ user, role, org, loading, refreshAuth }}>

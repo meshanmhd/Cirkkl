@@ -32,3 +32,17 @@ UPDATE members SET name = full_name WHERE name IS NULL;
 
 ALTER TABLE notifications ADD COLUMN IF NOT EXISTS is_read boolean DEFAULT false;
 UPDATE notifications SET is_read = COALESCE(read, false) WHERE is_read IS NULL;
+
+ALTER TABLE members ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now();
+UPDATE members SET created_at = COALESCE(joined_at, now()) WHERE created_at IS NULL;
+
+ALTER TABLE members ADD COLUMN IF NOT EXISTS user_id uuid;
+UPDATE members SET user_id = id WHERE user_id IS NULL;
+
+CREATE TABLE IF NOT EXISTS event_roles (
+  id uuid PRIMARY KEY,
+  event_id text NOT NULL,
+  user_id text NOT NULL,
+  role text NOT NULL,
+  created_at timestamp with time zone DEFAULT now()
+);

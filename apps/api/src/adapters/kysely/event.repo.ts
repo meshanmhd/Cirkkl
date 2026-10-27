@@ -34,26 +34,65 @@ export class KyselyEventRepo implements EventRepo {
       }
     }
 
+    let tags: string[] = [];
+    if (row.tags) {
+      if (Array.isArray(row.tags)) {
+        tags = row.tags;
+      } else if (typeof row.tags === "string") {
+        try {
+          tags = JSON.parse(row.tags);
+        } catch {
+          tags = row.tags.split(",").map((t: string) => t.trim()).filter(Boolean);
+        }
+      }
+    }
+
+    const isPaid = row.is_paid !== undefined ? Boolean(row.is_paid) : (row.price === "paid");
+    const price = row.price ? (row.price.toLowerCase() === "paid" ? "paid" : "free") : (isPaid ? "paid" : "free");
+    const seats = row.seats !== undefined && row.seats !== null ? Number(row.seats) : (row.capacity !== undefined && row.capacity !== null ? Number(row.capacity) : null);
+    const seatsAvailable = row.seats_available !== undefined && row.seats_available !== null ? Number(row.seats_available) : (row.seatsAvailable !== undefined && row.seatsAvailable !== null ? Number(row.seatsAvailable) : seats);
+    const priceAmount = row.price_amount !== undefined && row.price_amount !== null ? Number(row.price_amount) : (row.priceAmount !== undefined && row.priceAmount !== null ? Number(row.priceAmount) : null);
+
     return {
       id: row.id,
       organisationId: row.org_id,
       title: row.title,
       slug: row.slug,
       description: row.description,
-      venue: row.venue,
-      city: row.city,
-      startDate: new Date(row.start_date),
+      tagline: row.tagline ?? null,
+      category: row.category ?? null,
+      organizer: row.organizer ?? null,
+      venue: row.venue ?? null,
+      city: row.city ?? null,
+      startDate: new Date(row.start_date || row.date),
       endDate: row.end_date ? new Date(row.end_date) : null,
+      time: row.time ?? null,
+      endTime: row.end_time ?? null,
+      location: row.location ?? row.venue ?? row.city ?? null,
+      locationType: row.location_type ?? "physical",
+      locationLink: row.location_link ?? null,
+      meetingLink: row.meeting_link ?? null,
+      platform: row.platform ?? null,
       registrationDeadline: row.registration_deadline ? new Date(row.registration_deadline) : null,
+      registrationEndTime: row.registration_end_time ?? null,
       status: row.status as EventStatus,
       visibility: row.visibility as EventVisibility,
-      isFeatured: Boolean(row.is_featured),
-      isPaid: Boolean(row.is_paid),
+      isFeatured: Boolean(row.is_featured || row.featured),
+      isPaid,
+      price,
+      priceAmount,
+      seats,
+      seatsAvailable,
+      approvalRequired: Boolean(row.approval_required),
+      cancellationPolicy: row.cancellation_policy ?? null,
+      refundPolicy: row.refund_policy ?? null,
+      photographyPolicy: row.photography_policy ?? null,
+      tags,
       isTeamEvent: Boolean(row.is_team_event),
-      minTeamSize: row.min_team_size,
-      maxTeamSize: row.max_team_size,
-      bannerUrl: row.banner_url,
-      posterUrl: row.poster_url,
+      minTeamSize: row.min_team_size ?? row.team_min_size ?? null,
+      maxTeamSize: row.max_team_size ?? row.team_max_size ?? null,
+      bannerUrl: row.banner_url || row.image || null,
+      posterUrl: row.poster_url || row.poster_image || null,
       speakers,
       customFields,
       createdAt: new Date(row.created_at),
@@ -83,13 +122,15 @@ export class KyselyEventRepo implements EventRepo {
     return row ? this.mapRowToEvent(row) : null;
   }
 
-  async findOrgEvent(id: string, orgId: string): Promise<Event | null> {
-    const row = await this.db
-      .selectFrom("events")
-      .selectAll()
-      .where("id", "=", id)
-      .where("org_id", "=", orgId)
-      .executeTakeFirst();
+  async findOrgEvent(idOrSlug: string, orgId: string): Promise<Event | null> {
+    let query = this.db.selectFrom("events").selectAll().where("org_id", "=", orgId);
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrSlug);
+    if (isUuid) {
+      query = query.where((eb) => eb.or([eb("id", "=", idOrSlug), eb("slug", "=", idOrSlug)]));
+    } else {
+      query = query.where("slug", "=", idOrSlug);
+    }
+    const row = await query.executeTakeFirst();
     return row ? this.mapRowToEvent(row) : null;
   }
 
@@ -105,9 +146,19 @@ export class KyselyEventRepo implements EventRepo {
 
     const now = new Date();
     if (filters.timeFilter === "upcoming") {
-      query = query.where("start_date", ">=", now);
+      query = query.where((eb) =>
+        eb.or([
+          eb("start_date", ">=", now),
+          eb("end_date", ">=", now),
+        ])
+      );
     } else if (filters.timeFilter === "past") {
-      query = query.where("start_date", "<", now);
+      query = query.where((eb) =>
+        eb.and([
+          eb("start_date", "<", now),
+          eb.or([eb("end_date", "is", null), eb("end_date", "<", now)]),
+        ])
+      );
     }
 
     if (filters.search) {
@@ -307,12 +358,12 @@ export class KyselyEventRepo implements EventRepo {
   async findHosts(eventId: string): Promise<EventHost[]> {
     const rows = await this.db
       .selectFrom("members")
-      .select(["id", "name", "role", "avatar_url"])
+      .select(["id", "user_id", "name", "role", "avatar_url"])
       .where("org_id", "=", (eb) => eb.selectFrom("events").select("org_id").where("id", "=", eventId))
       .execute();
 
     return rows.map((r) => ({
-      id: r.id,
+      id: r.user_id || r.id,
       name: r.name,
       role: r.role,
       avatarUrl: r.avatar_url ?? undefined,
@@ -320,13 +371,17 @@ export class KyselyEventRepo implements EventRepo {
   }
 
   async findRoles(eventId: string): Promise<Array<{ id: string; eventId: string; userId: string; role: string }>> {
-    const rows = await this.db.selectFrom("event_roles").selectAll().where("event_id", "=", eventId).execute();
-    return rows.map((r) => ({
-      id: r.id,
-      eventId: r.event_id,
-      userId: r.user_id,
-      role: r.role,
-    }));
+    try {
+      const rows = await this.db.selectFrom("event_roles").selectAll().where("event_id", "=", eventId).execute();
+      return rows.map((r) => ({
+        id: r.id,
+        eventId: r.event_id,
+        userId: r.user_id,
+        role: r.role,
+      }));
+    } catch {
+      return [];
+    }
   }
 
   async assignRole(

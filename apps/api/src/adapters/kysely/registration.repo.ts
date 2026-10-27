@@ -8,9 +8,10 @@ export class KyselyRegistrationRepo implements RegistrationRepo {
 
   private mapRow(row: any): Registration {
     let fieldValues: Record<string, string> = {};
-    if (row.field_values) {
+    const rawFields = row.custom_field_values ?? row.field_values;
+    if (rawFields) {
       try {
-        fieldValues = typeof row.field_values === "string" ? JSON.parse(row.field_values) : row.field_values;
+        fieldValues = typeof rawFields === "string" ? JSON.parse(rawFields) : rawFields;
       } catch {
         fieldValues = {};
       }
@@ -20,12 +21,12 @@ export class KyselyRegistrationRepo implements RegistrationRepo {
       id: row.id,
       eventId: row.event_id,
       userId: row.user_id,
-      ticketId: row.ticket_id,
+      ticketId: row.ticket_tier_id ?? row.ticket_id ?? null,
       ticketCode: row.ticket_code,
       status: row.status as RegistrationStatus,
       attended: Boolean(row.attended),
       attendedAt: row.attended_at ? new Date(row.attended_at) : null,
-      isTeam: Boolean(row.is_team),
+      isTeam: Boolean(row.is_team || row.team_id),
       teamId: row.team_id,
       fieldValues,
       transactionId: row.transaction_id,
@@ -67,10 +68,10 @@ export class KyselyRegistrationRepo implements RegistrationRepo {
     eventId: string,
     cklId: string
   ): Promise<{ id: string; displayName: string; isRegistered: boolean; isInTeam: boolean } | null> {
-    const user = await this.db
-      .selectFrom("users")
+    const user = await (this.db as any)
+      .selectFrom("profiles")
       .select(["id", "full_name"])
-      .where("ckl_id", "=", cklId)
+      .where("id", "=", cklId)
       .executeTakeFirst();
 
     if (!user) {
@@ -149,23 +150,9 @@ export class KyselyRegistrationRepo implements RegistrationRepo {
   ): Promise<Array<Registration & { eventTitle: string; eventDate?: Date }>> {
     const directRows = await this.db
       .selectFrom("registrations")
+      .selectAll("registrations")
       .innerJoin("events", "events.id", "registrations.event_id")
       .select([
-        "registrations.id",
-        "registrations.event_id",
-        "registrations.user_id",
-        "registrations.ticket_id",
-        "registrations.ticket_code",
-        "registrations.status",
-        "registrations.attended",
-        "registrations.attended_at",
-        "registrations.is_team",
-        "registrations.team_id",
-        "registrations.field_values",
-        "registrations.transaction_id",
-        "registrations.payment_proof_url",
-        "registrations.created_at",
-        "registrations.updated_at",
         "events.title as event_title",
         "events.start_date as event_start_date",
       ])
@@ -178,22 +165,8 @@ export class KyselyRegistrationRepo implements RegistrationRepo {
       .innerJoin("teams", "teams.id", "team_members.team_id")
       .innerJoin("registrations", "registrations.team_id", "teams.id")
       .innerJoin("events", "events.id", "teams.event_id")
+      .selectAll("registrations")
       .select([
-        "registrations.id",
-        "registrations.event_id",
-        "registrations.user_id",
-        "registrations.ticket_id",
-        "registrations.ticket_code",
-        "registrations.status",
-        "registrations.attended",
-        "registrations.attended_at",
-        "registrations.is_team",
-        "registrations.team_id",
-        "registrations.field_values",
-        "registrations.transaction_id",
-        "registrations.payment_proof_url",
-        "registrations.created_at",
-        "registrations.updated_at",
         "events.title as event_title",
         "events.start_date as event_start_date",
       ])
@@ -236,20 +209,19 @@ export class KyselyRegistrationRepo implements RegistrationRepo {
 
   async create(data: Omit<Registration, "id" | "createdAt" | "updatedAt">): Promise<Registration> {
     const id = crypto.randomUUID();
-    await this.db
+    await (this.db as any)
       .insertInto("registrations")
       .values({
         id,
         event_id: data.eventId,
         user_id: data.userId,
-        ticket_id: data.ticketId ?? null,
+        ticket_tier_id: data.ticketId ?? null,
         ticket_code: data.ticketCode,
         status: data.status,
         attended: data.attended,
         attended_at: data.attendedAt ?? null,
-        is_team: data.isTeam,
         team_id: data.teamId ?? null,
-        field_values: data.fieldValues ? JSON.stringify(data.fieldValues) : null,
+        custom_field_values: data.fieldValues ? JSON.stringify(data.fieldValues) : null,
         transaction_id: data.transactionId ?? null,
         payment_proof_url: data.paymentProofKey ?? null,
       })
@@ -268,14 +240,14 @@ export class KyselyRegistrationRepo implements RegistrationRepo {
     if (data.attended !== undefined) values.attended = data.attended;
     if (data.attendedAt !== undefined) values.attended_at = data.attendedAt;
     if (data.ticketCode !== undefined) values.ticket_code = data.ticketCode;
-    if (data.ticketId !== undefined) values.ticket_id = data.ticketId;
+    if (data.ticketId !== undefined) values.ticket_tier_id = data.ticketId;
     if (data.teamId !== undefined) values.team_id = data.teamId;
     if (data.transactionId !== undefined) values.transaction_id = data.transactionId;
     if (data.paymentProofKey !== undefined) values.payment_proof_url = data.paymentProofKey;
-    if (data.fieldValues !== undefined) values.field_values = JSON.stringify(data.fieldValues);
+    if (data.fieldValues !== undefined) values.custom_field_values = JSON.stringify(data.fieldValues);
 
     if (Object.keys(values).length > 0) {
-      await this.db.updateTable("registrations").set(values).where("id", "=", id).execute();
+      await (this.db as any).updateTable("registrations").set(values).where("id", "=", id).execute();
     }
 
     const updated = await this.findById(id);

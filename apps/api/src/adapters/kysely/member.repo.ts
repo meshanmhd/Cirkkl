@@ -10,13 +10,13 @@ export class KyselyMemberRepo implements MemberRepo {
     return {
       id: row.id,
       organisationId: row.org_id,
-      userId: row.user_id,
-      name: row.name,
+      userId: row.user_id || row.id,
+      name: row.name || row.full_name || "Member",
       email: row.email,
       role: row.role,
       department: row.department,
       avatarUrl: row.avatar_url,
-      createdAt: new Date(row.created_at),
+      createdAt: new Date(row.created_at ?? row.joined_at ?? Date.now()),
     };
   }
 

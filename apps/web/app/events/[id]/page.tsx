@@ -1,4 +1,5 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { getAuthContext } from "@/lib/auth/server";
 import Link from "next/link";
 import { ArrowLeft, Calendar, Clock, MapPin, Ticket, User, Users, Globe, ExternalLink, Info, ShieldCheck, Banknote, Camera } from "lucide-react";
 import { Metadata } from "next";
@@ -27,6 +28,11 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 }
 
 export default async function EventPage({ params }: { params: Promise<{ id: string }> }) {
+  const auth = await getAuthContext();
+  if (auth.role === "organisation" || auth.org) {
+    redirect("/dashboard/events");
+  }
+
   const { id } = await params;
   let apiEvent;
   try {
@@ -143,7 +149,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
             <ShareButton 
                url={`https://cirkkl.com/events/${event.id}`} 
                title={event.title} 
-               description={event.description}
+               description={event.description ?? undefined}
             />
           </div>
         </div>

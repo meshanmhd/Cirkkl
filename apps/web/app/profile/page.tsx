@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { getAuthContext } from "@/lib/auth/server";
 import { ProfilePage } from "@/components/ProfilePage";
 import { api } from "@/lib/api";
 
@@ -8,6 +9,11 @@ export const metadata = {
 };
 
 export default async function ProfileRoute() {
+  const auth = await getAuthContext();
+  if (auth.role === "organisation" || auth.org) {
+    redirect("/dashboard/events");
+  }
+
   let profileData;
   try {
     const res = await api.profile.get();

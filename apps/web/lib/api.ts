@@ -349,8 +349,15 @@ export const api = {
         ResendOrgOtpOutputSchema
       );
     },
-    me: async (): Promise<MeOutput> => {
-      return request<MeOutput>("/api/v1/auth/me", { method: "GET" }, MeOutputSchema);
+    me: async (): Promise<MeOutput | null> => {
+      try {
+        return await request<MeOutput>("/api/v1/auth/me", { method: "GET" }, MeOutputSchema);
+      } catch (err: unknown) {
+        if (err instanceof ApiError && (err.status === 401 || err.code === "UNAUTHORIZED")) {
+          return null;
+        }
+        throw err;
+      }
     },
   },
   events: {

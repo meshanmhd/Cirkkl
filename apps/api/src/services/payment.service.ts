@@ -17,7 +17,7 @@ export class PaymentService {
       throw notFound("Ticket not found for event");
     }
 
-    if (ticket.availableQuantity <= 0) {
+    if (ticket.availableQuantity !== null && ticket.availableQuantity <= 0) {
       throw badRequest("Ticket tier is sold out");
     }
 
