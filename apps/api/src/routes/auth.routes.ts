@@ -82,17 +82,18 @@ export function createAuthRoutes(authService: AuthService) {
 
   router.get("/me", requireUser(), async (c) => {
     const caller = c.get("caller");
-    const me = await authService.getMe(caller.userId);
+    const me = await authService.getMe(caller.userId, caller.email);
+    
     return c.json(
       {
         userId: me.userId,
-        email: me.email,
+        email: me.email || null,
         role: me.role,
         org: me.org,
         user: {
           id: me.userId,
-          email: me.email,
-          name: "",
+          email: me.email || null,
+          name: me.org ? (me.org.name || "Organisation") : "",
           role: me.role,
         },
       },

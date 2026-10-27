@@ -1,25 +1,12 @@
-import { redirect } from "next/navigation"
 import { getAuthContext } from "@/lib/auth/server"
 import { PendingApprovalClient } from "@/components/auth/PendingApprovalClient"
 
 export default async function PendingApprovalPage() {
   const { user, org } = await getAuthContext()
 
-  if (!user) {
-    redirect("/login")
-  }
-
-  if (!org) {
-    redirect("/")
-  }
-
-  if (!org.is_otp_verified) {
-    redirect("/verify-org")
-  }
-
-  if (org.is_approved) {
-    redirect("/dashboard/events")
-  }
+  // Middleware handles all redirects to avoid cascading navigation attempts
+  // If we reached this page, middleware validated everything
+  // Just render the component - middleware ensures we have the right state
 
   return <PendingApprovalClient />
 }

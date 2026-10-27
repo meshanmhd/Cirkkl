@@ -5,7 +5,7 @@ import { api } from "@/lib/api";
 
 export interface AuthUserRecord {
   id: string;
-  email?: string;
+  email?: string | null;
   name?: string;
   role?: string;
   user_metadata?: {
@@ -43,12 +43,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const me = await api.auth.me();
       setUser({
         id: me.userId,
-        email: me.email,
         role: me.role,
         user_metadata: {
           full_name: me.user?.name || (me.role === "organisation" ? "Organisation" : undefined),
         },
         ...me.user,
+        email: me.user?.email || me.email || undefined,
       });
       setRole(me.role);
       setOrg(me.org || null);
@@ -65,17 +65,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let ignore = false;
     
     const initializeAuth = async () => {
+      // Skip auth fetch on protected routes - server components handle auth
+      // This prevents redundant API calls and potential race conditions
+      const protectedPaths = ['/dashboard', '/verify-org', '/pending-approval', '/profile'];
+      const isProtectedPath = protectedPaths.some(path => window.location.pathname.startsWith(path));
+      
+      if (isProtectedPath) {
+        setLoading(false);
+        return;
+      }
+
       try {
         const me = await api.auth.me();
         if (ignore) return;
         setUser({
           id: me.userId,
-          email: me.email,
           role: me.role,
           user_metadata: {
             full_name: me.user?.name || (me.role === "organisation" ? "Organisation" : undefined),
           },
           ...me.user,
+          email: me.user?.email || me.email || undefined,
         });
         setRole(me.role);
         setOrg(me.org || null);

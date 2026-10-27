@@ -6,8 +6,8 @@ export type UserRole = z.infer<typeof UserRoleSchema>;
 
 export const AuthUserSchema = z.object({
   id: z.string().uuid(),
-  email: z.string().email(),
-  name: z.string(),
+  email: z.string().nullable().optional(),
+  name: z.string().optional(),
   role: UserRoleSchema,
   qrCode: z.string().nullable().optional(),
 });
@@ -92,15 +92,23 @@ export type MeInput = z.infer<typeof MeInputSchema>;
 
 export const MeOutputSchema = z.object({
   userId: z.string().uuid(),
-  email: z.string().email(),
+  email: z.string().nullable().optional(),
   role: UserRoleSchema,
   org: z
     .object({
+      name: z.string().optional(),
       isOtpVerified: z.boolean(),
       isApproved: z.boolean(),
     })
     .optional(),
-  user: AuthUserSchema.optional(),
+  user: z
+    .object({
+      id: z.string().uuid(),
+      email: z.string().nullable().optional(),
+      name: z.string().optional(),
+      role: UserRoleSchema,
+    })
+    .optional(),
 });
 export type MeOutput = z.infer<typeof MeOutputSchema>;
 

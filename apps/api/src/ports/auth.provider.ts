@@ -1,7 +1,7 @@
 import { UserRole } from "./domain";
 
 export interface AuthProvider {
-  verifyToken(token: string): Promise<{ userId: string }>;
+  verifyToken(token: string): Promise<{ userId: string; email?: string }>;
   signup(params: {
     email: string;
     password: string;

@@ -15,7 +15,7 @@ export interface OrganisationRecord {
 
 export interface AuthUserRecord {
   id: string
-  email?: string
+  email?: string | null
   role?: string
   user_metadata?: {
     full_name?: string
@@ -34,32 +34,43 @@ export interface AuthContext {
 export async function getAuthContext(): Promise<AuthContext> {
   try {
     const me = await api.auth.me()
+    console.log('[getAuthContext] API response:', JSON.stringify(me, null, 2))
+    
     const isOrg = me.role === 'organisation' || !!me.org
     const orgRecord: OrganisationRecord | null = isOrg
       ? {
           id: me.userId,
-          name: me.user?.name || '',
-          org_email: me.email,
+          name: me.org?.name || me.user?.name || '',
+          org_email: me.email || '',
           is_approved: me.org?.isApproved ?? false,
           is_otp_verified: me.org?.isOtpVerified ?? false,
         }
       : null
 
+    console.log('[getAuthContext] Returning:', {
+      userId: me.userId,
+      hasUser: true,
+      role: me.role,
+      hasOrg: !!orgRecord,
+      orgName: orgRecord?.name
+    })
+
     return {
       userId: me.userId,
       user: {
         id: me.userId,
-        email: me.email,
         role: me.role,
         user_metadata: {
-          full_name: me.user?.name || (isOrg ? 'Organisation' : undefined),
+          full_name: me.org?.name || me.user?.name || (isOrg ? 'Organisation' : undefined),
         },
         ...me.user,
+        email: me.user?.email || me.email || '',
       },
       role: me.role as UserRole,
       org: orgRecord,
     }
-  } catch {
+  } catch (error) {
+    console.error('[getAuthContext] Error:', error)
     return {
       userId: null,
       user: null,

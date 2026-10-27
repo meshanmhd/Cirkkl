@@ -8,6 +8,7 @@ import { encryptOtp } from "../crypto";
 
 export interface CallerContext {
   userId: string;
+  email?: string;
   role: UserRole;
   orgId?: string;
   isOrgApproved?: boolean;
@@ -231,12 +232,13 @@ export class AuthService {
   }
 
   async getCaller(token: string): Promise<CallerContext> {
-    const { userId } = await this.authProvider.verifyToken(token);
+    const { userId, email } = await this.authProvider.verifyToken(token);
     const org = (await this.orgRepo.findById(userId)) ?? (await this.orgRepo.findByOwnerId(userId));
 
     if (org) {
       return {
         userId,
+        email: email ?? org.email,
         role: "organiser",
         orgId: org.id,
         isOrgApproved: org.status === "approved" && org.isOtpVerified,
@@ -245,42 +247,58 @@ export class AuthService {
 
     return {
       userId,
+      email,
       role: "attendee",
     };
   }
 
-  async getMe(userId: string): Promise<{
+  async getMe(userId: string, userEmail?: string): Promise<{
     userId: string;
-    email: string;
+    email: string | null;
     role: "organisation" | "member";
     org?: {
+      name?: string;
       isOtpVerified: boolean;
       isApproved: boolean;
     };
   }> {
-    const org = (await this.orgRepo.findById(userId)) ?? (await this.orgRepo.findByOwnerId(userId));
-    if (org) {
+    try {
+      const org = (await this.orgRepo.findById(userId)) ?? (await this.orgRepo.findByOwnerId(userId));
+      if (org) {
+        return {
+          userId,
+          email: userEmail || org.email || null,
+          role: "organisation",
+          org: {
+            name: org.name,
+            isOtpVerified: org.isOtpVerified,
+            isApproved: org.status === "approved",
+          },
+        };
+      }
+
+      let email = userEmail || "";
+      if (!email && this.profileRepo) {
+        try {
+          const profile = await this.profileRepo.findByUserId(userId);
+          if (profile?.email) email = profile.email;
+        } catch (profileError) {
+          console.error(`Error fetching profile for user ${userId}:`, profileError);
+        }
+      }
+
       return {
         userId,
-        email: org.email,
-        role: "organisation",
-        org: {
-          isOtpVerified: org.isOtpVerified,
-          isApproved: org.status === "approved",
-        },
+        email: email || null,
+        role: "member",
+      };
+    } catch (error) {
+      console.error(`Error in getMe for user ${userId}:`, error);
+      return {
+        userId,
+        email: userEmail || null,
+        role: "member",
       };
     }
-
-    let email = "";
-    if (this.profileRepo) {
-      const profile = await this.profileRepo.findByUserId(userId);
-      if (profile) email = profile.email;
-    }
-
-    return {
-      userId,
-      email,
-      role: "member",
-    };
   }
 }

@@ -185,8 +185,11 @@ async function getServerAccessToken(): Promise<string | undefined> {
   try {
     const { cookies } = await import("next/headers");
     const cookieStore = await cookies();
-    return cookieStore.get(ACCESS_TOKEN_COOKIE)?.value;
-  } catch {
+    const token = cookieStore.get(ACCESS_TOKEN_COOKIE)?.value;
+    console.log('[API] getServerAccessToken:', token ? `Found (${token.substring(0, 20)}...)` : 'NOT FOUND');
+    return token;
+  } catch (error) {
+    console.log('[API] getServerAccessToken error:', error);
     return undefined;
   }
 }
