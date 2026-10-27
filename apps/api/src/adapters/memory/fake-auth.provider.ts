@@ -18,12 +18,13 @@ export class MemoryAuthProvider implements AuthProvider {
     this.users.set(user.id, user);
   }
 
-  async verifyToken(token: string): Promise<{ userId: string }> {
+  async verifyToken(token: string): Promise<{ userId: string; email?: string }> {
     const userId = this.tokens.get(token);
     if (!userId) {
       throw unauthorized("Invalid token");
     }
-    return { userId };
+    const user = this.users.get(userId);
+    return { userId, email: user?.email };
   }
 
   async signup(params: {

@@ -14,7 +14,7 @@ import {
 
 export interface DashboardUser {
   id: string;
-  email?: string;
+  email?: string | null;
   user_metadata?: {
     full_name?: string;
   };
@@ -38,7 +38,7 @@ interface DashboardTopBarProps {
 export function DashboardTopBar({ user }: DashboardTopBarProps) {
   const router = useRouter();
 
-  const fullName = user.user_metadata?.full_name || user.email?.split("@")[0] || "Club Admin";
+  const fullName = user.user_metadata?.full_name || user.email?.split("@")[0] || "Organization";
   const initials = getInitials(fullName);
 
   const handleSignOut = async () => {
@@ -61,7 +61,7 @@ export function DashboardTopBar({ user }: DashboardTopBarProps) {
         <DropdownMenu>
           <DropdownMenuTrigger className="rounded-full outline-none ring-2 ring-transparent focus-visible:ring-[#cfe467] transition-all">
             <Avatar className="h-9 w-9 border border-[#E5E5EA]">
-              <AvatarImage src={`https://api.dicebear.com/7.x/notionists/svg?seed=${user.id}`} alt={fullName} />
+              <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${fullName}`} alt={fullName} />
               <AvatarFallback className="bg-[#F5F5F7] text-[#111111] font-medium text-xs">
                 {initials}
               </AvatarFallback>
@@ -70,7 +70,7 @@ export function DashboardTopBar({ user }: DashboardTopBarProps) {
           <DropdownMenuContent align="end" className="w-56 rounded-xl border-[#E5E5EA] p-2 bg-white mt-1">
             <div className="px-2 py-2">
               <p className="text-sm font-semibold text-[#111111]">{fullName}</p>
-              <p className="text-xs text-[#6E6E73] truncate">{user.email}</p>
+              <p className="text-xs text-[#6E6E73] truncate">{user.email || ''}</p>
             </div>
             <DropdownMenuSeparator className="bg-[#E5E5EA] my-1" />
             <DropdownMenuItem className="cursor-pointer rounded-lg px-2 py-2 text-sm text-[#111111] hover:bg-[#F5F5F7] focus:bg-[#F5F5F7]">

@@ -29,7 +29,7 @@ interface EventRegistration {
 
 interface MenuUser {
   id: string;
-  email?: string;
+  email?: string | null;
   user_metadata?: {
     full_name?: string;
     [key: string]: unknown;

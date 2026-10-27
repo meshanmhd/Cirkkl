@@ -25,6 +25,7 @@ export class KyselyOrganisationRepo implements OrganisationRepo {
 
   async findById(id: string): Promise<Organisation | null> {
     const row = await this.db.selectFrom("organisations").selectAll().where("id", "=", id).executeTakeFirst();
+    console.log(`[OrgRepo] findById(${id}):`, row ? "FOUND" : "NOT FOUND");
     return row ? this.mapRow(row) : null;
   }
 

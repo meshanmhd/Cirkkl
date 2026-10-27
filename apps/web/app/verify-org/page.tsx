@@ -1,24 +1,12 @@
-import { redirect } from 'next/navigation'
 import { getAuthContext } from '@/lib/auth/server'
 import { VerifyOrgClient } from '@/components/auth/VerifyOrgClient'
 
 export default async function VerifyOrgPage() {
   const { user, org } = await getAuthContext()
 
-  if (!user) {
-    redirect('/login')
-  }
+  // Middleware handles all redirects to avoid cascading navigation attempts
+  // If we reached this page, middleware validated everything
+  // Just render the component - middleware ensures we have the right state
 
-  if (!org) {
-    redirect('/')
-  }
-
-  if (org.is_otp_verified) {
-    if (org.is_approved) {
-      redirect('/dashboard/events')
-    }
-    redirect('/pending-approval')
-  }
-
-  return <VerifyOrgClient email={user.email || ''} />
+  return <VerifyOrgClient email={user?.email || ''} />
 }

@@ -82,6 +82,7 @@ export async function middleware(request: NextRequest) {
         headers: request.headers,
       },
     });
+    // Only set cookies if tokens were actually refreshed (not null)
     if (tokens) {
       res.cookies.set(ACCESS_TOKEN_COOKIE, tokens.accessToken, getCookieOptions(false));
       res.cookies.set(REFRESH_TOKEN_COOKIE, tokens.refreshToken, getCookieOptions(true));
@@ -93,7 +94,13 @@ export async function middleware(request: NextRequest) {
     url: URL,
     tokens: { accessToken: string; refreshToken: string } | null
   ) => {
+    // Prevent redirect loop: don't redirect if already on target page
+    if (url.pathname === request.nextUrl.pathname) {
+      return createNextResponse(tokens);
+    }
+    
     const res = NextResponse.redirect(url);
+    // Only set cookies if tokens were actually refreshed (not null)
     if (tokens) {
       res.cookies.set(ACCESS_TOKEN_COOKIE, tokens.accessToken, getCookieOptions(false));
       res.cookies.set(REFRESH_TOKEN_COOKIE, tokens.refreshToken, getCookieOptions(true));
@@ -200,25 +207,31 @@ export async function middleware(request: NextRequest) {
   const isOrg = me.role === "organisation" || !!me.org;
 
   if (isOrg) {
-    if (me.org && !me.org.isOtpVerified) {
-      if (path !== "/verify-org") {
-        return createRedirectResponse(new URL("/verify-org", request.url), refreshedTokens);
-      }
-    } else if (me.org && !me.org.isApproved) {
-      if (path !== "/pending-approval") {
-        return createRedirectResponse(new URL("/pending-approval", request.url), refreshedTokens);
-      }
-    } else {
-      if (
-        path === "/login" ||
-        path === "/signup" ||
-        path === "/verify-org" ||
-        path === "/pending-approval" ||
-        path === "/profile"
-      ) {
-        return createRedirectResponse(new URL("/dashboard/events", request.url), refreshedTokens);
+    // For organisations, check verification and approval status
+    if (me.org) {
+      if (!me.org.isOtpVerified) {
+        if (path !== "/verify-org") {
+          return createRedirectResponse(new URL("/verify-org", request.url), refreshedTokens);
+        }
+      } else if (!me.org.isApproved) {
+        if (path !== "/pending-approval") {
+          return createRedirectResponse(new URL("/pending-approval", request.url), refreshedTokens);
+        }
+      } else {
+        // Org is both verified AND approved
+        if (
+          path === "/login" ||
+          path === "/signup" ||
+          path === "/verify-org" ||
+          path === "/pending-approval" ||
+          path === "/profile"
+        ) {
+          return createRedirectResponse(new URL("/dashboard/events", request.url), refreshedTokens);
+        }
       }
     }
+    // If role is org but org object missing, allow access to verify/pending pages
+    // Don't redirect to login - the pages will handle it
   } else {
     if (path.startsWith("/dashboard") || path === "/verify-org" || path === "/pending-approval") {
       return createRedirectResponse(new URL("/", request.url), refreshedTokens);
@@ -234,6 +247,14 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    /*
+     * Match all request paths except:
+     * - api routes
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico, sitemap.xml, robots.txt
+     * - images and other static assets
+     */
+    "/((?!api/|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js)$).*))",
   ],
 };

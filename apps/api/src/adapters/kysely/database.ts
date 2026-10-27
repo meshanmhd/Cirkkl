@@ -175,7 +175,6 @@ export interface AdminAuditLogTable {
 }
 
 export interface Database {
-  users: UsersTable;
   organisations: OrganisationsTable;
   profiles: ProfilesTable;
   events: EventsTable;

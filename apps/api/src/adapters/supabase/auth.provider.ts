@@ -15,12 +15,12 @@ export class SupabaseAuthProvider implements AuthProvider {
     });
   }
 
-  async verifyToken(token: string): Promise<{ userId: string }> {
+  async verifyToken(token: string): Promise<{ userId: string; email?: string }> {
     const { data, error } = await this.client.auth.getUser(token);
     if (error || !data.user) {
       throw unauthorized("Invalid or expired session token");
     }
-    return { userId: data.user.id };
+    return { userId: data.user.id, email: data.user.email };
   }
 
   async signup(params: {

@@ -1,4 +1,4 @@
-import { requireOrg } from "@/lib/auth/server";
+import { getAuthContext } from "@/lib/auth/server";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { DashboardTopBar } from "@/components/dashboard/DashboardTopBar";
 
@@ -7,7 +7,25 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user } = await requireOrg();
+  // Middleware handles authentication - if we reach here, user is authenticated
+  // We can't reliably call requireOrg() here due to Next.js cookie timing issues
+  // after server action redirects
+  const context = await getAuthContext()
+  
+  // Create user object with org name if available
+  const user = context.user || { 
+    id: '', 
+    email: '',
+    user_metadata: { full_name: context.org?.name || 'Organization' }
+  }
+  
+  // If org name exists, use it as display name
+  if (context.org?.name && user) {
+    user.user_metadata = { 
+      ...user.user_metadata,
+      full_name: context.org.name 
+    }
+  }
 
   return (
     <div className="flex min-h-screen bg-[#F7F7F8]">

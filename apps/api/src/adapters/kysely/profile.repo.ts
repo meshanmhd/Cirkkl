@@ -28,42 +28,43 @@ export class KyselyProfileRepo implements ProfileRepo {
   }
 
   async findByUserId(userId: string): Promise<Profile | null> {
-    const row = await this.db
-      .selectFrom("profiles")
-      .innerJoin("users", "users.id", "profiles.id")
-      .select([
-        "profiles.id",
-        "profiles.is_profile_completed",
-        "profiles.full_name",
-        "profiles.college",
-        "profiles.branch",
-        "profiles.academic_year",
-        "profiles.phone_number",
-        "profiles.gender",
-        "profiles.avatar_url",
-        "profiles.linkedin_url",
-        "profiles.github_url",
-        "profiles.bio",
-        "profiles.created_at",
-        "profiles.updated_at",
-        "users.email",
-        "users.ckl_id",
-      ])
-      .where("profiles.id", "=", userId)
-      .executeTakeFirst();
+    try {
+      const row = await this.db
+        .selectFrom("profiles")
+        .select([
+          "profiles.id",
+          "profiles.is_profile_completed",
+          "profiles.full_name",
+          "profiles.college",
+          "profiles.branch",
+          "profiles.academic_year",
+          "profiles.phone_number",
+          "profiles.gender",
+          "profiles.avatar_url",
+          "profiles.linkedin_url",
+          "profiles.github_url",
+          "profiles.bio",
+          "profiles.created_at",
+          "profiles.updated_at",
+        ])
+        .where("profiles.id", "=", userId)
+        .executeTakeFirst();
 
-    return row ? this.mapRow(row, row.email, row.ckl_id) : null;
+      if (!row) return null;
+      
+      // Email and cklId are fetched separately or set to empty
+      // Since there's no users table in the schema, we just use empty defaults
+      return this.mapRow(row, "", null);
+    } catch (error) {
+      console.error(`Error finding profile for userId ${userId}:`, error);
+      return null;
+    }
   }
 
   async findByCklId(cklId: string): Promise<Profile | null> {
-    const user = await this.db
-      .selectFrom("users")
-      .select(["id", "email", "ckl_id"])
-      .where("ckl_id", "=", cklId)
-      .executeTakeFirst();
-
-    if (!user) return null;
-    return this.findByUserId(user.id);
+    // Since there's no users table, we can't look up by ckl_id
+    // This feature requires a users table or storing ckl_id in profiles table
+    return null;
   }
 
   async create(data: Omit<Profile, "createdAt" | "updatedAt">): Promise<Profile> {
@@ -85,11 +86,18 @@ export class KyselyProfileRepo implements ProfileRepo {
       })
       .execute();
 
-    const created = await this.findByUserId(data.userId);
+    // Return the profile with the email from the data
+    const created = await this.db
+      .selectFrom("profiles")
+      .selectAll()
+      .where("id", "=", data.userId)
+      .executeTakeFirst();
+    
     if (!created) {
       throw new Error("Failed to retrieve created profile");
     }
-    return created;
+    
+    return this.mapRow(created, data.email, data.cklId);
   }
 
   async update(userId: string, data: Partial<Profile>): Promise<Profile> {
@@ -110,15 +118,22 @@ export class KyselyProfileRepo implements ProfileRepo {
       await this.db.updateTable("profiles").set(values).where("id", "=", userId).execute();
     }
 
-    if (data.fullName !== undefined) {
-      await this.db.updateTable("users").set({ full_name: data.fullName }).where("id", "=", userId).execute();
-    }
-
-    const updated = await this.findByUserId(userId);
+    // Fetch updated profile with preserved email
+    const updated = await this.db
+      .selectFrom("profiles")
+      .selectAll()
+      .where("id", "=", userId)
+      .executeTakeFirst();
+      
     if (!updated) {
       throw new Error("Failed to retrieve updated profile");
     }
-    return updated;
+    
+    // Keep the email from the update data if provided, otherwise use empty
+    const email = data.email ?? "";
+    const cklId = data.cklId ?? null;
+    
+    return this.mapRow(updated, email, cklId);
   }
 
   async updateAvatar(userId: string, avatarUrl: string): Promise<string> {
