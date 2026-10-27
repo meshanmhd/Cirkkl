@@ -63,18 +63,51 @@ export default async function ManageEventPage({ params }: { params: Promise<{ id
       event_id: r.eventId,
     }));
 
-    const orgMembers = membersData.items.map(m => ({
-      id: m.userId,
-      name: m.name,
-      full_name: m.name,
-      email: m.email,
-      role: m.role,
-      avatar_url: m.avatarUrl,
-    }));
+    const orgMembers = membersData.items.flatMap(m => [
+      {
+        id: m.userId,
+        name: m.name,
+        full_name: m.name,
+        email: m.email,
+        role: m.role,
+        avatar_url: m.avatarUrl,
+      },
+      {
+        id: m.id,
+        name: m.name,
+        full_name: m.name,
+        email: m.email,
+        role: m.role,
+        avatar_url: m.avatarUrl,
+      }
+    ]);
+
+    const mappedEvent = {
+      ...event,
+      end_date: event.endDate ?? (event as any).end_date,
+      end_time: event.endTime ?? (event as any).end_time,
+      location_type: event.locationType ?? (event as any).location_type,
+      location_link: event.locationLink ?? (event as any).location_link,
+      meeting_link: event.meetingLink ?? (event as any).meeting_link,
+      poster_image: event.posterImage ?? (event as any).poster_image,
+      image: event.image ?? (event as any).bannerUrl,
+      price_amount: event.priceAmount ?? (event as any).price_amount,
+      registration_deadline: event.registrationDeadline ?? (event as any).registration_deadline,
+      registration_end_time: event.registrationEndTime ?? (event as any).registration_end_time,
+      cancellation_policy: event.cancellationPolicy ?? (event as any).cancellation_policy,
+      refund_policy: event.refundPolicy ?? (event as any).refund_policy,
+      photography_policy: event.photographyPolicy ?? (event as any).photography_policy,
+      approval_required: event.approvalRequired ?? (event as any).approval_required,
+      is_team_event: event.isTeamEvent ?? (event as any).is_team_event,
+      team_min_size: event.teamMinSize ?? (event as any).team_min_size,
+      team_max_size: event.teamMaxSize ?? (event as any).team_max_size,
+      custom_fields: event.customFields ?? (event as any).custom_fields,
+      ticket_types: event.ticketTypes ?? (event as any).ticket_types,
+    };
 
     return (
       <EventManagePage
-        event={event}
+        event={mappedEvent}
         registrations={registrations}
         profiles={profiles}
         orgMembers={orgMembers}
@@ -84,7 +117,8 @@ export default async function ManageEventPage({ params }: { params: Promise<{ id
         teamMembers={teamMembers}
       />
     );
-  } catch {
+  } catch (error) {
+    console.error("Failed to load event details:", error);
     notFound();
   }
 }

@@ -108,27 +108,8 @@ export async function middleware(request: NextRequest) {
     return res;
   };
 
-  if (!isProtectedPage && !isAuthPage) {
-    if (refreshToken && (!accessToken || isTokenExpired(accessToken))) {
-      const refresh = await refreshTokens(refreshToken);
-      if (refresh.status === "ok") {
-        request.cookies.set(ACCESS_TOKEN_COOKIE, refresh.tokens.accessToken);
-        request.cookies.set(REFRESH_TOKEN_COOKIE, refresh.tokens.refreshToken);
-        return createNextResponse(refresh.tokens);
-      }
-      if (refresh.status === "invalid") {
-        const res = NextResponse.next();
-        res.cookies.delete(ACCESS_TOKEN_COOKIE);
-        res.cookies.delete(REFRESH_TOKEN_COOKIE);
-        return res;
-      }
-      return NextResponse.next();
-    }
-    return NextResponse.next();
-  }
-
   if (!accessToken && !refreshToken) {
-    if (isAuthPage) {
+    if (isAuthPage || !isProtectedPage) {
       return NextResponse.next();
     }
     const loginUrl = new URL("/login", request.url);
@@ -146,7 +127,7 @@ export async function middleware(request: NextRequest) {
       request.cookies.set(ACCESS_TOKEN_COOKIE, refreshedTokens.accessToken);
       request.cookies.set(REFRESH_TOKEN_COOKIE, refreshedTokens.refreshToken);
     } else if (refresh.status === "invalid") {
-      if (isAuthPage) {
+      if (isAuthPage || !isProtectedPage) {
         const res = NextResponse.next();
         res.cookies.delete(ACCESS_TOKEN_COOKIE);
         res.cookies.delete(REFRESH_TOKEN_COOKIE);
@@ -172,7 +153,7 @@ export async function middleware(request: NextRequest) {
       request.cookies.set(REFRESH_TOKEN_COOKIE, refreshedTokens.refreshToken);
       meRes = await fetchMe(accessToken);
     } else if (refresh.status === "invalid") {
-      if (isAuthPage) {
+      if (isAuthPage || !isProtectedPage) {
         const res = NextResponse.next();
         res.cookies.delete(ACCESS_TOKEN_COOKIE);
         res.cookies.delete(REFRESH_TOKEN_COOKIE);
@@ -189,7 +170,7 @@ export async function middleware(request: NextRequest) {
 
   if (!meRes || !meRes.ok) {
     if (meRes && (meRes.status === 401 || meRes.status === 403)) {
-      if (isAuthPage) {
+      if (isAuthPage || !isProtectedPage) {
         const res = NextResponse.next();
         res.cookies.delete(ACCESS_TOKEN_COOKIE);
         res.cookies.delete(REFRESH_TOKEN_COOKIE);
@@ -207,7 +188,6 @@ export async function middleware(request: NextRequest) {
   const isOrg = me.role === "organisation" || !!me.org;
 
   if (isOrg) {
-    // For organisations, check verification and approval status
     if (me.org) {
       if (!me.org.isOtpVerified) {
         if (path !== "/verify-org") {
@@ -218,20 +198,15 @@ export async function middleware(request: NextRequest) {
           return createRedirectResponse(new URL("/pending-approval", request.url), refreshedTokens);
         }
       } else {
-        // Org is both verified AND approved
-        if (
-          path === "/login" ||
-          path === "/signup" ||
-          path === "/verify-org" ||
-          path === "/pending-approval" ||
-          path === "/profile"
-        ) {
+        if (!path.startsWith("/dashboard")) {
           return createRedirectResponse(new URL("/dashboard/events", request.url), refreshedTokens);
         }
       }
+    } else {
+      if (!path.startsWith("/dashboard") && path !== "/verify-org" && path !== "/pending-approval") {
+        return createRedirectResponse(new URL("/dashboard/events", request.url), refreshedTokens);
+      }
     }
-    // If role is org but org object missing, allow access to verify/pending pages
-    // Don't redirect to login - the pages will handle it
   } else {
     if (path.startsWith("/dashboard") || path === "/verify-org" || path === "/pending-approval") {
       return createRedirectResponse(new URL("/", request.url), refreshedTokens);
@@ -247,14 +222,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except:
-     * - api routes
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico, sitemap.xml, robots.txt
-     * - images and other static assets
-     */
-    "/((?!api/|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js)$).*))",
+    "/((?!api/|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js)$).*)",
   ],
 };

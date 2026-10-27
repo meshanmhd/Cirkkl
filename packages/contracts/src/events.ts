@@ -24,7 +24,7 @@ export type Speaker = z.infer<typeof SpeakerSchema>;
 export const CustomFieldSchema = z.object({
   id: z.string(),
   label: z.string(),
-  type: z.enum(["text", "textarea", "number", "select", "radio", "checkbox"]),
+  type: z.string(),
   required: z.boolean(),
   options: z.string().optional(),
 });
@@ -34,7 +34,7 @@ export const TicketTypeSchema = z.object({
   id: z.string().uuid().optional(),
   name: z.string().min(1),
   price: z.number().min(0),
-  quantity: z.number().int().min(1).nullable().optional(),
+  quantity: z.number().int().min(0).nullable().optional(),
   unlimited: z.boolean().default(false),
 });
 export type TicketType = z.infer<typeof TicketTypeSchema>;
@@ -69,7 +69,7 @@ export const EventSummarySchema = z.object({
 export type EventSummary = z.infer<typeof EventSummarySchema>;
 
 export const EventDetailSchema = EventSummarySchema.extend({
-  description: z.string(),
+  description: z.string().nullable().optional().default(""),
   tags: z.array(z.string()).default([]),
   venue: z.string().nullable().optional(),
   locationLink: z.string().nullable().optional(),

@@ -7,14 +7,19 @@ export class KyselyTicketRepo implements TicketRepo {
   constructor(private readonly db: Kysely<Database>) {}
 
   private mapRow(row: any): Ticket {
+    const rawTotal = row.quantity ?? row.total_quantity;
+    const rawAvailable = row.available_quantity ?? row.quantity ?? row.total_quantity;
+    const totalQuantity = rawTotal != null && !isNaN(Number(rawTotal)) ? Number(rawTotal) : null;
+    const availableQuantity = rawAvailable != null && !isNaN(Number(rawAvailable)) ? Number(rawAvailable) : null;
     return {
       id: row.id,
       eventId: row.event_id,
       name: row.name,
       price: Number(row.price),
       currency: "INR",
-      totalQuantity: Number(row.total_quantity),
-      availableQuantity: Number(row.available_quantity),
+      totalQuantity,
+      availableQuantity,
+      unlimited: Boolean(row.unlimited || totalQuantity == null),
       createdAt: new Date(row.created_at),
     };
   }
@@ -25,8 +30,17 @@ export class KyselyTicketRepo implements TicketRepo {
   }
 
   async findByEventId(eventId: string): Promise<Ticket[]> {
-    const rows = await this.db.selectFrom("tickets").selectAll().where("event_id", "=", eventId).execute();
-    return rows.map((r) => this.mapRow(r));
+    const rows = await this.db.selectFrom("tickets").selectAll().where("event_id", "=", eventId).orderBy("created_at", "asc").execute();
+    const seenNames = new Set<string>();
+    const uniqueRows: any[] = [];
+    for (const r of rows) {
+      const normalizedName = (r.name || "").trim().toLowerCase();
+      if (!seenNames.has(normalizedName)) {
+        seenNames.add(normalizedName);
+        uniqueRows.push(r);
+      }
+    }
+    return uniqueRows.map((r) => this.mapRow(r));
   }
 
   async create(data: Omit<Ticket, "id" | "createdAt">): Promise<Ticket> {
@@ -94,10 +108,10 @@ export class KyselyTicketRepo implements TicketRepo {
   }
 
   async hasRegistrationsOrPayments(ticketId: string): Promise<boolean> {
-    const reg = await this.db
+    const reg = await (this.db as any)
       .selectFrom("registrations")
       .select("id")
-      .where("ticket_id", "=", ticketId)
+      .where("ticket_tier_id", "=", ticketId)
       .executeTakeFirst();
     if (reg) return true;
 

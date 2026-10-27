@@ -53,10 +53,12 @@ export class RegistrationService {
         if (!ticket || ticket.eventId !== eventId) {
           throw badRequest("Invalid ticket tier");
         }
-        if (ticket.availableQuantity <= 0) {
+        if (ticket.availableQuantity !== null && ticket.availableQuantity <= 0) {
           throw badRequest("Selected ticket tier is sold out");
         }
-        await uow.ticketRepo.decrementAvailable(ticket.id, 1);
+        if (ticket.availableQuantity !== null) {
+          await uow.ticketRepo.decrementAvailable(ticket.id, 1);
+        }
       }
 
       const existing = await uow.registrationRepo.findByUserAndEvent(userId, eventId);

@@ -61,8 +61,7 @@ export function ProfileMenu({ initialUser = null, initialRole = "user", initialQ
         setRole(profile.role);
         setQrCode(profile.cklId || null);
       }
-    } catch (error) {
-      console.error("Error fetching role:", error);
+    } catch {
     }
   };
 
@@ -89,30 +88,28 @@ export function ProfileMenu({ initialUser = null, initialRole = "user", initialQ
     let unsubStream: (() => void) | undefined;
 
     if (authUser && !authLoading) {
-      // User is authenticated and loading is complete
       setUser(authUser);
       if (authRole) setRole(authRole);
       
-      Promise.all([
-        fetchRole(),
-        fetchMyEvents(),
-        fetchUnreadCount(),
-      ]).finally(() => {
+      const isOrg = authRole === "organisation" || authRole === "organiser";
+      const tasks = isOrg
+        ? [fetchUnreadCount()]
+        : [fetchRole(), fetchMyEvents(), fetchUnreadCount()];
+
+      Promise.all(tasks).finally(() => {
         if (mounted) setLoading(false);
       });
 
       unsubStream = api.notifications.stream(() => {
         if (mounted) fetchUnreadCount();
       });
-    } else if (!authLoading && !authUser) {
-      // Loading is complete and user is NOT authenticated
+    } else if (!authLoading && !authUser && !initialUser) {
       setUser(null);
       setRole("user");
       setMyEvents([]);
       setUnreadNotifications(0);
       setLoading(false);
-    } else if (authLoading) {
-      // Still loading, show loading state
+    } else if (authLoading && !initialUser) {
       setLoading(true);
     }
 
@@ -120,7 +117,14 @@ export function ProfileMenu({ initialUser = null, initialRole = "user", initialQ
       mounted = false;
       unsubStream?.();
     };
-  }, [authUser, authRole, authLoading]);
+  }, [authUser, authRole, authLoading, initialUser]);
+
+  useEffect(() => {
+    if (initialUser && !user) {
+      setUser(initialUser);
+      if (initialRole) setRole(initialRole);
+    }
+  }, [initialUser, initialRole, user]);
 
   const handleSignOut = async () => {
     await signOutAction();
@@ -184,7 +188,7 @@ export function ProfileMenu({ initialUser = null, initialRole = "user", initialQ
         >
           <DropdownMenuTrigger className="rounded-full shrink-0 overflow-hidden outline-none ring-2 ring-transparent focus-visible:ring-[#cfe467] transition-all">
             <Avatar className="h-9 w-9 border border-[#E5E5EA]">
-              <AvatarImage src={`https://api.dicebear.com/7.x/notionists/svg?seed=${user.id}`} alt={fullName} />
+              <AvatarImage src={user.user_metadata?.avatar_url || (user as any).avatar_url || `https://api.dicebear.com/7.x/notionists/svg?seed=${user.id}`} alt={fullName} />
               <AvatarFallback className="bg-[#F5F5F7] text-[#111111] font-medium text-xs">
                 {getInitials(fullName)}
               </AvatarFallback>
@@ -202,43 +206,50 @@ export function ProfileMenu({ initialUser = null, initialRole = "user", initialQ
                   </DropdownMenuLabel>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator className="bg-[#E5E5EA] my-1" />
-                <DropdownMenuItem
-                  className="cursor-pointer rounded-lg px-2 py-2 text-sm text-[#111111] hover:bg-[#F5F5F7] focus:bg-[#F5F5F7]"
-                  onClick={() => setQrOpen(true)}
-                >
-                  My QR
-                </DropdownMenuItem>
-                
-                {/* 
-                  Base UI uses closeOnClick={false} to keep the menu open.
-                  Also, Base UI uses onClick, NOT onSelect.
-                */}
-                <DropdownMenuItem
-                  className="cursor-pointer rounded-lg px-2 py-2 text-sm text-[#111111] hover:bg-[#F5F5F7] focus:bg-[#F5F5F7] flex items-center justify-between"
-                  closeOnClick={false}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setEventsView(true);
-                  }}
-                >
-                  <span>My Events</span>
-                  <ChevronRight size={14} className="text-[#6E6E73]" />
-                </DropdownMenuItem>
-                
-                <DropdownMenuItem
-                  className="cursor-pointer rounded-lg px-2 py-2 text-sm text-[#111111] hover:bg-[#F5F5F7] focus:bg-[#F5F5F7]"
-                  onClick={() => router.push("/profile")}
-                >
-                  Profile
-                </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer rounded-lg px-2 py-2 text-sm text-[#111111] hover:bg-[#F5F5F7] focus:bg-[#F5F5F7]">
-                  Settings
-                </DropdownMenuItem>
-                
-                {["host", "admin", "superadmin"].includes(role) && (
-                  <DropdownMenuItem className="cursor-pointer rounded-lg px-2 py-2 text-sm font-medium text-[#cfe467] bg-[#111111] focus:bg-[#222222] focus:text-[#cfe467] mt-1">
-                    Manage Events
+                {["organisation", "organiser"].includes(role) ? (
+                  <DropdownMenuItem
+                    className="cursor-pointer rounded-lg px-2 py-2 text-sm text-[#111111] hover:bg-[#F5F5F7] focus:bg-[#F5F5F7]"
+                    onClick={() => router.push("/dashboard/events")}
+                  >
+                    Dashboard
                   </DropdownMenuItem>
+                ) : (
+                  <>
+                    <DropdownMenuItem
+                      className="cursor-pointer rounded-lg px-2 py-2 text-sm text-[#111111] hover:bg-[#F5F5F7] focus:bg-[#F5F5F7]"
+                      onClick={() => setQrOpen(true)}
+                    >
+                      My QR
+                    </DropdownMenuItem>
+                    
+                    <DropdownMenuItem
+                      className="cursor-pointer rounded-lg px-2 py-2 text-sm text-[#111111] hover:bg-[#F5F5F7] focus:bg-[#F5F5F7] flex items-center justify-between"
+                      closeOnClick={false}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setEventsView(true);
+                      }}
+                    >
+                      <span>My Events</span>
+                      <ChevronRight size={14} className="text-[#6E6E73]" />
+                    </DropdownMenuItem>
+                    
+                    <DropdownMenuItem
+                      className="cursor-pointer rounded-lg px-2 py-2 text-sm text-[#111111] hover:bg-[#F5F5F7] focus:bg-[#F5F5F7]"
+                      onClick={() => router.push("/profile")}
+                    >
+                      Profile
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="cursor-pointer rounded-lg px-2 py-2 text-sm text-[#111111] hover:bg-[#F5F5F7] focus:bg-[#F5F5F7]">
+                      Settings
+                    </DropdownMenuItem>
+                    
+                    {["host", "admin", "superadmin"].includes(role) && (
+                      <DropdownMenuItem className="cursor-pointer rounded-lg px-2 py-2 text-sm font-medium text-[#cfe467] bg-[#111111] focus:bg-[#222222] focus:text-[#cfe467] mt-1">
+                        Manage Events
+                      </DropdownMenuItem>
+                    )}
+                  </>
                 )}
                 <DropdownMenuSeparator className="bg-[#E5E5EA] my-1" />
                 <DropdownMenuItem

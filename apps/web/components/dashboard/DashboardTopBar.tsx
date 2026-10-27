@@ -15,8 +15,11 @@ import {
 export interface DashboardUser {
   id: string;
   email?: string | null;
+  avatar_url?: string | null;
   user_metadata?: {
     full_name?: string;
+    avatar_url?: string;
+    [key: string]: unknown;
   };
 }
 
@@ -40,6 +43,7 @@ export function DashboardTopBar({ user }: DashboardTopBarProps) {
 
   const fullName = user.user_metadata?.full_name || user.email?.split("@")[0] || "Organization";
   const initials = getInitials(fullName);
+  const avatarUrl = user.user_metadata?.avatar_url || user.avatar_url || `https://api.dicebear.com/7.x/notionists/svg?seed=${user.id || fullName}`;
 
   const handleSignOut = async () => {
     await signOutAction();
@@ -61,7 +65,7 @@ export function DashboardTopBar({ user }: DashboardTopBarProps) {
         <DropdownMenu>
           <DropdownMenuTrigger className="rounded-full outline-none ring-2 ring-transparent focus-visible:ring-[#cfe467] transition-all">
             <Avatar className="h-9 w-9 border border-[#E5E5EA]">
-              <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${fullName}`} alt={fullName} />
+              <AvatarImage src={avatarUrl} alt={fullName} />
               <AvatarFallback className="bg-[#F5F5F7] text-[#111111] font-medium text-xs">
                 {initials}
               </AvatarFallback>

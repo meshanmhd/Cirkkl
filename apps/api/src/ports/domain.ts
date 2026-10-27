@@ -72,15 +72,35 @@ export interface Event {
   title: string;
   slug: string;
   description: string;
+  tagline?: string | null;
+  category?: string | null;
+  organizer?: string | null;
   venue?: string | null;
   city?: string | null;
   startDate: Date;
   endDate?: Date | null;
+  time?: string | null;
+  endTime?: string | null;
+  location?: string | null;
+  locationType?: "physical" | "online" | "hybrid" | null;
+  locationLink?: string | null;
+  meetingLink?: string | null;
+  platform?: string | null;
   registrationDeadline?: Date | null;
+  registrationEndTime?: string | null;
   status: EventStatus;
   visibility: EventVisibility;
   isFeatured: boolean;
   isPaid: boolean;
+  price?: "free" | "paid" | null;
+  priceAmount?: number | null;
+  seats?: number | null;
+  seatsAvailable?: number | null;
+  approvalRequired?: boolean | null;
+  cancellationPolicy?: string | null;
+  refundPolicy?: string | null;
+  photographyPolicy?: string | null;
+  tags?: string[];
   isTeamEvent: boolean;
   minTeamSize?: number | null;
   maxTeamSize?: number | null;
@@ -101,8 +121,9 @@ export interface Ticket {
   name: string;
   price: number;
   currency: string;
-  totalQuantity: number;
-  availableQuantity: number;
+  totalQuantity: number | null;
+  availableQuantity: number | null;
+  unlimited?: boolean;
   createdAt: Date;
 }
 

@@ -50,7 +50,12 @@ export default function EventsClient() {
       }
 
       const res = await api.events.list(params);
-      const mapped = (res.items || []).map((e) => ({
+      let items: any[] = res.items || [];
+      if (items.length === 0 && mappedTimeFilter === "upcoming" && !search.trim() && categoryFilter === "All") {
+        const fallbackRes = await api.events.list({ ...params, timeFilter: "all" });
+        items = fallbackRes.items || [];
+      }
+      const mapped = items.map((e: any) => ({
         id: e.id,
         title: e.title,
         slug: e.slug,

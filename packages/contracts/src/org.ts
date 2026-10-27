@@ -6,11 +6,11 @@ export const OrgEventRegistrationItemSchema = z.object({
   id: z.string().uuid(),
   userId: z.string().uuid(),
   userName: z.string(),
-  userEmail: z.string(),
+  userEmail: z.string().nullable().optional().default(""),
   userPhone: z.string().nullable().optional(),
   cklId: z.string().nullable().optional(),
   status: RegistrationStatusSchema,
-  attended: z.boolean(),
+  attended: z.boolean().default(false),
   ticketCode: z.string(),
   ticketName: z.string().nullable().optional(),
   ticketPrice: z.number().nullable().optional(),
@@ -23,19 +23,19 @@ export const OrgEventRegistrationItemSchema = z.object({
       id: z.string().uuid(),
       userId: z.string().uuid(),
       name: z.string(),
-      email: z.string(),
+      email: z.string().nullable().optional().default(""),
       status: z.string(),
       cklId: z.string().nullable().optional(),
     })
   ).default([]),
-  fieldValues: z.record(z.string(), z.string()).default({}),
+  fieldValues: z.record(z.string(), z.any()).default({}),
   paymentProofUrl: z.string().nullable().optional(),
   createdAt: z.string(),
 });
 export type OrgEventRegistrationItem = z.infer<typeof OrgEventRegistrationItemSchema>;
 
 export const GetOrgEventRegistrationsInputSchema = PaginationQuerySchema.extend({
-  eventId: z.string().uuid(),
+  eventId: z.string(),
   status: RegistrationStatusSchema.optional(),
   search: z.string().optional(),
 });
@@ -102,10 +102,10 @@ export type ToggleAttendanceOutput = z.infer<typeof ToggleAttendanceOutputSchema
 
 export const EventRoleMemberSchema = z.object({
   id: z.string().uuid(),
-  eventId: z.string().uuid(),
+  eventId: z.string(),
   userId: z.string().uuid(),
   name: z.string(),
-  email: z.string(),
+  email: z.string().nullable().optional().default(""),
   role: z.string(),
 });
 export type EventRoleMember = z.infer<typeof EventRoleMemberSchema>;
@@ -114,14 +114,14 @@ export const AvailableOrgMemberSchema = z.object({
   id: z.string().uuid(),
   userId: z.string().uuid(),
   name: z.string(),
-  email: z.string(),
+  email: z.string().nullable().optional().default(""),
   role: z.string(),
   department: z.string().nullable().optional(),
 });
 export type AvailableOrgMember = z.infer<typeof AvailableOrgMemberSchema>;
 
 export const GetEventRolesInputSchema = z.object({
-  eventId: z.string().uuid(),
+  eventId: z.string(),
 });
 export type GetEventRolesInput = z.infer<typeof GetEventRolesInputSchema>;
 
@@ -161,7 +161,7 @@ export const OrgMemberItemSchema = z.object({
   id: z.string().uuid(),
   userId: z.string().uuid(),
   name: z.string(),
-  email: z.string(),
+  email: z.string().nullable().optional().default(""),
   role: z.string(),
   department: z.string().nullable().optional(),
   avatarUrl: z.string().nullable().optional(),

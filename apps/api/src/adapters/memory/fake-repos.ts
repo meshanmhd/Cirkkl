@@ -264,7 +264,7 @@ export class MemoryTicketRepo implements TicketRepo {
 
   async decrementAvailable(id: string, quantity: number): Promise<void> {
     const ticket = this.tickets.get(id);
-    if (ticket && ticket.availableQuantity >= quantity) {
+    if (ticket && ticket.availableQuantity !== null && ticket.availableQuantity >= quantity) {
       ticket.availableQuantity -= quantity;
     }
   }

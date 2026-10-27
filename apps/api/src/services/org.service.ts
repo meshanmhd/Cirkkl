@@ -28,7 +28,7 @@ export class OrgService {
       throw forbidden("Organisation access required");
     }
 
-    const event = await this.eventRepo.findById(eventId);
+    const event = (await this.eventRepo.findById(eventId)) ?? (await this.eventRepo.findBySlug(eventId));
     if (!event) {
       throw notFound("Event not found");
     }
@@ -76,14 +76,14 @@ export class OrgService {
           userPhone: profile?.phoneNumber,
           cklId: profile?.cklId,
           status: reg.status,
-          attended: reg.attended,
+          attended: Boolean(reg.attended),
           ticketCode: reg.ticketCode,
           isTeam: reg.isTeam,
           teamId: reg.teamId,
           teamName,
           teamMembers,
           fieldValues: reg.fieldValues || {},
-          paymentProofUrl: reg.paymentProofKey,
+          paymentProofUrl: reg.paymentProofKey || null,
           createdAt: reg.createdAt.toISOString(),
         };
       })
@@ -228,7 +228,7 @@ export class OrgService {
 
       if (reg.ticketId) {
         const ticket = await uow.ticketRepo.findById(reg.ticketId);
-        if (ticket) {
+        if (ticket && ticket.availableQuantity !== null) {
           await uow.ticketRepo.update(ticket.id, {
             availableQuantity: ticket.availableQuantity + 1,
           });

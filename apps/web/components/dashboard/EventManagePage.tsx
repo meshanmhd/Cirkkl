@@ -554,18 +554,21 @@ export function EventManagePage({ event: initialEvent, registrations: initialReg
                         <div>
                           <p className="text-[11px] font-semibold text-[#6E6E73] uppercase tracking-wider mb-2">Hosts</p>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            {event.hosts.map((hostId: string) => {
-                              const m = memberMap[hostId];
+                            {event.hosts.map((hostItem: any, idx: number) => {
+                              const hostId = typeof hostItem === "string" ? hostItem : (hostItem?.id || hostItem?.userId);
+                              const m = memberMap[hostId] || (typeof hostItem === "object" ? hostItem : null);
+                              const displayName = m?.name || m?.full_name || "Unknown";
+                              const avatarUrl = m?.avatar_url || m?.avatarUrl;
                               return (
-                                <div key={hostId} className="flex items-center gap-3 bg-[#F5F5F7] p-3 rounded-[12px] border border-[#E5E5EA]">
-                                  {m?.avatar_url ? (
-                                    <img src={m.avatar_url} alt={m.name || m.full_name} className="w-8 h-8 rounded-full object-cover" />
+                                <div key={hostId || idx} className="flex items-center gap-3 bg-[#F5F5F7] p-3 rounded-[12px] border border-[#E5E5EA]">
+                                  {avatarUrl ? (
+                                    <img src={avatarUrl} alt={displayName} className="w-8 h-8 rounded-full object-cover" />
                                   ) : (
                                     <div className="w-8 h-8 rounded-full bg-[#E5E5EA] flex items-center justify-center text-[10px] font-bold text-[#6E6E73]">
-                                      {(m?.name || m?.full_name || "?").substring(0, 2).toUpperCase()}
+                                      {displayName.substring(0, 2).toUpperCase()}
                                     </div>
                                   )}
-                                  <span className="text-[13px] font-medium text-[#111111]">{m?.name || m?.full_name || "Unknown"}</span>
+                                  <span className="text-[13px] font-medium text-[#111111]">{displayName}</span>
                                 </div>
                               );
                             })}

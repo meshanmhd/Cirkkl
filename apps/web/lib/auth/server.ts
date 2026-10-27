@@ -34,7 +34,14 @@ export interface AuthContext {
 export async function getAuthContext(): Promise<AuthContext> {
   try {
     const me = await api.auth.me()
-    console.log('[getAuthContext] API response:', JSON.stringify(me, null, 2))
+    if (!me) {
+      return {
+        userId: null,
+        user: null,
+        role: null,
+        org: null,
+      }
+    }
     
     const isOrg = me.role === 'organisation' || !!me.org
     const orgRecord: OrganisationRecord | null = isOrg

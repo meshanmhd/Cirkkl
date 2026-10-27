@@ -7,7 +7,15 @@ export default async function EventsDashboardPage() {
   // Middleware handles auth - if we reach here, user is authenticated as org
   // Don't call requireOrg() due to Next.js cookie timing issues after login redirect
   
-  let events = [];
+  let events: Array<{
+    id: string;
+    title: string | null;
+    date: string | null;
+    category: string | null;
+    status: string | null;
+    visibility: string | null;
+    price: string | null;
+  }> = [];
   try {
     const res = await api.events.listForOrg();
     events = (res.items || []).map((e) => ({
