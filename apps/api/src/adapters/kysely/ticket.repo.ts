@@ -7,7 +7,7 @@ export class KyselyTicketRepo implements TicketRepo {
   constructor(private readonly db: Kysely<Database>) {}
 
   private mapRow(row: any): Ticket {
-    const rawTotal = row.quantity ?? row.total_quantity;
+    const rawTotal = row.total_quantity ?? row.quantity;
     const rawAvailable = row.available_quantity ?? row.quantity ?? row.total_quantity;
     const totalQuantity = rawTotal != null && !isNaN(Number(rawTotal)) ? Number(rawTotal) : null;
     const availableQuantity = rawAvailable != null && !isNaN(Number(rawAvailable)) ? Number(rawAvailable) : null;
@@ -45,15 +45,17 @@ export class KyselyTicketRepo implements TicketRepo {
 
   async create(data: Omit<Ticket, "id" | "createdAt">): Promise<Ticket> {
     const id = crypto.randomUUID();
-    await this.db
+    await (this.db as any)
       .insertInto("tickets")
       .values({
         id,
         event_id: data.eventId,
         name: data.name,
         price: data.price,
-        total_quantity: data.totalQuantity,
-        available_quantity: data.availableQuantity,
+        quantity: data.totalQuantity ?? null,
+        unlimited: Boolean(data.unlimited || data.totalQuantity == null),
+        total_quantity: data.totalQuantity ?? null,
+        available_quantity: data.availableQuantity ?? data.totalQuantity ?? null,
       })
       .execute();
 
@@ -78,11 +80,19 @@ export class KyselyTicketRepo implements TicketRepo {
     const values: Record<string, unknown> = {};
     if (data.name !== undefined) values.name = data.name;
     if (data.price !== undefined) values.price = data.price;
-    if (data.totalQuantity !== undefined) values.total_quantity = data.totalQuantity;
-    if (data.availableQuantity !== undefined) values.available_quantity = data.availableQuantity;
+    if (data.totalQuantity !== undefined) {
+      values.total_quantity = data.totalQuantity;
+      values.quantity = data.totalQuantity;
+    }
+    if (data.availableQuantity !== undefined) {
+      values.available_quantity = data.availableQuantity;
+    }
+    if (data.unlimited !== undefined) {
+      values.unlimited = data.unlimited;
+    }
 
     if (Object.keys(values).length > 0) {
-      await this.db.updateTable("tickets").set(values).where("id", "=", id).execute();
+      await (this.db as any).updateTable("tickets").set(values).where("id", "=", id).execute();
     }
 
     const updated = await this.findById(id);

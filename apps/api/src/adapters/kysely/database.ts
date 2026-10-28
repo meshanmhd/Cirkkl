@@ -13,6 +13,8 @@ export interface UsersTable {
 export interface OrganisationsTable {
   id: string;
   name: string;
+  org_name?: string | null;
+  owner_id?: string | null;
   email: string;
   is_approved: boolean;
   is_otp_verified: boolean;
@@ -27,14 +29,20 @@ export interface ProfilesTable {
   is_profile_completed: boolean;
   full_name: string | null;
   college: string | null;
+  college_name?: string | null;
   branch: string | null;
+  department?: string | null;
   academic_year: string | null;
   phone_number: string | null;
+  phone?: string | null;
   gender: string | null;
   avatar_url: string | null;
   linkedin_url: string | null;
+  linkedin?: string | null;
   github_url: string | null;
+  github?: string | null;
   bio: string | null;
+  ckl_id?: string | null;
   created_at: Generated<Date>;
   updated_at: Generated<Date>;
 }
@@ -58,9 +66,9 @@ export interface EventsTable {
   meeting_link?: string | null;
   platform?: string | null;
   start_date: Date;
-  end_date: Date | null;
+  end_date?: Date | string | null;
   end_time?: string | null;
-  registration_deadline: Date | null;
+  registration_deadline?: Date | string | null;
   registration_end_time?: string | null;
   status: string;
   visibility: string;
@@ -83,13 +91,14 @@ export interface EventsTable {
   max_team_size: number | null;
   team_min_size?: number | null;
   team_max_size?: number | null;
-  capacity: number | null;
+  capacity?: number | null;
   banner_url: string | null;
   poster_url: string | null;
   image?: string | null;
   poster_image?: string | null;
   speakers: string | null;
   custom_fields: string | null;
+  hosts?: string | null;
   created_at: Generated<Date>;
   updated_at: Generated<Date>;
 }
@@ -99,6 +108,8 @@ export interface TicketsTable {
   event_id: string;
   name: string;
   price: number;
+  quantity?: number | null;
+  unlimited?: boolean | null;
   total_quantity: number | null;
   available_quantity: number | null;
   created_at: Generated<Date>;
@@ -164,9 +175,10 @@ export interface NotificationsTable {
   id: string;
   user_id: string;
   type: string;
-  title: string;
-  message: string;
+  title: string | null;
+  message: string | null;
   is_read: boolean;
+  read?: boolean | null;
   event_id: string | null;
   team_id: string | null;
   sender_id: string | null;
@@ -177,13 +189,18 @@ export interface PaymentsTable {
   id: string;
   order_reference: string;
   user_id: string;
-  event_id: string;
+  event_id: string | null;
   ticket_id: string;
   amount: number;
   status: string;
   transaction_id: string | null;
+  payment_proof_url?: string | null;
+  currency?: string | null;
+  merchant_upi_id?: string | null;
+  merchant_name?: string | null;
   upi_uri: string;
   created_at: Generated<Date>;
+  updated_at?: Generated<Date>;
 }
 
 export interface MerchantSettingsTable {

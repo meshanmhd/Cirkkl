@@ -12,8 +12,8 @@ export type NotificationType = z.infer<typeof NotificationTypeSchema>;
 export const NotificationItemSchema = z.object({
   id: z.string().uuid(),
   type: NotificationTypeSchema,
-  title: z.string(),
-  message: z.string(),
+  title: z.string().nullish().transform((v) => v ?? "Notification"),
+  message: z.string().nullish().transform((v) => v ?? ""),
   isRead: z.boolean(),
   createdAt: z.string(),
   eventId: z.string().uuid().nullable().optional(),

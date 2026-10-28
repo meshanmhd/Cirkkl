@@ -17,9 +17,13 @@ export class NotificationService {
       message: n.message,
       isRead: n.isRead,
       createdAt: n.createdAt.toISOString(),
-      eventId: n.eventId,
-      teamId: n.teamId,
-      senderId: n.senderId,
+      eventId: n.eventId ?? null,
+      eventTitle: n.eventTitle ?? null,
+      teamId: n.teamId ?? null,
+      teamName: n.teamName ?? null,
+      senderId: n.senderId ?? null,
+      senderName: n.senderName ?? null,
+      inviteStatus: n.inviteStatus ?? null,
     }));
 
     return {

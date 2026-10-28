@@ -35,6 +35,8 @@ export class PaymentService {
       amount: ticket.price,
       currency: "INR",
       status: "pending",
+      merchantUpiId: merchantSettings.upiId,
+      merchantName: merchantSettings.merchantName,
       upiUri,
     });
 
