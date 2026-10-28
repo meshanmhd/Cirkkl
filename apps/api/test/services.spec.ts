@@ -501,6 +501,97 @@ describe("API Service Layer Tests", () => {
     });
   });
 
+  describe("registration deadline validation", () => {
+    it("should reject registration deadline when not between start date and end date", async () => {
+      const { services, ports } = container;
+
+      const org = await ports.orgRepo.create({
+        ownerId: "owner-deadline-test",
+        name: "Deadline Org",
+        email: "deadline@org.com",
+        status: "approved",
+        isOtpVerified: true,
+      });
+
+      const orgCaller = {
+        userId: org.ownerId,
+        role: "organiser" as const,
+        orgId: org.id,
+        isOrgApproved: true,
+      };
+
+      await expect(
+        services.eventService.createEvent(
+          {
+            title: "Deadline Test Before Start",
+            description: "Test deadline",
+            date: "2026-11-10",
+            time: "10:00",
+            endDate: "2026-11-15",
+            endTime: "18:00",
+            registrationDeadline: "2026-11-08",
+            registrationEndTime: "12:00",
+            price: "free",
+          },
+          orgCaller
+        )
+      ).rejects.toThrow("Registration deadline must be between the event start date and end date");
+
+      await expect(
+        services.eventService.createEvent(
+          {
+            title: "Deadline Test After End",
+            description: "Test deadline",
+            date: "2026-11-10",
+            time: "10:00",
+            endDate: "2026-11-15",
+            endTime: "18:00",
+            registrationDeadline: "2026-11-16",
+            registrationEndTime: "11:00",
+            price: "free",
+          },
+          orgCaller
+        )
+      ).rejects.toThrow("Registration deadline must be between the event start date and end date");
+
+      const validEvent = await services.eventService.createEvent(
+        {
+          title: "Valid Deadline",
+          description: "Test deadline",
+          date: "2026-11-10",
+          time: "10:00",
+          endDate: "2026-11-15",
+          endTime: "18:00",
+          registrationDeadline: "2026-11-12",
+          registrationEndTime: "18:00",
+          price: "free",
+        },
+        orgCaller
+      );
+      expect(validEvent.id).toBeDefined();
+
+      await expect(
+        services.eventService.updateEvent(
+          validEvent.id,
+          {
+            registrationDeadline: "2026-11-09",
+          },
+          orgCaller
+        )
+      ).rejects.toThrow("Registration deadline must be between the event start date and end date");
+
+      await expect(
+        services.eventService.updateEvent(
+          validEvent.id,
+          {
+            registrationDeadline: "2026-11-16",
+          },
+          orgCaller
+        )
+      ).rejects.toThrow("Registration deadline must be between the event start date and end date");
+    });
+  });
+
   describe("profileService", () => {
     it("should compute isProfileCompleted only when all required fields are present", async () => {
       const { services, ports } = container;

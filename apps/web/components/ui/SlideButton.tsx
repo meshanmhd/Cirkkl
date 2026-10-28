@@ -687,6 +687,20 @@ export const SlideButton = ({ onComplete, event, isFull = false, userRegistratio
   const [isCompleted, setIsCompleted] = useState(!!userRegistration && userRegistration.status !== 'cancelled');
   const [showModal, setShowModal] = useState(false);
   const [showAckModal, setShowAckModal] = useState(false);
+  const [ack1, setAck1] = useState(false);
+  const [ack2, setAck2] = useState(false);
+
+  const openAckModal = () => {
+    setAck1(false);
+    setAck2(false);
+    setShowAckModal(true);
+  };
+
+  const closeAckModal = () => {
+    setShowAckModal(false);
+    setAck1(false);
+    setAck2(false);
+  };
   const [regData, setRegData] = useState<any>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -825,14 +839,14 @@ export const SlideButton = ({ onComplete, event, isFull = false, userRegistratio
     if (requiresModal) {
       setShowModal(true);
     } else {
-      setShowAckModal(true);
+      openAckModal();
     }
   };
 
   const handleModalSubmit = (values: Record<string, string>, transactionId: string, selectedTicketId: string, paymentProofFile: File | null, teamName: string, teamMates: any[]) => {
     setRegData({ values, transactionId, selectedTicketId, paymentProofFile, teamName, teamMates });
     setShowModal(false);
-    setShowAckModal(true);
+    openAckModal();
   };
 
   return (
@@ -889,11 +903,11 @@ export const SlideButton = ({ onComplete, event, isFull = false, userRegistratio
 
       {showAckModal && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowAckModal(false)} />
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={closeAckModal} />
           <div className="relative z-10 w-full max-w-md bg-white rounded-[28px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
             <div className="flex items-center justify-between px-6 py-5 border-b border-[#E5E5EA] shrink-0">
               <h2 className="text-xl font-bold text-[#111111]">Join the Adventure!</h2>
-              <button onClick={() => setShowAckModal(false)} className="w-8 h-8 rounded-full flex items-center justify-center bg-[#F5F5F7] text-[#6E6E73] hover:bg-[#E5E5EA] transition-colors">
+              <button onClick={closeAckModal} className="w-8 h-8 rounded-full flex items-center justify-center bg-[#F5F5F7] text-[#6E6E73] hover:bg-[#E5E5EA] transition-colors">
                 <X size={16} />
               </button>
             </div>
@@ -903,13 +917,25 @@ export const SlideButton = ({ onComplete, event, isFull = false, userRegistratio
               </p>
               <div className="flex flex-col gap-3 mb-8">
                 <label className="flex items-start gap-3 cursor-pointer">
-                  <input type="checkbox" id="ack-check-1" className="w-4 h-4 accent-[#111111] rounded mt-0.5 shrink-0" />
+                  <input
+                    type="checkbox"
+                    id="ack-check-1"
+                    checked={ack1}
+                    onChange={(e) => setAck1(e.target.checked)}
+                    className="w-4 h-4 accent-[#111111] rounded mt-0.5 shrink-0"
+                  />
                   <span className="text-[13px] text-[#6E6E73] leading-relaxed font-medium">
                     I acknowledge that I have read and understood the event details and agree to participate in the event in accordance with the guidelines and instructions provided.
                   </span>
                 </label>
                 <label className="flex items-start gap-3 cursor-pointer">
-                  <input type="checkbox" id="ack-check-2" className="w-4 h-4 accent-[#111111] rounded mt-0.5 shrink-0" />
+                  <input
+                    type="checkbox"
+                    id="ack-check-2"
+                    checked={ack2}
+                    onChange={(e) => setAck2(e.target.checked)}
+                    className="w-4 h-4 accent-[#111111] rounded mt-0.5 shrink-0"
+                  />
                   <span className="text-[13px] text-[#6E6E73] leading-relaxed font-medium">
                     I agree to the <a href="#" className="underline decoration-[#9E9EA7] hover:text-[#111111] transition-colors">community guidelines</a>.
                   </span>
@@ -917,18 +943,14 @@ export const SlideButton = ({ onComplete, event, isFull = false, userRegistratio
               </div>
               <SlideButtonBase
                 label="Slide to Confirm"
+                disabled={!ack1 || !ack2}
                 loading={loading}
                 onSlideComplete={() => {
-                  const chk1 = document.getElementById("ack-check-1") as HTMLInputElement;
-                  const chk2 = document.getElementById("ack-check-2") as HTMLInputElement;
-                  if ((chk1 && !chk1.checked) || (chk2 && !chk2.checked)) {
-                    alert("Please acknowledge the terms and conditions before proceeding.");
-                    return;
-                  }
+                  if (!ack1 || !ack2) return;
                   if (regData) {
-                    doRegister(regData.values, regData.transactionId, regData.selectedTicketId, regData.paymentProofFile, regData.teamName, regData.teamMates).then(() => setShowAckModal(false));
+                    doRegister(regData.values, regData.transactionId, regData.selectedTicketId, regData.paymentProofFile, regData.teamName, regData.teamMates).then(() => closeAckModal());
                   } else {
-                    doRegister().then(() => setShowAckModal(false));
+                    doRegister().then(() => closeAckModal());
                   }
                 }}
               />

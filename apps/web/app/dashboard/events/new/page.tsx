@@ -230,6 +230,13 @@ function FormInput({ label, required, hint, children }: { label: string; require
   );
 }
 
+const safeDate = (val?: string) => {
+  if (!val) return undefined;
+  const s = val.includes("T") ? val.split("T")[0] : val.slice(0, 10);
+  const d = new Date(s + "T12:00:00Z");
+  return isNaN(d.getTime()) ? undefined : d;
+};
+
 const inputCls = "w-full px-4 py-2.5 rounded-xl border border-[#E5E5EA] bg-white text-[14px] text-[#111111] placeholder:text-[#9E9EA7] focus:outline-none focus:border-[#cfe467] focus:ring-2 focus:ring-[#cfe467]/20 transition-all";
 
 export default function NewEventPage() {
@@ -381,11 +388,26 @@ export default function NewEventPage() {
         throw new Error("You must select at least one host for the event.");
       }
 
+      if (form.startDate && form.endDate) {
+        if (form.endDate < form.startDate) {
+          throw new Error("End date must be on or after the start date.");
+        }
+        if (form.endDate === form.startDate && form.startTime && form.endTime) {
+          if (form.endTime <= form.startTime) {
+            throw new Error("End time must be after the start time.");
+          }
+        }
+      }
+
       if (form.startDate && form.registrationDeadline) {
-        const startDateTimeStr = form.startDate + (form.startTime ? `T${form.startTime}` : 'T00:00:00');
-        const regEndDateTimeStr = form.registrationDeadline + (form.registrationEndTime ? `T${form.registrationEndTime}` : 'T23:59:59');
-        if (new Date(regEndDateTimeStr) > new Date(startDateTimeStr)) {
-          throw new Error("Registration deadline cannot be after the event start date and time.");
+        const effectiveEndDate = form.endDate || form.startDate;
+        const effectiveEndTime = form.endDate ? (form.endTime || "23:59") : (form.endTime || form.startTime || "23:59");
+        const eventStartDateTimeStr = `${form.startDate}T${form.startTime ? (form.startTime.length === 5 ? `${form.startTime}:00` : form.startTime) : "00:00:00"}`;
+        const eventEndDateTimeStr = `${effectiveEndDate}T${effectiveEndTime.length === 5 ? `${effectiveEndTime}:00` : effectiveEndTime}`;
+        const regEndDateTimeStr = `${form.registrationDeadline}T${form.registrationEndTime ? (form.registrationEndTime.length === 5 ? `${form.registrationEndTime}:00` : form.registrationEndTime) : "23:59:59"}`;
+
+        if (new Date(regEndDateTimeStr).getTime() < new Date(eventStartDateTimeStr).getTime() || new Date(regEndDateTimeStr).getTime() > new Date(eventEndDateTimeStr).getTime()) {
+          throw new Error("Registration deadline must be between the event start date and end date.");
         }
       }
 
@@ -526,11 +548,11 @@ export default function NewEventPage() {
               <FormInput label="Start Date" required>
                 <Popover>
                   <PopoverTrigger className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl border border-[#E5E5EA] bg-white text-[14px] text-left focus:outline-none focus:border-[#cfe467] focus:ring-2 focus:ring-[#cfe467]/20 transition-all ${!form.startDate ? 'text-[#9E9EA7]' : 'text-[#111111]'}`}>
-                    {form.startDate ? format(new Date(form.startDate + 'T12:00:00Z'), "MMM d, yyyy") : <span>Select date</span>}
+                    {safeDate(form.startDate) ? format(safeDate(form.startDate)!, "MMM d, yyyy") : <span>Select date</span>}
                     <Calendar size={15} className="text-[#6E6E73]" />
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0 z-[100] bg-white border border-[#E5E5EA] rounded-xl shadow-lg" align="end">
-                    <CalendarUI mode="single" selected={form.startDate ? new Date(form.startDate + 'T12:00:00Z') : undefined} onSelect={(d) => set("startDate", d ? format(d, "yyyy-MM-dd") : "")} />
+                    <CalendarUI mode="single" selected={safeDate(form.startDate)} onSelect={(d) => set("startDate", d ? format(d, "yyyy-MM-dd") : "")} />
                   </PopoverContent>
                 </Popover>
               </FormInput>
@@ -540,11 +562,11 @@ export default function NewEventPage() {
               <FormInput label="End Date">
                 <Popover>
                   <PopoverTrigger className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl border border-[#E5E5EA] bg-white text-[14px] text-left focus:outline-none focus:border-[#cfe467] focus:ring-2 focus:ring-[#cfe467]/20 transition-all ${!form.endDate ? 'text-[#9E9EA7]' : 'text-[#111111]'}`}>
-                    {form.endDate ? format(new Date(form.endDate + 'T12:00:00Z'), "MMM d, yyyy") : <span>Select date</span>}
+                    {safeDate(form.endDate) ? format(safeDate(form.endDate)!, "MMM d, yyyy") : <span>Select date</span>}
                     <Calendar size={15} className="text-[#6E6E73]" />
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0 z-[100] bg-white border border-[#E5E5EA] rounded-xl shadow-lg" align="end">
-                    <CalendarUI mode="single" selected={form.endDate ? new Date(form.endDate + 'T12:00:00Z') : undefined} onSelect={(d) => set("endDate", d ? format(d, "yyyy-MM-dd") : "")} />
+                    <CalendarUI mode="single" selected={safeDate(form.endDate)} disabled={(date) => form.startDate ? date < new Date(form.startDate.slice(0, 10) + 'T00:00:00') : false} onSelect={(d) => set("endDate", d ? format(d, "yyyy-MM-dd") : "")} />
                   </PopoverContent>
                 </Popover>
               </FormInput>
@@ -696,20 +718,22 @@ export default function NewEventPage() {
               <FormInput label="Registration Deadline" required>
                 <Popover>
                   <PopoverTrigger className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl border border-[#E5E5EA] bg-white text-[14px] text-left focus:outline-none focus:border-[#cfe467] focus:ring-2 focus:ring-[#cfe467]/20 transition-all ${!form.registrationDeadline ? 'text-[#9E9EA7]' : 'text-[#111111]'}`}>
-                    {form.registrationDeadline ? format(new Date(form.registrationDeadline + 'T12:00:00Z'), "MMM d, yyyy") : <span>Select date</span>}
+                    {safeDate(form.registrationDeadline) ? format(safeDate(form.registrationDeadline)!, "MMM d, yyyy") : <span>Select date</span>}
                     <Calendar size={15} className="text-[#6E6E73]" />
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0 z-[100] bg-white border border-[#E5E5EA] rounded-xl shadow-lg" align="end">
-                    <CalendarUI mode="single" selected={form.registrationDeadline ? new Date(form.registrationDeadline + 'T12:00:00Z') : undefined} onSelect={(d) => set("registrationDeadline", d ? format(d, "yyyy-MM-dd") : "")} />
+                    <CalendarUI mode="single" selected={safeDate(form.registrationDeadline)} disabled={(date) => {
+                      if (form.startDate && date < new Date(form.startDate.slice(0, 10) + 'T00:00:00')) return true;
+                      const effEnd = form.endDate || form.startDate;
+                      if (effEnd && date > new Date(effEnd.slice(0, 10) + 'T23:59:59')) return true;
+                      return false;
+                    }} onSelect={(d) => set("registrationDeadline", d ? format(d, "yyyy-MM-dd") : "")} />
                   </PopoverContent>
                 </Popover>
               </FormInput>
 
               <FormInput label="Registration Time" required>
-                <div className="relative">
-                  <input type="time" className={inputCls} value={form.registrationEndTime} onChange={e => set("registrationEndTime", e.target.value)} />
-                  <Clock size={15} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#6E6E73] pointer-events-none" />
-                </div>
+                <input type="time" className={inputCls} value={form.registrationEndTime} onChange={e => set("registrationEndTime", e.target.value.slice(0, 5))} required />
               </FormInput>
             </div>
 

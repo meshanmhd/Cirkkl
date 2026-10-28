@@ -203,45 +203,41 @@ export default function NotificationsPage() {
   return (
     <div className="min-h-screen bg-white font-geist">
       <Navbar />
-      <div className="pt-28 pb-20 px-[10%] w-full mx-auto">
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-[22px] font-bold text-[#111111] tracking-tight">Notifications</h1>
-        </div>
-
-        <div className="flex items-center gap-6 border-b border-[#E5E5EA] mb-6">
-          {(["All", "Invites", "General"] as const).map(tab => {
-            const key = tab.toLowerCase() as "all" | "invites" | "general";
-            return (
-              <button 
-                key={tab} 
-                onClick={() => setActiveTab(key)}
-                className={`pb-3 text-sm font-medium transition-all relative ${activeTab === key ? "text-[#111111]" : "text-[#6E6E73] hover:text-[#111111]"}`}
-              >
-                {tab}
-                {activeTab === key && (
-                  <span className="absolute bottom-[-1px] left-0 right-0 h-[2px] bg-[#cfe467] rounded-t-md" />
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-          <div className="relative w-full sm:w-[320px]">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9E9EA7]" />
-            <input 
-              type="text" 
-              placeholder="Search for notification" 
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-white border border-[#E5E5EA] rounded-lg text-sm text-[#111111] placeholder:text-[#9E9EA7] focus:outline-none focus:border-[#cfe467] focus:ring-2 focus:ring-[#cfe467]/20 transition-all"
-            />
+      <div className="pt-24 pb-20 px-[10%] w-full mx-auto">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#E5E5EA] pb-3 mb-6">
+          <div className="flex items-center gap-6 shrink-0">
+            {(["All", "Invites", "General"] as const).map(tab => {
+              const key = tab.toLowerCase() as "all" | "invites" | "general";
+              return (
+                <button 
+                  key={tab} 
+                  onClick={() => setActiveTab(key)}
+                  className={`h-9 flex items-center text-sm font-medium transition-all relative ${activeTab === key ? "text-[#111111]" : "text-[#6E6E73] hover:text-[#111111]"}`}
+                >
+                  {tab}
+                  {activeTab === key && (
+                    <span className="absolute -bottom-[13px] left-0 right-0 h-[2px] bg-[#cfe467] rounded-t-md" />
+                  )}
+                </button>
+              );
+            })}
           </div>
-          <div className="flex items-center gap-2">
-            <button onClick={handleRefresh} className="p-2 bg-white border border-[#E5E5EA] rounded-lg text-[#111111] hover:bg-[#F5F5F7] transition-all" title="Refresh">
+
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            <div className="relative flex-1 md:w-[260px] lg:w-[300px] md:flex-initial">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9E9EA7]" />
+              <input 
+                type="text" 
+                placeholder="Search for notification" 
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="w-full h-9 pl-9 pr-4 bg-white border border-[#E5E5EA] rounded-lg text-sm text-[#111111] placeholder:text-[#9E9EA7] focus:outline-none focus:border-[#cfe467] focus:ring-2 focus:ring-[#cfe467]/20 transition-all"
+              />
+            </div>
+            <button onClick={handleRefresh} className="h-9 w-9 flex items-center justify-center bg-white border border-[#E5E5EA] rounded-lg text-[#111111] hover:bg-[#F5F5F7] transition-all shrink-0" title="Refresh">
               <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
             </button>
-            <button onClick={markAllAsRead} className="px-4 py-2 bg-white border border-[#E5E5EA] rounded-lg text-[13px] font-medium text-[#111111] hover:bg-[#cfe467]/20 hover:border-[#cfe467] hover:text-[#111111] transition-all whitespace-nowrap">
+            <button onClick={markAllAsRead} className="h-9 px-4 flex items-center justify-center bg-white border border-[#E5E5EA] rounded-lg text-[13px] font-medium text-[#111111] hover:bg-[#cfe467]/20 hover:border-[#cfe467] hover:text-[#111111] transition-all whitespace-nowrap shrink-0">
               Mark all as read
             </button>
           </div>
@@ -273,7 +269,7 @@ export default function NotificationsPage() {
             </p>
           </div>
         ) : (
-          <div className="flex flex-col border-t border-[#E5E5EA]">
+          <div className="flex flex-col">
             {filtered.map(notif => {
               const { title, desc } = getTitleDesc(notif);
               const badge = getBadgeInfo(notif.type);

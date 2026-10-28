@@ -176,8 +176,11 @@ export interface Notification {
   message: string;
   isRead: boolean;
   eventId?: string | null;
+  eventTitle?: string | null;
   teamId?: string | null;
+  teamName?: string | null;
   senderId?: string | null;
+  senderName?: string | null;
   inviteStatus?: NotificationInviteStatus | null;
   createdAt: Date;
 }
@@ -221,6 +224,8 @@ export interface Payment {
   currency: string;
   status: PaymentStatus;
   transactionId?: string | null;
+  merchantUpiId?: string | null;
+  merchantName?: string | null;
   upiUri: string;
   createdAt: Date;
   updatedAt?: Date;

@@ -11,12 +11,12 @@ export class KyselyNotificationRepo implements NotificationRepo {
       id: row.id,
       userId: row.user_id,
       type: row.type as NotificationType,
-      title: row.title,
-      message: row.message,
-      isRead: Boolean(row.is_read),
-      eventId: row.event_id,
-      teamId: row.team_id,
-      senderId: row.sender_id,
+      title: row.title || "Notification",
+      message: row.message || "",
+      isRead: Boolean(row.is_read ?? row.read),
+      eventId: row.event_id ?? null,
+      teamId: row.team_id ?? null,
+      senderId: row.sender_id ?? null,
       createdAt: new Date(row.created_at),
     };
   }
@@ -60,8 +60,109 @@ export class KyselyNotificationRepo implements NotificationRepo {
     const total = Number(countRes?.count ?? 0);
     const totalPages = Math.ceil(total / limit);
 
+    const eventIds = Array.from(new Set(rows.map((r: any) => r.event_id).filter(Boolean)));
+    const teamIds = Array.from(new Set(rows.map((r: any) => r.team_id).filter(Boolean)));
+    const senderIds = Array.from(new Set(rows.map((r: any) => r.sender_id).filter(Boolean)));
+
+    const [events, teams, senders, teamMembers] = await Promise.all([
+      eventIds.length > 0
+        ? (this.db as any).selectFrom("events").select(["id", "title"]).where("id", "in", eventIds).execute()
+        : [],
+      teamIds.length > 0
+        ? (this.db as any).selectFrom("teams").select(["id", "name"]).where("id", "in", teamIds).execute()
+        : [],
+      senderIds.length > 0
+        ? (this.db as any).selectFrom("profiles").select(["id", "full_name"]).where("id", "in", senderIds).execute()
+        : [],
+      teamIds.length > 0
+        ? (this.db as any).selectFrom("team_members").select(["team_id", "status"]).where("team_id", "in", teamIds).where("user_id", "=", userId).execute()
+        : [],
+    ]);
+
+    const eventMap = new Map<string, string>();
+    for (const e of events) {
+      if (e?.id && e.title) eventMap.set(e.id, e.title);
+    }
+
+    const teamMap = new Map<string, string>();
+    for (const t of teams) {
+      if (t?.id && t.name) teamMap.set(t.id, t.name);
+    }
+
+    const senderMap = new Map<string, string>();
+    for (const s of senders) {
+      if (s?.id && s.full_name) senderMap.set(s.id, s.full_name);
+    }
+
+    const teamMemberMap = new Map<string, "pending" | "approved" | "rejected">();
+    for (const tm of teamMembers) {
+      if (tm?.team_id && tm.status) teamMemberMap.set(tm.team_id, tm.status as any);
+    }
+
+    const items: Notification[] = rows.map((r: any) => {
+      const eventTitle = r.event_id ? eventMap.get(r.event_id) ?? null : null;
+      const teamName = r.team_id ? teamMap.get(r.team_id) ?? null : null;
+      const senderName = r.sender_id ? senderMap.get(r.sender_id) ?? null : null;
+      const inviteStatus = r.team_id ? teamMemberMap.get(r.team_id) ?? "pending" : null;
+
+      let isRead = Boolean(r.is_read ?? r.read);
+      if (r.type === "team_invite") {
+        if (inviteStatus === "pending") {
+          isRead = false;
+        } else if (inviteStatus === "approved" || inviteStatus === "rejected") {
+          isRead = true;
+        }
+      }
+
+      let title = r.title;
+      let message = r.message;
+
+      if (!title || !message) {
+        if (r.type === "team_invite") {
+          const tName = teamName || "the team";
+          const eTitle = eventTitle || "the event";
+          if (inviteStatus === "approved") {
+            title = title || "Team Invite Accepted";
+            message = message || `You joined ${tName} for the event ${eTitle}.`;
+          } else if (inviteStatus === "rejected") {
+            title = title || "Team Invite Rejected";
+            message = message || `You declined the invite to join ${tName} for the event ${eTitle}.`;
+          } else {
+            title = title || "Team Invite received";
+            message = message || `${senderName || "Someone"} invited you to join team ${tName} for ${eTitle}.`;
+          }
+        } else if (r.type === "registration_approved") {
+          title = title || "Registration Approved";
+          message = message || `Your registration for ${eventTitle || "the event"} has been approved.`;
+        } else if (r.type === "registration_rejected") {
+          title = title || "Registration Rejected";
+          message = message || `Your registration for ${eventTitle || "the event"} has been rejected.`;
+        } else {
+          title = title || "Notification";
+          message = message || "You have a new notification.";
+        }
+      }
+
+      return {
+        id: r.id,
+        userId: r.user_id,
+        type: r.type as NotificationType,
+        title,
+        message,
+        isRead,
+        eventId: r.event_id ?? null,
+        eventTitle,
+        teamId: r.team_id ?? null,
+        teamName,
+        senderId: r.sender_id ?? null,
+        senderName,
+        inviteStatus,
+        createdAt: new Date(r.created_at),
+      };
+    });
+
     return {
-      items: rows.map((r) => this.mapRow(r)),
+      items,
       total,
       page,
       limit,
@@ -73,15 +174,16 @@ export class KyselyNotificationRepo implements NotificationRepo {
 
   async create(data: Omit<Notification, "id" | "createdAt">): Promise<Notification> {
     const id = crypto.randomUUID();
-    await this.db
+    await (this.db as any)
       .insertInto("notifications")
       .values({
         id,
         user_id: data.userId,
         type: data.type,
-        title: data.title,
-        message: data.message,
+        title: data.title ?? null,
+        message: data.message ?? null,
         is_read: data.isRead,
+        read: data.isRead,
         event_id: data.eventId ?? null,
         team_id: data.teamId ?? null,
         sender_id: data.senderId ?? null,
@@ -106,20 +208,20 @@ export class KyselyNotificationRepo implements NotificationRepo {
   }
 
   async markRead(id: string, userId: string): Promise<void> {
-    await this.db
+    await (this.db as any)
       .updateTable("notifications")
-      .set({ is_read: true })
+      .set({ is_read: true, read: true })
       .where("id", "=", id)
       .where("user_id", "=", userId)
       .execute();
   }
 
   async markAllRead(userId: string): Promise<number> {
-    const res = await this.db
+    const res = await (this.db as any)
       .updateTable("notifications")
-      .set({ is_read: true })
+      .set({ is_read: true, read: true })
       .where("user_id", "=", userId)
-      .where("is_read", "=", false)
+      .where((eb: any) => eb.or([eb("is_read", "=", false), eb("read", "=", false)]))
       .execute();
 
     return Number(res[0]?.numUpdatedRows ?? 0);
@@ -135,9 +237,9 @@ export class KyselyNotificationRepo implements NotificationRepo {
 
   async deleteOldNotifications(userId: string, olderThanDays: number): Promise<number> {
     const cutoff = new Date(Date.now() - olderThanDays * 24 * 60 * 60 * 1000);
-    const query = this.db.deleteFrom("notifications").where("created_at", "<", cutoff);
+    let query = this.db.deleteFrom("notifications").where("created_at", "<", cutoff);
     if (userId) {
-      query.where("user_id", "=", userId);
+      query = query.where("user_id", "=", userId);
     }
     const res = await query.execute();
     return Number(res[0]?.numDeletedRows ?? 0);
@@ -155,11 +257,16 @@ export class KyselyNotificationRepo implements NotificationRepo {
   }
 
   async countUnread(userId: string): Promise<number> {
-    const res = await this.db
+    const res = await (this.db as any)
       .selectFrom("notifications")
       .select(sql<number>`count(*)`.as("count"))
       .where("user_id", "=", userId)
-      .where("is_read", "=", false)
+      .where((eb: any) =>
+        eb.and([
+          eb("is_read", "=", false),
+          eb.or([eb("read", "=", false), eb("read", "is", null)]),
+        ])
+      )
       .executeTakeFirst();
 
     return Number(res?.count ?? 0);

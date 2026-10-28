@@ -12,6 +12,18 @@ import {
   Speaker,
 } from "../../ports/domain";
 
+function parseDateStr(d: any): string | null {
+  if (!d) return null;
+  if (d instanceof Date) return isNaN(d.getTime()) ? null : d.toISOString().split("T")[0];
+  const s = String(d).trim();
+  return s.includes("T") ? s.split("T")[0] : s.slice(0, 10);
+}
+
+function parseTimeStr(t: any): string | null {
+  if (!t) return null;
+  return String(t).trim().slice(0, 5);
+}
+
 export class KyselyEventRepo implements EventRepo {
   constructor(private readonly db: Kysely<Database>) {}
 
@@ -66,15 +78,15 @@ export class KyselyEventRepo implements EventRepo {
       city: row.city ?? null,
       startDate: new Date(row.start_date || row.date),
       endDate: row.end_date ? new Date(row.end_date) : null,
-      time: row.time ?? null,
-      endTime: row.end_time ?? null,
+      time: parseTimeStr(row.time),
+      endTime: parseTimeStr(row.end_time),
       location: row.location ?? row.venue ?? row.city ?? null,
       locationType: row.location_type ?? "physical",
       locationLink: row.location_link ?? null,
       meetingLink: row.meeting_link ?? null,
       platform: row.platform ?? null,
       registrationDeadline: row.registration_deadline ? new Date(row.registration_deadline) : null,
-      registrationEndTime: row.registration_end_time ?? null,
+      registrationEndTime: parseTimeStr(row.registration_end_time),
       status: row.status as EventStatus,
       visibility: row.visibility as EventVisibility,
       isFeatured: Boolean(row.is_featured || row.featured),
@@ -281,7 +293,6 @@ export class KyselyEventRepo implements EventRepo {
 
   async create(data: Omit<Event, "id" | "createdAt" | "updatedAt">): Promise<Event> {
     const id = crypto.randomUUID();
-    const now = new Date();
 
     await this.db
       .insertInto("events")
@@ -291,21 +302,45 @@ export class KyselyEventRepo implements EventRepo {
         title: data.title,
         slug: data.slug,
         description: data.description,
+        tagline: data.tagline ?? null,
+        category: data.category ?? null,
+        organizer: data.organizer ?? null,
         venue: data.venue ?? null,
         city: data.city ?? null,
+        date: parseDateStr(data.startDate),
+        time: parseTimeStr(data.time),
         start_date: data.startDate,
-        end_date: data.endDate ?? null,
-        registration_deadline: data.registrationDeadline ?? null,
+        end_date: parseDateStr(data.endDate),
+        end_time: parseTimeStr(data.endTime),
+        registration_deadline: parseDateStr(data.registrationDeadline),
+        registration_end_time: parseTimeStr(data.registrationEndTime),
+        location: data.location ?? data.venue ?? data.city ?? null,
+        location_type: data.locationType ?? "physical",
+        location_link: data.locationLink ?? null,
+        meeting_link: data.meetingLink ?? null,
+        platform: data.platform ?? null,
         status: data.status,
         visibility: data.visibility,
         is_featured: data.isFeatured,
         is_paid: data.isPaid,
+        price: data.price ?? (data.isPaid ? "paid" : "free"),
+        price_amount: data.priceAmount ?? null,
+        seats: data.seats ?? null,
+        seats_available: data.seatsAvailable ?? data.seats ?? null,
+        capacity: data.seats ?? null,
+        approval_required: data.approvalRequired ?? false,
+        cancellation_policy: data.cancellationPolicy ?? null,
+        refund_policy: data.refundPolicy ?? null,
+        photography_policy: data.photographyPolicy ?? null,
+        tags: Array.isArray(data.tags) ? data.tags : (data.tags ? [data.tags] : []), 
+        hosts: data.hosts ? JSON.stringify(data.hosts) : null,
         is_team_event: data.isTeamEvent,
         min_team_size: data.minTeamSize ?? null,
         max_team_size: data.maxTeamSize ?? null,
-        capacity: null,
         banner_url: data.bannerUrl ?? null,
         poster_url: data.posterUrl ?? null,
+        image: data.bannerUrl ?? null,
+        poster_image: data.posterUrl ?? null,
         speakers: data.speakers ? JSON.stringify(data.speakers) : null,
         custom_fields: data.customFields ? JSON.stringify(data.customFields) : null,
       })
@@ -323,22 +358,57 @@ export class KyselyEventRepo implements EventRepo {
     if (data.title !== undefined) values.title = data.title;
     if (data.slug !== undefined) values.slug = data.slug;
     if (data.description !== undefined) values.description = data.description;
+    if (data.tagline !== undefined) values.tagline = data.tagline;
+    if (data.category !== undefined) values.category = data.category;
+    if (data.organizer !== undefined) values.organizer = data.organizer;
     if (data.venue !== undefined) values.venue = data.venue;
     if (data.city !== undefined) values.city = data.city;
-    if (data.startDate !== undefined) values.start_date = data.startDate;
-    if (data.endDate !== undefined) values.end_date = data.endDate;
-    if (data.registrationDeadline !== undefined) values.registration_deadline = data.registrationDeadline;
+    if (data.startDate !== undefined) {
+      values.start_date = data.startDate;
+      values.date = data.startDate ? data.startDate.toISOString().split("T")[0] : null;
+    }
+    if (data.time !== undefined) values.time = parseTimeStr(data.time);
+    if (data.endDate !== undefined) values.end_date = parseDateStr(data.endDate);
+    if (data.endTime !== undefined) values.end_time = parseTimeStr(data.endTime);
+    if (data.registrationDeadline !== undefined) values.registration_deadline = parseDateStr(data.registrationDeadline);
+    if (data.registrationEndTime !== undefined) values.registration_end_time = parseTimeStr(data.registrationEndTime);
+    if (data.location !== undefined) values.location = data.location;
+    if (data.locationType !== undefined) values.location_type = data.locationType;
+    if (data.locationLink !== undefined) values.location_link = data.locationLink;
+    if (data.meetingLink !== undefined) values.meeting_link = data.meetingLink;
+    if (data.platform !== undefined) values.platform = data.platform;
     if (data.status !== undefined) values.status = data.status;
     if (data.visibility !== undefined) values.visibility = data.visibility;
     if (data.isFeatured !== undefined) values.is_featured = data.isFeatured;
     if (data.isPaid !== undefined) values.is_paid = data.isPaid;
+    if (data.price !== undefined) values.price = data.price;
+    if (data.priceAmount !== undefined) values.price_amount = data.priceAmount;
+    if (data.seats !== undefined) {
+      values.seats = data.seats;
+      values.capacity = data.seats;
+    }
+    if (data.seatsAvailable !== undefined) values.seats_available = data.seatsAvailable;
+    if (data.approvalRequired !== undefined) values.approval_required = data.approvalRequired;
+    if (data.cancellationPolicy !== undefined) values.cancellation_policy = data.cancellationPolicy;
+    if (data.refundPolicy !== undefined) values.refund_policy = data.refundPolicy;
+    if (data.photographyPolicy !== undefined) values.photography_policy = data.photographyPolicy;
+    if (data.tags !== undefined) {
+      values.tags = Array.isArray(data.tags) ? data.tags : (data.tags ? [data.tags] : []);
+    }
     if (data.isTeamEvent !== undefined) values.is_team_event = data.isTeamEvent;
     if (data.minTeamSize !== undefined) values.min_team_size = data.minTeamSize;
     if (data.maxTeamSize !== undefined) values.max_team_size = data.maxTeamSize;
-    if (data.bannerUrl !== undefined) values.banner_url = data.bannerUrl;
-    if (data.posterUrl !== undefined) values.poster_url = data.posterUrl;
+    if (data.bannerUrl !== undefined) {
+      values.banner_url = data.bannerUrl;
+      values.image = data.bannerUrl;
+    }
+    if (data.posterUrl !== undefined) {
+      values.poster_url = data.posterUrl;
+      values.poster_image = data.posterUrl;
+    }
     if (data.speakers !== undefined) values.speakers = JSON.stringify(data.speakers);
     if (data.customFields !== undefined) values.custom_fields = JSON.stringify(data.customFields);
+    if (data.hosts !== undefined) values.hosts = JSON.stringify(data.hosts);
 
     if (Object.keys(values).length > 0) {
       await this.db.updateTable("events").set(values).where("id", "=", id).execute();
@@ -356,6 +426,29 @@ export class KyselyEventRepo implements EventRepo {
   }
 
   async findHosts(eventId: string): Promise<EventHost[]> {
+    const hostRoles = await this.db
+      .selectFrom("event_roles")
+      .select("user_id")
+      .where("event_id", "=", eventId)
+      .where("role", "=", "host")
+      .execute();
+
+    if (hostRoles.length > 0) {
+      const userIds = hostRoles.map((r) => r.user_id);
+      const rows = await this.db
+        .selectFrom("members")
+        .select(["id", "user_id", "name", "role", "avatar_url"])
+        .where((eb) => eb.or([eb("user_id", "in", userIds), eb("id", "in", userIds)]))
+        .execute();
+
+      return rows.map((r) => ({
+        id: r.user_id || r.id,
+        name: r.name,
+        role: r.role,
+        avatarUrl: r.avatar_url ?? undefined,
+      }));
+    }
+
     const rows = await this.db
       .selectFrom("members")
       .select(["id", "user_id", "name", "role", "avatar_url"])
@@ -368,6 +461,26 @@ export class KyselyEventRepo implements EventRepo {
       role: r.role,
       avatarUrl: r.avatar_url ?? undefined,
     }));
+  }
+
+  async setHosts(eventId: string, hostUserIds: string[]): Promise<void> {
+    await this.db
+      .deleteFrom("event_roles")
+      .where("event_id", "=", eventId)
+      .where("role", "=", "host")
+      .execute();
+
+    for (const userId of hostUserIds) {
+      await this.db
+        .insertInto("event_roles")
+        .values({
+          id: crypto.randomUUID(),
+          event_id: eventId,
+          user_id: userId,
+          role: "host",
+        })
+        .execute();
+    }
   }
 
   async findRoles(eventId: string): Promise<Array<{ id: string; eventId: string; userId: string; role: string }>> {

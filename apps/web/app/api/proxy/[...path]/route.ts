@@ -183,11 +183,29 @@ async function handleProxy(req: NextRequest, { params }: { params: Promise<{ pat
     body = await req.arrayBuffer();
   }
 
-  let upstreamRes = await fetch(targetUrl.toString(), {
-    method: req.method,
-    headers: forwardHeaders,
-    body,
-  });
+  let upstreamRes: Response;
+  try {
+    upstreamRes = await fetch(targetUrl.toString(), {
+      method: req.method,
+      headers: forwardHeaders,
+      body,
+      signal: req.signal,
+    });
+  } catch (err: any) {
+    if (req.signal.aborted) {
+      return new Response(null, { status: 499 });
+    }
+    return new NextResponse(
+      JSON.stringify({
+        error: {
+          code: "API_UNAVAILABLE",
+          message: "API service is currently unavailable. Please check your connection.",
+          details: err?.message,
+        },
+      }),
+      { status: 503, headers: { "Content-Type": "application/json" } }
+    );
+  }
 
   if (upstreamRes.status === 401 && refreshToken && !refreshedTokens) {
     const refresh = await refreshTokens(refreshToken);
@@ -195,11 +213,28 @@ async function handleProxy(req: NextRequest, { params }: { params: Promise<{ pat
       refreshedTokens = refresh.tokens;
       accessToken = refreshedTokens.accessToken;
       forwardHeaders.set("Authorization", `Bearer ${accessToken}`);
-      upstreamRes = await fetch(targetUrl.toString(), {
-        method: req.method,
-        headers: forwardHeaders,
-        body,
-      });
+      try {
+        upstreamRes = await fetch(targetUrl.toString(), {
+          method: req.method,
+          headers: forwardHeaders,
+          body,
+          signal: req.signal,
+        });
+      } catch (err: any) {
+        if (req.signal.aborted) {
+          return new Response(null, { status: 499 });
+        }
+        return new NextResponse(
+          JSON.stringify({
+            error: {
+              code: "API_UNAVAILABLE",
+              message: "API service is currently unavailable. Please check your connection.",
+              details: err?.message,
+            },
+          }),
+          { status: 503, headers: { "Content-Type": "application/json" } }
+        );
+      }
     } else if (refresh.status === "invalid") {
       const response = new NextResponse(
         JSON.stringify({ error: { code: "UNAUTHORIZED", message: "Session expired" } }),

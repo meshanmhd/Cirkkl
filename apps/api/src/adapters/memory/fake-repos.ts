@@ -189,6 +189,13 @@ export class MemoryEventRepo implements EventRepo {
     return this.hosts.get(eventId) ?? [];
   }
 
+  async setHosts(eventId: string, hostUserIds: string[]): Promise<void> {
+    this.hosts.set(
+      eventId,
+      hostUserIds.map((id) => ({ id, name: "Host" }))
+    );
+  }
+
   async findRoles(eventId: string): Promise<Array<{ id: string; eventId: string; userId: string; role: string }>> {
     return this.roles.get(eventId) ?? [];
   }

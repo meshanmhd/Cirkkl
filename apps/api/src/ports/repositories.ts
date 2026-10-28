@@ -51,6 +51,7 @@ export interface EventRepo {
   update(id: string, data: Partial<Event>): Promise<Event>;
   delete(id: string): Promise<void>;
   findHosts(eventId: string): Promise<EventHost[]>;
+  setHosts(eventId: string, hostUserIds: string[]): Promise<void>;
   findRoles(
     eventId: string
   ): Promise<Array<{ id: string; eventId: string; userId: string; role: string }>>;

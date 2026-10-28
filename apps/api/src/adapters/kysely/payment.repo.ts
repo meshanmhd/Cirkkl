@@ -17,6 +17,8 @@ export class KyselyPaymentRepo implements PaymentRepo {
       currency: "INR",
       status: row.status as PaymentStatus,
       transactionId: row.transaction_id,
+      merchantUpiId: row.merchant_upi_id,
+      merchantName: row.merchant_name,
       upiUri: row.upi_uri,
       createdAt: new Date(row.created_at),
     };
@@ -46,6 +48,7 @@ export class KyselyPaymentRepo implements PaymentRepo {
 
   async create(data: Omit<Payment, "id" | "createdAt" | "updatedAt">): Promise<Payment> {
     const id = crypto.randomUUID();
+    const merchant = await this.getMerchantSettings();
     await this.db
       .insertInto("payments")
       .values({
@@ -56,6 +59,8 @@ export class KyselyPaymentRepo implements PaymentRepo {
         ticket_id: data.ticketId,
         amount: data.amount,
         status: data.status,
+        merchant_upi_id: data.merchantUpiId || merchant.upiId,
+        merchant_name: data.merchantName || merchant.merchantName,
         transaction_id: data.transactionId ?? null,
         upi_uri: data.upiUri,
       })
