@@ -16,6 +16,8 @@ export interface Event {
   price: "free" | "paid";
   priceAmount?: number;
   registered?: boolean;
+  visibility?: "public" | "private";
+  createdAt?: string;
 }
 
 export const CATEGORIES = [

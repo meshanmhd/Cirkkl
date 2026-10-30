@@ -6,7 +6,7 @@ import { api, getErrorMessage } from "@/lib/api";
 import {
   ArrowLeft, Image as ImageIcon, Plus, X, Loader2,
   Upload, Globe, MapPin, Wifi, Car, UtensilsCrossed,
-  Calendar, Clock, Users, FileText, Tag, Trash2, ChevronDown, Check,
+  Calendar, Users, FileText, Tag, Trash2, ChevronDown, Check,
   Info, ListPlus, Mic, Search, Eye, RefreshCw, Lock
 } from "lucide-react";
 import Link from "next/link";
@@ -372,10 +372,10 @@ export default function EditEventPage() {
           tagline: data.tagline || "",
           description: data.description || "",
           category: data.category || "General",
-          startDate: data.date || "",
-          startTime: data.time || "",
-          endDate: data.endDate || "",
-          endTime: data.endTime || "",
+          startDate: data.date ? (data.date.includes("T") ? data.date.split("T")[0] : data.date) : "",
+          startTime: data.time ? data.time.substring(0, 5) : "",
+          endDate: data.endDate ? (data.endDate.includes("T") ? data.endDate.split("T")[0] : data.endDate) : "",
+          endTime: data.endTime ? data.endTime.substring(0, 5) : "",
           locationType: data.locationType || "physical",
           venue: data.venue || "",
           locationLink: data.locationLink || "",
@@ -385,8 +385,8 @@ export default function EditEventPage() {
           price: data.price || "free",
           capacity: data.seats ? data.seats.toString() : "",
           approvalRequired: data.approvalRequired ? "true" : "false",
-          registrationDeadline: data.registrationDeadline || "",
-          registrationEndTime: data.registrationEndTime || "",
+          registrationDeadline: data.registrationDeadline ? (data.registrationDeadline.includes("T") ? data.registrationDeadline.split("T")[0] : data.registrationDeadline) : "",
+          registrationEndTime: data.registrationEndTime ? data.registrationEndTime.substring(0, 5) : "",
           cancellationPolicy: data.cancellationPolicy || "",
           refundPolicy: data.refundPolicy || "",
           photographyPolicy: data.photographyPolicy || "",
@@ -508,7 +508,7 @@ export default function EditEventPage() {
         capacity: isUnlimitedCapacity ? null : (parseInt(form.capacity) || null),
         approvalRequired: form.price === "paid" ? true : form.approvalRequired === "true",
         registrationDeadline: form.registrationDeadline || undefined,
-        registrationEndTime: form.registrationEndTime || undefined,
+        registrationEndTime: form.registrationEndTime ? form.registrationEndTime.substring(0, 5) : undefined,
         cancellationPolicy: form.cancellationPolicy || undefined,
         refundPolicy: form.refundPolicy || undefined,
         photographyPolicy: form.photographyPolicy || undefined,
@@ -583,7 +583,7 @@ export default function EditEventPage() {
             </div>
             <FormInput label="Visibility">
               <TabSwitcher
-                options={[{ value: "public", label: "Public" }, { value: "unlisted", label: "Unlisted" }, { value: "private", label: "Private" }]}
+                options={[{ value: "public", label: "Public" }, { value: "private", label: "Private" }]}
                 value={form.visibility}
                 onChange={v => set("visibility", v)}
               />
@@ -788,10 +788,7 @@ export default function EditEventPage() {
               </FormInput>
 
               <FormInput label="Registration Time" required>
-                <div className="relative">
-                  <input type="time" className={inputCls} value={form.registrationEndTime} onChange={e => set("registrationEndTime", e.target.value)} />
-                  <Clock size={15} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#6E6E73] pointer-events-none" />
-                </div>
+                <input type="time" step="60" className={inputCls} value={form.registrationEndTime ? form.registrationEndTime.substring(0, 5) : ""} onChange={e => set("registrationEndTime", e.target.value ? e.target.value.substring(0, 5) : "")} />
               </FormInput>
             </div>
 

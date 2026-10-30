@@ -154,9 +154,9 @@ export function getErrorMessage(err: unknown, fallback: string = "An error occur
       case "TEAM_NOT_FOUND":
         return "Team not found or invite has expired.";
       case "UNAUTHORIZED":
-        return "Please log in to continue.";
+        return err.message || "Please log in to continue.";
       case "FORBIDDEN":
-        return "You do not have permission to perform this action.";
+        return err.message || "You do not have permission to perform this action.";
       case "INVALID_CREDENTIALS":
         return "Invalid email or password.";
       case "INVALID_OTP":

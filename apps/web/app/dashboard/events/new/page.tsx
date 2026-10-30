@@ -6,7 +6,7 @@ import { api, getErrorMessage } from "@/lib/api";
 import {
   ArrowLeft, Image as ImageIcon, Plus, X, Loader2,
   Upload, Globe, MapPin, Wifi, Car, UtensilsCrossed,
-  Calendar, Clock, Users, FileText, Tag, Trash2, ChevronDown, Check,
+  Calendar, Users, FileText, Tag, Trash2, ChevronDown, Check,
   Info, ListPlus, Mic, Search, Eye, RefreshCw, Lock
 } from "lucide-react";
 import Link from "next/link";
@@ -434,7 +434,7 @@ export default function NewEventPage() {
         capacity: isUnlimitedCapacity ? null : (parseInt(form.capacity) || null),
         approvalRequired: form.price === "paid" ? true : form.approvalRequired === "true",
         registrationDeadline: form.registrationDeadline || undefined,
-        registrationEndTime: form.registrationEndTime || undefined,
+        registrationEndTime: form.registrationEndTime ? form.registrationEndTime.substring(0, 5) : undefined,
         cancellationPolicy: form.cancellationPolicy || undefined,
         refundPolicy: form.refundPolicy || undefined,
         photographyPolicy: form.photographyPolicy || undefined,
@@ -501,7 +501,7 @@ export default function NewEventPage() {
             </div>
             <FormInput label="Visibility">
               <TabSwitcher
-                options={[{ value: "public", label: "Public" }, { value: "unlisted", label: "Unlisted" }, { value: "private", label: "Private" }]}
+                options={[{ value: "public", label: "Public" }, { value: "private", label: "Private" }]}
                 value={form.visibility}
                 onChange={v => set("visibility", v)}
               />
@@ -706,10 +706,7 @@ export default function NewEventPage() {
               </FormInput>
 
               <FormInput label="Registration Time" required>
-                <div className="relative">
-                  <input type="time" className={inputCls} value={form.registrationEndTime} onChange={e => set("registrationEndTime", e.target.value)} />
-                  <Clock size={15} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#6E6E73] pointer-events-none" />
-                </div>
+                <input type="time" step="60" className={inputCls} value={form.registrationEndTime ? form.registrationEndTime.substring(0, 5) : ""} onChange={e => set("registrationEndTime", e.target.value ? e.target.value.substring(0, 5) : "")} />
               </FormInput>
             </div>
 

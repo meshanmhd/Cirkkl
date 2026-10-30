@@ -64,6 +64,9 @@ async function fetchMe(token: string): Promise<{ ok: boolean; status: number; da
 }
 
 export async function middleware(request: NextRequest) {
+  if (request.headers.has("next-action")) {
+    return NextResponse.next();
+  }
   const path = request.nextUrl.pathname;
   const isAuthPage = path === "/login" || path === "/signup";
   const isProtectedPage =

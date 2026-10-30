@@ -4,7 +4,7 @@ import { Operation } from "./common";
 export const EventStatusSchema = z.enum(["draft", "published", "cancelled", "completed"]);
 export type EventStatus = z.infer<typeof EventStatusSchema>;
 
-export const EventVisibilitySchema = z.enum(["public", "unlisted", "private"]);
+export const EventVisibilitySchema = z.enum(["public", "private"]);
 export type EventVisibility = z.infer<typeof EventVisibilitySchema>;
 
 export const EventPriceTypeSchema = z.enum(["free", "paid"]);
@@ -65,6 +65,8 @@ export const EventSummarySchema = z.object({
   priceAmount: z.number().nullable().optional(),
   status: EventStatusSchema,
   featured: z.boolean().default(false),
+  visibility: EventVisibilitySchema.optional(),
+  createdAt: z.string().optional(),
 });
 export type EventSummary = z.infer<typeof EventSummarySchema>;
 

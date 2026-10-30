@@ -13,15 +13,17 @@ export function createEventsRoutes(eventService: EventService) {
   const router = new Hono();
 
   router.get("/", async (c) => {
+    const caller = c.get("caller");
     const query = c.req.query();
     const parsed = ListEventsInputSchema.parse(query);
-    const result = await eventService.listEvents(parsed);
+    const result = await eventService.listEvents(parsed, caller);
     return c.json(result, 200);
   });
 
   router.get("/:idOrSlug", async (c) => {
+    const caller = c.get("caller");
     const idOrSlug = c.req.param("idOrSlug")!;
-    const result = await eventService.getEvent(idOrSlug);
+    const result = await eventService.getEvent(idOrSlug, caller);
     return c.json(result, 200);
   });
 

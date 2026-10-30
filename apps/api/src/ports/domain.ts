@@ -42,7 +42,7 @@ export interface Member {
 }
 
 export type EventStatus = "draft" | "published" | "cancelled" | "completed";
-export type EventVisibility = "public" | "unlisted" | "private";
+export type EventVisibility = "public" | "private";
 
 export interface Speaker {
   name: string;

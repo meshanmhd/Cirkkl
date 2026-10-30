@@ -120,14 +120,15 @@ export function createContainer(adapterOverride?: "supabase" | "memory") {
   }
 
   const authService = new AuthService(authProvider, orgRepo, profileRepo);
-  const eventService = new EventService(eventRepo, ticketRepo, transactionRunner);
+  const eventService = new EventService(eventRepo, ticketRepo, transactionRunner, memberRepo);
   const registrationService = new RegistrationService(
     registrationRepo,
     eventRepo,
     ticketRepo,
     teamRepo,
     notificationRepo,
-    transactionRunner
+    transactionRunner,
+    memberRepo
   );
   const orgService = new OrgService(
     eventRepo,

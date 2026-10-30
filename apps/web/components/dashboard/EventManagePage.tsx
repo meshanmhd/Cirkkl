@@ -518,7 +518,7 @@ export function EventManagePage({ event: initialEvent, registrations: initialReg
                     <div className="bg-[#F5F5F7] p-3.5 rounded-[12px] border border-[#E5E5EA]">
                       <p className="text-[11px] font-semibold text-[#6E6E73] uppercase tracking-wider mb-1">Registration Deadline</p>
                       <p className="text-[13px] font-medium text-[#111111]">
-                        {event.registration_deadline ? `${formatDate(event.registration_deadline)} ${event.registration_end_time ? `at ${event.registration_end_time}` : ""}` : "Null"}
+                        {event.registration_deadline ? `${formatDate(event.registration_deadline)} ${event.registration_end_time ? `at ${event.registration_end_time.substring(0, 5)}` : ""}` : "Null"}
                       </p>
                     </div>
                     <div className="bg-[#F5F5F7] p-3.5 rounded-[12px] border border-[#E5E5EA]">

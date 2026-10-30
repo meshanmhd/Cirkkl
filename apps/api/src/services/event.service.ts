@@ -1,23 +1,39 @@
-import { EventRepo, TicketRepo, TransactionRunner } from "../ports/repositories";
+import { EventRepo, MemberRepo, TicketRepo, TransactionRunner } from "../ports/repositories";
 import { Event, EventStatus, Ticket } from "../ports/domain";
 import { CallerContext } from "./auth.service";
-import { conflict, forbidden, notFound } from "../errors";
+import { conflict, forbidden, notFound, unauthorized } from "../errors";
 
 export class EventService {
   constructor(
     private readonly eventRepo: EventRepo,
     private readonly ticketRepo: TicketRepo,
-    private readonly transactionRunner: TransactionRunner
+    private readonly transactionRunner: TransactionRunner,
+    private readonly memberRepo: MemberRepo
   ) {}
 
-  async listEvents(input: {
-    search?: string;
-    category?: string;
-    timeFilter?: "upcoming" | "past" | "all";
-    cursor?: string;
-    limit?: number;
-  }): Promise<{ items: any[]; nextCursor: string | null }> {
-    const res = await this.eventRepo.findPublicEvents(input);
+  async listEvents(
+    input: {
+      search?: string;
+      category?: string;
+      timeFilter?: "upcoming" | "past" | "all";
+      cursor?: string;
+      limit?: number;
+    },
+    caller?: CallerContext
+  ): Promise<{ items: any[]; nextCursor: string | null }> {
+    let allowedOrgIds: string[] | undefined = undefined;
+    if (caller?.userId) {
+      const orgIds = new Set<string>();
+      if (caller.orgId) {
+        orgIds.add(caller.orgId);
+      }
+      const memberOrgIds = await this.memberRepo.findOrgIdsForUser(caller.userId);
+      for (const id of memberOrgIds) {
+        orgIds.add(id);
+      }
+      allowedOrgIds = Array.from(orgIds);
+    }
+    const res = await this.eventRepo.findPublicEvents({ ...input, allowedOrgIds });
     const items = res.items.map((e) => this.mapToSummary(e));
     return {
       items,
@@ -25,10 +41,23 @@ export class EventService {
     };
   }
 
-  async getEvent(idOrSlug: string): Promise<any> {
+  async getEvent(idOrSlug: string, caller?: CallerContext): Promise<any> {
     const event = await this.eventRepo.findPublicByIdOrSlug(idOrSlug);
     if (!event) {
       throw notFound("Event not found");
+    }
+
+    if (event.visibility === "private") {
+      if (!caller?.userId) {
+        throw unauthorized("You don't have access to view this event");
+      }
+      const isOwner = caller.orgId === event.organisationId || caller.userId === event.organisationId;
+      if (!isOwner) {
+        const member = await this.memberRepo.findByOrgAndUser(event.organisationId, caller.userId);
+        if (!member) {
+          throw forbidden("You don't have access to view this event");
+        }
+      }
     }
 
     const [tickets, hosts] = await Promise.all([
@@ -273,6 +302,8 @@ export class EventService {
       priceAmount: event.priceAmount,
       status: event.status,
       featured: event.isFeatured,
+      visibility: event.visibility,
+      createdAt: event.createdAt ? event.createdAt.toISOString() : undefined,
     };
   }
 

@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { getAuthContext } from "@/lib/auth/server";
 import Link from "next/link";
-import { ArrowLeft, Calendar, Clock, MapPin, Ticket, User, Users, Globe, ExternalLink, Info, ShieldCheck, Banknote, Camera } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, MapPin, Ticket, User, Users, Globe, ExternalLink, Info, Lock, LockKeyhole, ShieldCheck, Banknote, Camera } from "lucide-react";
 import { Metadata } from "next";
 import { SlideButton } from "@/components/ui/SlideButton";
 import { StickyRegisterBar } from "@/components/ui/StickyRegisterBar";
@@ -15,7 +15,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { api } from "@/lib/api";
+import { api, ApiError } from "@/lib/api";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
@@ -35,11 +35,60 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
 
   const { id } = await params;
   let apiEvent;
+  let accessDenied = false;
   try {
     const res = await api.events.get(id);
     apiEvent = res;
-  } catch {
-    notFound();
+  } catch (err: unknown) {
+    if (err instanceof ApiError && (err.status === 401 || err.code === "UNAUTHORIZED")) {
+      if (!auth.user) {
+        redirect(`/login?redirectTo=${encodeURIComponent(`/events/${id}`)}`);
+      }
+      accessDenied = true;
+    } else if (err instanceof ApiError && (err.status === 403 || err.code === "FORBIDDEN")) {
+      if (!auth.user) {
+        redirect(`/login?redirectTo=${encodeURIComponent(`/events/${id}`)}`);
+      }
+      accessDenied = true;
+    } else {
+      notFound();
+    }
+  }
+
+  if (accessDenied || !apiEvent) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center p-6 bg-white relative overflow-hidden font-sans">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#cfe467]/15 rounded-full blur-[120px] pointer-events-none" />
+
+        <div className="w-full max-w-[400px] flex flex-col items-center gap-6 text-center relative z-10">
+          <div className="w-16 h-16 bg-[#cfe467]/30 text-[#111111] rounded-full flex items-center justify-center">
+            <LockKeyhole className="w-8 h-8" strokeWidth={2} />
+          </div>
+
+          <div className="flex flex-col gap-2 w-full">
+            <h1 className="text-2xl font-bold text-[#111111] tracking-tight">Access Denied</h1>
+            <p className="text-[#6E6E73] text-[15px] leading-relaxed">
+              You don&apos;t have access to view this event
+            </p>
+          </div>
+
+          <div className="w-full flex flex-col gap-3 pt-2">
+            <Link
+              href="/events"
+              className="w-full rounded-xl bg-[#cfe467] text-[#111111] hover:bg-[#b8cc58] font-semibold h-12 flex items-center justify-center text-sm transition-colors"
+            >
+              Back to Events
+            </Link>
+            <Link
+              href="/"
+              className="text-xs text-[#6E6E73] hover:text-[#111111] transition-colors py-1"
+            >
+              Go to Home
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   let userRegistration = null;
@@ -166,24 +215,29 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                 <div className="mb-8">
                   <div className="flex flex-wrap items-center gap-3 mb-5">
                     {eventStatus === 'upcoming' && (
-                      <span className="inline-block px-3 py-1.5 bg-white border border-[#E5E5EA] text-[#111111] text-xs font-semibold rounded-lg uppercase tracking-wide">
+                      <span className="h-7 inline-flex items-center px-3 bg-white border border-[#E5E5EA] text-[#111111] text-xs font-semibold rounded-lg uppercase tracking-wide">
                         Upcoming
                       </span>
                     )}
                     {eventStatus === 'live' && (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 border border-red-100 text-red-600 text-xs font-semibold rounded-lg uppercase tracking-wide">
+                      <span className="h-7 inline-flex items-center gap-1.5 px-3 bg-red-50 border border-red-100 text-red-600 text-xs font-semibold rounded-lg uppercase tracking-wide">
                         <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
                         Live
                       </span>
                     )}
                     {eventStatus === 'ended' && (
-                      <span className="inline-block px-3 py-1.5 bg-gray-100 border border-gray-200 text-gray-500 text-xs font-semibold rounded-lg uppercase tracking-wide">
+                      <span className="h-7 inline-flex items-center px-3 bg-gray-100 border border-gray-200 text-gray-500 text-xs font-semibold rounded-lg uppercase tracking-wide">
                         Ended
                       </span>
                     )}
                     {event.category && (
-                      <span className="inline-block px-3 py-1.5 bg-[#cfe467] text-[#111111] text-xs font-semibold rounded-lg uppercase tracking-wide">
+                      <span className="h-7 inline-flex items-center px-3 bg-[#cfe467] text-[#111111] text-xs font-semibold rounded-lg uppercase tracking-wide">
                         {event.category}
+                      </span>
+                    )}
+                    {event.visibility === 'private' && (
+                      <span className="h-7 w-7 inline-flex items-center justify-center bg-[#111111] text-white rounded-lg shrink-0" title="Private Event">
+                        <Lock size={13} />
                       </span>
                     )}
                   </div>
@@ -441,7 +495,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                       <div className="flex flex-col justify-center w-full">
                         <span className="text-[13px] font-medium text-[#6E6E73] mb-1">Registration Type</span>
                         <span className="text-[15px] font-semibold text-[#111111]">
-                          {event.price === 'paid' ? 'Paid' : 'Free'}{event.is_team_event ? ' | Team Event' : ' | Individual'}
+                          {event.price === 'paid' ? 'Paid' : 'Free'}{event.is_team_event ? ' | Team Event' : ' | Individual'}{event.visibility === 'private' ? ' | Private' : ''}
                         </span>
                       </div>
 

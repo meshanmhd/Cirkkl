@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import {
   EventRepo,
+  MemberRepo,
   NotificationRepo,
   RegistrationRepo,
   TeamRepo,
@@ -8,7 +9,7 @@ import {
   TransactionRunner,
 } from "../ports/repositories";
 import { CallerContext } from "./auth.service";
-import { badRequest, conflict, notFound, unauthorized } from "../errors";
+import { badRequest, conflict, forbidden, notFound, unauthorized } from "../errors";
 
 export class RegistrationService {
   constructor(
@@ -17,7 +18,8 @@ export class RegistrationService {
     private readonly ticketRepo: TicketRepo,
     private readonly teamRepo: TeamRepo,
     private readonly notificationRepo: NotificationRepo,
-    private readonly transactionRunner: TransactionRunner
+    private readonly transactionRunner: TransactionRunner,
+    private readonly memberRepo: MemberRepo
   ) {}
 
   async registerForEvent(input: any, caller: CallerContext): Promise<{
@@ -40,6 +42,27 @@ export class RegistrationService {
 
       if (event.status !== "published") {
         throw badRequest("Event is not open for registration");
+      }
+
+      if (event.visibility === "private") {
+        if (!caller?.userId) {
+          throw unauthorized("You don't have access to view this event");
+        }
+        const isOwner = caller.orgId === event.organisationId || caller.userId === event.organisationId;
+        if (!isOwner) {
+          const member = await this.memberRepo.findByOrgAndUser(event.organisationId, caller.userId);
+          if (!member) {
+            throw forbidden("You don't have access to view this event");
+          }
+        }
+        if (input.isTeamEvent && input.teamMates && Array.isArray(input.teamMates)) {
+          for (const mate of input.teamMates) {
+            const mateMember = await this.memberRepo.findByOrgAndUser(event.organisationId, mate.id);
+            if (!mateMember && mate.id !== event.organisationId) {
+              throw forbidden("All team members must belong to the organisation for this private event");
+            }
+          }
+        }
       }
 
       const currentCount = await uow.registrationRepo.countByEvent(eventId, "approved");
@@ -159,6 +182,16 @@ export class RegistrationService {
     eventId: string,
     caller: CallerContext
   ): Promise<{ success: boolean }> {
+    const event = await this.eventRepo.findById(eventId);
+    if (event?.visibility === "private") {
+      const isOwner = caller.orgId === event.organisationId || caller.userId === event.organisationId;
+      if (!isOwner) {
+        const member = await this.memberRepo.findByOrgAndUser(event.organisationId, caller.userId);
+        if (!member) {
+          throw forbidden("You don't have access to view this event");
+        }
+      }
+    }
     const userId = caller.userId;
 
     return this.transactionRunner.run(async (uow) => {
@@ -254,6 +287,17 @@ export class RegistrationService {
     cklId: string,
     caller: CallerContext
   ): Promise<{ id: string; displayName: string }> {
+    const event = await this.eventRepo.findById(eventId);
+    if (event?.visibility === "private") {
+      const isOwner = caller.orgId === event.organisationId || caller.userId === event.organisationId;
+      if (!isOwner) {
+        const callerMember = await this.memberRepo.findByOrgAndUser(event.organisationId, caller.userId);
+        if (!callerMember) {
+          throw forbidden("You don't have access to view this event");
+        }
+      }
+    }
+
     const result = await this.registrationRepo.lookupTeammate(eventId, cklId);
     if (!result) {
       throw notFound("No user found with this CKL ID");
@@ -261,6 +305,13 @@ export class RegistrationService {
 
     if (result.id === caller.userId) {
       throw badRequest("You cannot add yourself as a teammate");
+    }
+
+    if (event?.visibility === "private") {
+      const targetMember = await this.memberRepo.findByOrgAndUser(event.organisationId, result.id);
+      if (!targetMember && result.id !== event.organisationId) {
+        throw forbidden("User is not a member of this organisation");
+      }
     }
 
     if (result.isRegistered) {
