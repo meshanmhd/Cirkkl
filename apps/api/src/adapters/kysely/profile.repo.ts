@@ -62,8 +62,32 @@ export class KyselyProfileRepo implements ProfileRepo {
   }
 
   async findByCklId(cklId: string): Promise<Profile | null> {
-    // Since there's no users table, we can't look up by ckl_id
-    // This feature requires a users table or storing ckl_id in profiles table
+    const trimmed = cklId.trim();
+    try {
+      const user = await (this.db as any)
+        .selectFrom("users")
+        .select(["id", "ckl_id", "email"])
+        .where((eb: any) =>
+          eb.or([
+            eb("ckl_id", "=", trimmed),
+            eb("ckl_id", "=", trimmed.toUpperCase()),
+            eb("id", "=", trimmed),
+          ])
+        )
+        .executeTakeFirst();
+      if (user) {
+        return this.findByUserId(user.id);
+      }
+    } catch {
+    }
+    const profile = await (this.db as any)
+      .selectFrom("profiles")
+      .select(["id"])
+      .where("id", "=", trimmed)
+      .executeTakeFirst();
+    if (profile) {
+      return this.findByUserId(profile.id);
+    }
     return null;
   }
 

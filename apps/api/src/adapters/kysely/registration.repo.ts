@@ -42,10 +42,18 @@ export class KyselyRegistrationRepo implements RegistrationRepo {
   }
 
   async findByTicketCode(ticketCode: string): Promise<Registration | null> {
+    const trimmed = ticketCode.trim();
     const row = await this.db
       .selectFrom("registrations")
       .selectAll()
-      .where("ticket_code", "=", ticketCode)
+      .where((eb) =>
+        eb.or([
+          eb("ticket_code", "=", trimmed),
+          eb("ticket_code", "=", trimmed.toUpperCase()),
+          eb("ticket_code", "=", trimmed.toLowerCase()),
+          sql<boolean>`lower(ticket_code) = ${trimmed.toLowerCase()}`,
+        ])
+      )
       .executeTakeFirst();
     return row ? this.mapRow(row) : null;
   }
@@ -147,7 +155,14 @@ export class KyselyRegistrationRepo implements RegistrationRepo {
 
   async findUserTickets(
     userId: string
-  ): Promise<Array<Registration & { eventTitle: string; eventDate?: Date }>> {
+  ): Promise<Array<Registration & {
+    eventTitle: string;
+    eventDate?: Date;
+    endDate?: Date | null;
+    endTime?: string | null;
+    dateStr?: string | null;
+    timeStr?: string | null;
+  }>> {
     const directRows = await this.db
       .selectFrom("registrations")
       .selectAll("registrations")
@@ -155,6 +170,10 @@ export class KyselyRegistrationRepo implements RegistrationRepo {
       .select([
         "events.title as event_title",
         "events.start_date as event_start_date",
+        "events.end_date as event_end_date",
+        "events.end_time as event_end_time",
+        "events.date as event_date_str",
+        "events.time as event_time_str",
       ])
       .where("registrations.user_id", "=", userId)
       .where("registrations.status", "=", "approved")
@@ -169,6 +188,10 @@ export class KyselyRegistrationRepo implements RegistrationRepo {
       .select([
         "events.title as event_title",
         "events.start_date as event_start_date",
+        "events.end_date as event_end_date",
+        "events.end_time as event_end_time",
+        "events.date as event_date_str",
+        "events.time as event_time_str",
       ])
       .where("team_members.user_id", "=", userId)
       .where("team_members.status", "=", "approved")
@@ -176,7 +199,14 @@ export class KyselyRegistrationRepo implements RegistrationRepo {
       .execute();
 
     const seen = new Set<string>();
-    const results: Array<Registration & { eventTitle: string; eventDate?: Date }> = [];
+    const results: Array<Registration & {
+      eventTitle: string;
+      eventDate?: Date;
+      endDate?: Date | null;
+      endTime?: string | null;
+      dateStr?: string | null;
+      timeStr?: string | null;
+    }> = [];
 
     for (const r of [...directRows, ...teamRows]) {
       if (!seen.has(r.id)) {
@@ -186,6 +216,10 @@ export class KyselyRegistrationRepo implements RegistrationRepo {
           ...mapped,
           eventTitle: r.event_title,
           eventDate: r.event_start_date ? new Date(r.event_start_date) : undefined,
+          endDate: r.event_end_date ? new Date(r.event_end_date) : null,
+          endTime: r.event_end_time ?? null,
+          dateStr: r.event_date_str ?? null,
+          timeStr: r.event_time_str ?? null,
         });
       }
     }

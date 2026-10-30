@@ -373,12 +373,34 @@ export class OrgService {
   async scanAttendance(eventId: string, ticketCode: string, caller: CallerContext): Promise<any> {
     await this.assertOrgOwnsEvent(eventId, caller);
 
-    const reg = await this.registrationRepo.findByTicketCode(ticketCode);
+    const trimmed = ticketCode.trim();
+    let reg = await this.registrationRepo.findByTicketCode(trimmed);
+    let attendeeUserId = reg ? reg.userId : null;
+
+    if (!reg || reg.eventId !== eventId) {
+      const profile = await this.profileRepo.findByCklId(trimmed)
+        || await this.profileRepo.findByCklId(trimmed.toUpperCase())
+        || await this.profileRepo.findByUserId(trimmed);
+      if (profile) {
+        attendeeUserId = profile.userId;
+        const directReg = await this.registrationRepo.findByUserAndEvent(profile.userId, eventId);
+        if (directReg) {
+          reg = directReg;
+        } else {
+          const userTickets = await this.registrationRepo.findUserTickets(profile.userId);
+          const eventTicket = userTickets.find((t) => t.eventId === eventId);
+          if (eventTicket) {
+            reg = eventTicket;
+          }
+        }
+      }
+    }
+
     if (!reg || reg.eventId !== eventId) {
       throw notFound("Invalid ticket code for this event");
     }
 
-    const profile = await this.profileRepo.findByUserId(reg.userId);
+    const profile = await this.profileRepo.findByUserId(attendeeUserId || reg.userId);
 
     return {
       registrationId: reg.id,
@@ -386,7 +408,7 @@ export class OrgService {
       attended: reg.attended,
       registeredAt: reg.createdAt.toISOString(),
       participant: {
-        id: reg.userId,
+        id: profile?.userId || reg.userId,
         name: profile?.fullName || "Attendee",
         email: profile?.email || "",
         cklId: profile?.cklId,

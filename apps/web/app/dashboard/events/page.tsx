@@ -11,6 +11,10 @@ export default async function EventsDashboardPage() {
     id: string;
     title: string | null;
     date: string | null;
+    startDate?: string | null;
+    endDate?: string | null;
+    time?: string | null;
+    endTime?: string | null;
     category: string | null;
     status: string | null;
     visibility: string | null;
@@ -22,6 +26,10 @@ export default async function EventsDashboardPage() {
       id: e.id,
       title: e.title,
       date: e.date,
+      startDate: e.startDate ?? e.date,
+      endDate: e.endDate ?? null,
+      time: e.time ?? null,
+      endTime: e.endTime ?? null,
       category: e.category,
       status: e.status,
       visibility: "public",
@@ -29,7 +37,6 @@ export default async function EventsDashboardPage() {
     }));
   } catch (error) {
     console.error('Failed to load events:', error);
-    // Show empty table if API fails
   }
 
   return (

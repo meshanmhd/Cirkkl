@@ -11,7 +11,7 @@ export default function AttendanceScanner({ eventId, eventTitle }: { eventId: st
   const [processing, setProcessing] = useState(false);
   const [scanResult, setScanResult] = useState<any>(null);
   const [modalState, setModalState] = useState<'none' | 'found' | 'success'>('none');
-  const [alertState, setAlertState] = useState<'none' | 'not_found' | 'error' | 'success'>('none');
+  const [alertState, setAlertState] = useState<'none' | 'not_found' | 'error' | 'already_checked_in' | 'success'>('none');
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -23,7 +23,9 @@ export default function AttendanceScanner({ eventId, eventTitle }: { eventId: st
   const handleScan = async (detectedCodes: any[]) => {
     if (!scanning || processing || detectedCodes.length === 0) return;
     
-    const code = detectedCodes[0].rawValue?.toLowerCase();
+    const rawCode = detectedCodes[0].rawValue;
+    if (!rawCode) return;
+    const code = String(rawCode).trim();
     if (!code) return;
 
     setScanning(false);
@@ -32,25 +34,28 @@ export default function AttendanceScanner({ eventId, eventTitle }: { eventId: st
     try {
       const result = await processAttendanceScan(eventId, code);
       
-      if (result.error || !result.registration) {
-        setScanResult({ error: result.error || "Scan failed", code });
+      if (result.error?.toLowerCase().includes("already")) {
+        setScanResult({ error: "Participant has already checked in.", code });
+        showAlert('already_checked_in');
+      } else if (result.error || !result.registration) {
+        setScanResult({ error: result.error || "User is not registered for this event.", code });
         showAlert('not_found');
       } else if (result.registration.attended) {
         setScanResult({ error: "Participant has already checked in.", code });
-        showAlert('error');
+        showAlert('already_checked_in');
       } else {
         setScanResult(result);
         setModalState('found');
       }
-    } catch (err) {
-      setScanResult({ error: "System error processing scan", code });
+    } catch (err: any) {
+      setScanResult({ error: err?.message || "System error processing scan", code });
       showAlert('not_found');
     } finally {
       setProcessing(false);
     }
   };
 
-  const showAlert = (state: 'not_found' | 'error') => {
+  const showAlert = (state: 'not_found' | 'error' | 'already_checked_in') => {
     setAlertState(state);
     setTimeout(() => {
       setAlertState('none');
@@ -69,8 +74,12 @@ export default function AttendanceScanner({ eventId, eventTitle }: { eventId: st
       resetScanner();
       setAlertState('success');
       setTimeout(() => setAlertState(prev => prev === 'success' ? 'none' : prev), 2500);
+    } else if (res.error?.toLowerCase().includes("already")) {
+      resetScanner();
+      setScanResult({ error: "Participant has already checked in." });
+      showAlert('already_checked_in');
     } else {
-      alert("Failed to mark attendance.");
+      alert("Failed to mark attendance: " + (res.error || "Unknown error"));
     }
   };
 
@@ -130,19 +139,37 @@ export default function AttendanceScanner({ eventId, eventTitle }: { eventId: st
       {alertState !== 'none' && (
         <div className="absolute bottom-8 left-0 right-0 z-40 flex justify-center px-4 animate-in slide-in-from-bottom-5 duration-300 pointer-events-none">
           <div className={`shadow-[0_8px_32px_rgba(0,0,0,0.12)] rounded-[16px] px-5 py-4 w-full max-w-sm flex items-center gap-3 backdrop-blur-md ${
-            alertState === 'success' ? 'bg-[#34C759]/90 border border-[#34C759] text-white' : 'bg-[#FF3B30]/90 border border-[#FF3B30] text-white'
+            alertState === 'success'
+              ? 'bg-[#34C759]/90 border border-[#34C759] text-white'
+              : alertState === 'already_checked_in'
+              ? 'bg-[#FF9500]/90 border border-[#FF9500] text-white'
+              : 'bg-[#FF3B30]/90 border border-[#FF3B30] text-white'
           }`}>
             <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-white/20">
-              {alertState === 'success' ? <CheckCircle2 size={16} strokeWidth={2.5} className="text-white" /> : <AlertTriangle size={16} strokeWidth={2.5} className="text-white" />}
+              {alertState === 'success' ? (
+                <CheckCircle2 size={16} strokeWidth={2.5} className="text-white" />
+              ) : (
+                <AlertTriangle size={16} strokeWidth={2.5} className="text-white" />
+              )}
             </div>
             <div className="flex-1">
               <p className="text-[14px] font-bold">
-                {alertState === 'success' ? "Attendance Marked!" : "Access Denied"}
+                {alertState === 'success'
+                  ? "Attendance Marked!"
+                  : alertState === 'already_checked_in'
+                  ? "Already Checked In"
+                  : "Access Denied"}
               </p>
               <p className="text-[13px] opacity-90 leading-snug">
-                {alertState === 'success' ? "User successfully checked in." :
-                 alertState === 'not_found' ? "User is not registered for this event." : 
-                 "QR Code could not be processed."}
+                {alertState === 'success'
+                  ? "User successfully checked in."
+                  : alertState === 'already_checked_in'
+                  ? "Participant has already checked in."
+                  : scanResult?.error
+                  ? scanResult.error
+                  : alertState === 'not_found'
+                  ? "User is not registered for this event."
+                  : "QR Code could not be processed."}
               </p>
             </div>
           </div>

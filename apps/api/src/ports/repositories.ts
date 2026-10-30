@@ -89,7 +89,14 @@ export interface RegistrationRepo {
   ): Promise<PaginatedResult<Registration>>;
   findUserTickets(
     userId: string
-  ): Promise<Array<Registration & { eventTitle: string; eventDate?: Date }>>;
+  ): Promise<Array<Registration & {
+    eventTitle: string;
+    eventDate?: Date;
+    endDate?: Date | null;
+    endTime?: string | null;
+    dateStr?: string | null;
+    timeStr?: string | null;
+  }>>;
   countByEvent(eventId: string, status?: RegistrationStatus): Promise<number>;
   create(
     data: Omit<Registration, "id" | "createdAt" | "updatedAt">

@@ -286,10 +286,13 @@ describe("API Service Layer Tests", () => {
         isOrgApproved: true,
       };
 
-      const scanResult = await services.orgService.scanAttendance(event.id, "CRK-SCAN-123", orgCaller);
+      const scanResult = await services.orgService.scanAttendance(event.id, "crk-scan-123", orgCaller);
       expect(scanResult.registrationId).toBe(reg.id);
       expect(scanResult.attended).toBe(false);
       expect(scanResult.participant.name).toBe("Jane Doe");
+
+      const scanResultByCkl = await services.orgService.scanAttendance(event.id, "ckl-9999", orgCaller);
+      expect(scanResultByCkl.registrationId).toBe(reg.id);
 
       const confirmResult = await services.orgService.confirmAttendance(event.id, reg.id, orgCaller);
       expect(confirmResult.attended).toBe(true);
