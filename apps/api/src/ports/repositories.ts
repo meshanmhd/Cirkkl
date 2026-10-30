@@ -32,6 +32,7 @@ export interface EventRepo {
     timeFilter?: "upcoming" | "past" | "all";
     cursor?: string;
     limit?: number;
+    allowedOrgIds?: string[];
   }): Promise<{ items: Event[]; nextCursor: string | null }>;
   findMany(
     filters?: {
@@ -147,6 +148,7 @@ export interface OrganisationRepo {
 export interface MemberRepo {
   findById(id: string): Promise<Member | null>;
   findByOrgAndUser(orgId: string, userId: string): Promise<Member | null>;
+  findOrgIdsForUser(userId: string): Promise<string[]>;
   findManyByOrg(
     orgId: string,
     filters?: { search?: string; department?: string; role?: string },

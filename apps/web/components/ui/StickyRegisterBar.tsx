@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { SlideButton } from '@/components/ui/SlideButton';
-import { Calendar, Clock } from 'lucide-react';
+import { Calendar, Clock, Lock } from 'lucide-react';
 
 interface StickyRegisterBarProps {
   event: any;
@@ -88,6 +88,12 @@ export function StickyRegisterBar({
               <span className="text-[#111111] shrink-0 font-bold bg-[#F5F5F7] px-2 py-0.5 rounded-md border border-[#E5E5EA]/50">
                 {event.price === 'paid' ? 'Paid' : 'Free'}
               </span>
+              {event.visibility === 'private' && (
+                <span className="text-white shrink-0 font-bold bg-[#111111] px-2 py-0.5 rounded-md text-xs flex items-center gap-1">
+                  <Lock size={10} />
+                  Private
+                </span>
+              )}
             </div>
           </div>
 

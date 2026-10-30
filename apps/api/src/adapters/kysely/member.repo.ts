@@ -35,6 +35,15 @@ export class KyselyMemberRepo implements MemberRepo {
     return row ? this.mapRow(row) : null;
   }
 
+  async findOrgIdsForUser(userId: string): Promise<string[]> {
+    const rows = await this.db
+      .selectFrom("members")
+      .select("org_id")
+      .where("user_id", "=", userId)
+      .execute();
+    return rows.map((r) => r.org_id);
+  }
+
   async findManyByOrg(
     orgId: string,
     filters?: { search?: string; department?: string; role?: string },

@@ -75,14 +75,31 @@ export class MemoryEventRepo implements EventRepo {
     timeFilter?: "upcoming" | "past" | "all";
     cursor?: string;
     limit?: number;
+    allowedOrgIds?: string[];
   }): Promise<{ items: Event[]; nextCursor: string | null }> {
     let list = Array.from(this.events.values()).filter((e) => e.status === "published");
+    if (filters.allowedOrgIds && filters.allowedOrgIds.length > 0) {
+      list = list.filter((e) => e.visibility !== "private" || filters.allowedOrgIds!.includes(e.organisationId));
+    } else {
+      list = list.filter((e) => e.visibility !== "private");
+    }
     const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
 
     if (filters.timeFilter === "upcoming") {
-      list = list.filter((e) => e.startDate >= now);
+      list = list.filter((e) => {
+        if (e.endDate) {
+          return e.endDate >= now || e.startDate >= now;
+        }
+        return e.startDate >= todayStart;
+      });
     } else if (filters.timeFilter === "past") {
-      list = list.filter((e) => e.startDate < now);
+      list = list.filter((e) => {
+        if (e.endDate) {
+          return e.endDate < now;
+        }
+        return e.startDate < todayStart;
+      });
     }
 
     if (filters.search) {
@@ -92,7 +109,7 @@ export class MemoryEventRepo implements EventRepo {
       );
     }
 
-    list.sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
+    list.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
     if (filters.cursor) {
       const idx = list.findIndex((e) => e.id === filters.cursor);
@@ -564,6 +581,16 @@ export class MemoryMemberRepo implements MemberRepo {
       if (m.organisationId === orgId && m.userId === userId) return m;
     }
     return null;
+  }
+
+  async findOrgIdsForUser(userId: string): Promise<string[]> {
+    const orgIds: string[] = [];
+    for (const m of this.members.values()) {
+      if (m.userId === userId) {
+        orgIds.push(m.organisationId);
+      }
+    }
+    return orgIds;
   }
 
   async findManyByOrg(

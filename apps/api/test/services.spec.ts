@@ -1167,5 +1167,230 @@ describe("API Service Layer Tests", () => {
       }
     });
   });
+
+  describe("event visibility", () => {
+    it("should list public events for anyone, but private events only for organisation members or owner", async () => {
+      const { services, ports } = container;
+
+      const pubEvent = await ports.eventRepo.create({
+        organisationId: "org-1",
+        title: "Public Event",
+        slug: "pub-event",
+        description: "A public event",
+        startDate: new Date(Date.now() + 86400000),
+        status: "published",
+        visibility: "public",
+        isFeatured: false,
+        isPaid: false,
+        isTeamEvent: false,
+      });
+
+      const privEvent = await ports.eventRepo.create({
+        organisationId: "org-1",
+        title: "Private Event",
+        slug: "priv-event",
+        description: "A private event",
+        startDate: new Date(Date.now() + 86400000),
+        status: "published",
+        visibility: "private",
+        isFeatured: false,
+        isPaid: false,
+        isTeamEvent: false,
+      });
+
+      await ports.memberRepo.create({
+        organisationId: "org-1",
+        userId: "member-user",
+        name: "Org Member",
+        email: "member@org.com",
+        role: "admin",
+      });
+
+      const anonList = await services.eventService.listEvents({});
+      expect(anonList.items.some((e: any) => e.id === pubEvent.id)).toBe(true);
+      expect(anonList.items.some((e: any) => e.id === privEvent.id)).toBe(false);
+
+      const otherUserCaller = { userId: "other-user", role: "attendee" as const };
+      const otherList = await services.eventService.listEvents({}, otherUserCaller);
+      expect(otherList.items.some((e: any) => e.id === pubEvent.id)).toBe(true);
+      expect(otherList.items.some((e: any) => e.id === privEvent.id)).toBe(false);
+
+      const memberCaller = { userId: "member-user", role: "attendee" as const };
+      const memberList = await services.eventService.listEvents({}, memberCaller);
+      expect(memberList.items.some((e: any) => e.id === pubEvent.id)).toBe(true);
+      expect(memberList.items.some((e: any) => e.id === privEvent.id)).toBe(true);
+
+      const ownerCaller = { userId: "org-1", orgId: "org-1", isOrgApproved: true, role: "organiser" as const };
+      const ownerList = await services.eventService.listEvents({}, ownerCaller);
+      expect(ownerList.items.some((e: any) => e.id === pubEvent.id)).toBe(true);
+      expect(ownerList.items.some((e: any) => e.id === privEvent.id)).toBe(true);
+    });
+
+    it("should allow viewing private event only for organisation members or owner and block others", async () => {
+      const { services, ports } = container;
+
+      const privEvent = await ports.eventRepo.create({
+        organisationId: "org-priv",
+        title: "Exclusive Private Event",
+        slug: "exclusive-private",
+        description: "Exclusive",
+        startDate: new Date(Date.now() + 86400000),
+        status: "published",
+        visibility: "private",
+        isFeatured: false,
+        isPaid: false,
+        isTeamEvent: false,
+      });
+
+      await ports.memberRepo.create({
+        organisationId: "org-priv",
+        userId: "priv-member",
+        name: "Priv Member",
+        email: "priv@org.com",
+        role: "member",
+      });
+
+      await expect(services.eventService.getEvent(privEvent.id)).rejects.toThrow("You don't have access to view this event");
+
+      const outsider = { userId: "outsider", role: "attendee" as const };
+      await expect(services.eventService.getEvent(privEvent.id, outsider)).rejects.toThrow("You don't have access to view this event");
+
+      const member = { userId: "priv-member", role: "attendee" as const };
+      const memberDetail = await services.eventService.getEvent(privEvent.id, member);
+      expect(memberDetail.id).toBe(privEvent.id);
+
+      const owner = { userId: "org-priv", orgId: "org-priv", isOrgApproved: true, role: "organiser" as const };
+      const ownerDetail = await services.eventService.getEvent(privEvent.id, owner);
+      expect(ownerDetail.id).toBe(privEvent.id);
+    });
+
+    it("should prevent unauthorized users from registering for private events", async () => {
+      const { services, ports } = container;
+
+      const privEvent = await ports.eventRepo.create({
+        organisationId: "org-priv-reg",
+        title: "Private Registration Event",
+        slug: "priv-reg",
+        description: "Private Reg",
+        startDate: new Date(Date.now() + 86400000),
+        status: "published",
+        visibility: "private",
+        isFeatured: false,
+        isPaid: false,
+        isTeamEvent: false,
+      });
+
+      await ports.ticketRepo.create({
+        eventId: privEvent.id,
+        name: "General",
+        price: 0,
+        currency: "INR",
+        totalQuantity: 100,
+        availableQuantity: 100,
+      });
+
+      const outsider = { userId: "outsider-reg", role: "attendee" as const };
+      await expect(
+        services.registrationService.registerForEvent({ eventId: privEvent.id, isTeamEvent: false }, outsider)
+      ).rejects.toThrow("You don't have access to view this event");
+
+      await ports.memberRepo.create({
+        organisationId: "org-priv-reg",
+        userId: "org-member-reg",
+        name: "Member Reg",
+        email: "reg@org.com",
+        role: "member",
+      });
+
+      const member = { userId: "org-member-reg", role: "attendee" as const };
+      const res = await services.registrationService.registerForEvent({ eventId: privEvent.id, isTeamEvent: false }, member);
+      expect(res.registrationId).toBeDefined();
+    });
+    it("should allow creating and updating an event with blank optional date and time fields while visibility rules hold", async () => {
+      const { services, ports } = container;
+
+      const org = await ports.orgRepo.create({
+        name: "Blank Fields Org",
+        slug: "blank-fields-org",
+        description: "Testing blank fields",
+        ownerId: "owner-blank",
+      });
+
+      const orgCaller = {
+        userId: org.ownerId,
+        role: "organiser" as const,
+        orgId: org.id,
+        isOrgApproved: true,
+      };
+
+      const created = await services.eventService.createEvent(
+        {
+          title: "Blank Fields Private Event",
+          description: "Testing blank date time fields",
+          date: "2026-11-01",
+          time: null,
+          endDate: null,
+          endTime: null,
+          registrationDeadline: null,
+          registrationEndTime: null,
+          cancellationPolicy: null,
+          refundPolicy: null,
+          photographyPolicy: null,
+          visibility: "private",
+          tickets: [{ name: "Standard", price: 0, quantity: 50 }],
+        },
+        orgCaller
+      );
+
+      expect(created.id).toBeDefined();
+      expect(created.visibility).toBe("private");
+      expect(created.registrationDeadline).toBeNull();
+      expect(created.endDate).toBeNull();
+
+      const updated = await services.eventService.updateEvent(
+        created.id,
+        {
+          title: "Updated Blank Fields Private Event",
+          registrationDeadline: null,
+          registrationEndTime: null,
+          endDate: null,
+          endTime: null,
+          cancellationPolicy: null,
+          refundPolicy: null,
+          photographyPolicy: null,
+          visibility: "private",
+        },
+        orgCaller
+      );
+
+      expect(updated.id).toBe(created.id);
+      expect(updated.title).toBe("Updated Blank Fields Private Event");
+      expect(updated.registrationDeadline).toBeNull();
+
+      const anonList = await services.eventService.listEvents({});
+      expect(anonList.items.some((e: any) => e.id === created.id)).toBe(false);
+
+      const outsider = { userId: "outsider-user", role: "attendee" as const };
+      await expect(services.eventService.getEvent(created.id, outsider)).rejects.toThrow("You don't have access to view this event");
+
+      await ports.memberRepo.create({
+        organisationId: org.id,
+        userId: "allowed-member",
+        name: "Allowed Member",
+        email: "allowed@org.com",
+        role: "member",
+      });
+
+      const member = { userId: "allowed-member", role: "attendee" as const };
+      const memberEvent = await services.eventService.getEvent(created.id, member);
+      expect(memberEvent.id).toBe(created.id);
+
+      const memberList = await services.eventService.listEvents({}, member);
+      expect(memberList.items.some((e: any) => e.id === created.id)).toBe(true);
+
+      const ownerEvent = await services.eventService.getEvent(created.id, orgCaller);
+      expect(ownerEvent.id).toBe(created.id);
+    });
+  });
 });
 

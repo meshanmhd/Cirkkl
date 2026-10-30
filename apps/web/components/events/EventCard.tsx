@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Calendar, Clock, MapPin, Users, Bookmark, BookmarkCheck } from "lucide-react";
+import { Calendar, Clock, MapPin, Users, Bookmark, BookmarkCheck, Lock } from "lucide-react";
 import type { Event } from "@/data/events";
 
 const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
@@ -51,11 +51,16 @@ export default function EventCard({ event }: EventCardProps) {
           {/* Title with left accent border */}
           <div className="relative pl-4 flex flex-col justify-center min-h-[48px]">
             <div className="absolute left-0 top-1 bottom-1 w-1 bg-[#cfe467] rounded-full" />
-            {event.organizer && (
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[#6E6E73] mb-0.5">
-                {event.organizer}
-              </span>
-            )}
+            <div className="flex items-center gap-1.5 mb-0.5">
+              {event.visibility === "private" && (
+                <Lock size={11} className="text-[#6E6E73] shrink-0" />
+              )}
+              {event.organizer && (
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#6E6E73] truncate">
+                  {event.organizer}
+                </span>
+              )}
+            </div>
             <h3 className="font-bold text-[17px] leading-snug text-[#111111] truncate">
               {event.title}
             </h3>

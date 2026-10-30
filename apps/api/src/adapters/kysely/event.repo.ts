@@ -152,23 +152,55 @@ export class KyselyEventRepo implements EventRepo {
     timeFilter?: "upcoming" | "past" | "all";
     cursor?: string;
     limit?: number;
+    allowedOrgIds?: string[];
   }): Promise<{ items: Event[]; nextCursor: string | null }> {
     const limit = filters.limit ?? 20;
     let query = this.db.selectFrom("events").selectAll().where("status", "=", "published");
 
+    if (filters.allowedOrgIds && filters.allowedOrgIds.length > 0) {
+      query = query.where((eb) =>
+        eb.or([
+          eb("visibility", "=", "public"),
+          eb("visibility", "is", null),
+          eb.and([
+            eb("visibility", "=", "private"),
+            eb("org_id", "in", filters.allowedOrgIds!),
+          ]),
+        ])
+      );
+    } else {
+      query = query.where((eb) =>
+        eb.or([
+          eb("visibility", "=", "public"),
+          eb("visibility", "is", null),
+        ])
+      );
+    }
+
     const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
     if (filters.timeFilter === "upcoming") {
       query = query.where((eb) =>
         eb.or([
           eb("start_date", ">=", now),
           eb("end_date", ">=", now),
+          eb.and([
+            eb("end_date", "is", null),
+            eb("start_date", ">=", todayStart),
+          ]),
         ])
       );
     } else if (filters.timeFilter === "past") {
       query = query.where((eb) =>
-        eb.and([
-          eb("start_date", "<", now),
-          eb.or([eb("end_date", "is", null), eb("end_date", "<", now)]),
+        eb.or([
+          eb.and([
+            eb("end_date", "is not", null),
+            eb("end_date", "<", now),
+          ]),
+          eb.and([
+            eb("end_date", "is", null),
+            eb("start_date", "<", todayStart),
+          ]),
         ])
       );
     }
@@ -184,7 +216,7 @@ export class KyselyEventRepo implements EventRepo {
       query = query.where("id", ">", filters.cursor);
     }
 
-    const rows = await query.orderBy("start_date", "asc").orderBy("id", "asc").limit(limit + 1).execute();
+    const rows = await query.orderBy("created_at", "desc").orderBy("id", "desc").limit(limit + 1).execute();
 
     let nextCursor: string | null = null;
     let items = rows;

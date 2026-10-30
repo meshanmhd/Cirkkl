@@ -6,7 +6,7 @@ import { api, getErrorMessage } from "@/lib/api";
 import {
   ArrowLeft, Image as ImageIcon, Plus, X, Loader2,
   Upload, Globe, MapPin, Wifi, Car, UtensilsCrossed,
-  Calendar, Clock, Users, FileText, Tag, Trash2, ChevronDown, Check,
+  Calendar, Users, FileText, Tag, Trash2, ChevronDown, Check,
   Info, ListPlus, Mic, Search, Eye, RefreshCw, Lock
 } from "lucide-react";
 import Link from "next/link";
@@ -230,6 +230,16 @@ function FormInput({ label, required, hint, children }: { label: string; require
   );
 }
 
+function cleanDateStr(d?: string | null): string {
+  if (!d) return "";
+  return d.includes("T") ? d.split("T")[0] : d.slice(0, 10);
+}
+
+function cleanTimeStr(t?: string | null): string {
+  if (!t) return "";
+  return t.slice(0, 5);
+}
+
 const safeDate = (val?: string) => {
   if (!val) return undefined;
   const s = val.includes("T") ? val.split("T")[0] : val.slice(0, 10);
@@ -374,14 +384,6 @@ export default function EditEventPage() {
     async function loadEvent() {
       try {
         const data = await api.events.getForOrg(eventId);
-        const cleanDateStr = (d?: string | null) => {
-          if (!d) return "";
-          return d.includes("T") ? d.split("T")[0] : d.slice(0, 10);
-        };
-        const cleanTimeStr = (t?: string | null) => {
-          if (!t) return "";
-          return t.slice(0, 5);
-        };
 
         setForm({
           title: data.title || "",
@@ -517,7 +519,7 @@ export default function EditEventPage() {
 
       await api.events.update(eventId, {
         title: form.title,
-        tagline: form.tagline ? form.tagline : null,
+        tagline: form.tagline || undefined,
         description: form.description,
         category: form.category,
         tags,
@@ -526,23 +528,23 @@ export default function EditEventPage() {
         ...(bannerKey ? { imageKey: bannerKey } : {}),
         ...(posterKey ? { posterImageKey: posterKey } : {}),
         date: form.startDate,
-        time: form.startTime ? form.startTime : null,
-        endDate: form.endDate ? form.endDate : null,
-        endTime: form.endTime ? form.endTime : null,
-        venue: form.venue ? form.venue : null,
-        locationLink: form.locationLink ? form.locationLink : null,
-        city: form.city ? form.city : null,
+        time: form.startTime || undefined,
+        endDate: form.endDate || undefined,
+        endTime: form.endTime || undefined,
+        venue: form.venue || undefined,
+        locationLink: form.locationLink || undefined,
+        city: form.city || undefined,
         locationType: form.locationType as any,
-        meetingLink: form.meetingLink ? form.meetingLink : null,
-        platform: form.platform ? form.platform : null,
+        meetingLink: form.meetingLink || undefined,
+        platform: form.platform || undefined,
         price: form.price as any,
         capacity: isUnlimitedCapacity ? null : (parseInt(form.capacity) || null),
         approvalRequired: form.price === "paid" ? true : form.approvalRequired === "true",
-        registrationDeadline: form.registrationDeadline ? form.registrationDeadline : null,
-        registrationEndTime: form.registrationEndTime ? form.registrationEndTime : null,
-        cancellationPolicy: form.cancellationPolicy ? form.cancellationPolicy : null,
-        refundPolicy: form.refundPolicy ? form.refundPolicy : null,
-        photographyPolicy: form.photographyPolicy ? form.photographyPolicy : null,
+        registrationDeadline: form.registrationDeadline || undefined,
+        registrationEndTime: form.registrationEndTime ? form.registrationEndTime.slice(0, 5) : undefined,
+        cancellationPolicy: form.cancellationPolicy || undefined,
+        refundPolicy: form.refundPolicy || undefined,
+        photographyPolicy: form.photographyPolicy || undefined,
         visibility: form.visibility as any,
         customFields: validFields as any,
         isTeamEvent: form.isTeamEvent === "true",
@@ -614,7 +616,7 @@ export default function EditEventPage() {
             </div>
             <FormInput label="Visibility">
               <TabSwitcher
-                options={[{ value: "public", label: "Public" }, { value: "unlisted", label: "Unlisted" }, { value: "private", label: "Private" }]}
+                options={[{ value: "public", label: "Public" }, { value: "private", label: "Private" }]}
                 value={form.visibility}
                 onChange={v => set("visibility", v)}
               />
@@ -823,8 +825,8 @@ export default function EditEventPage() {
                 </Popover>
               </FormInput>
 
-              <FormInput label="Registration Time" required>
-                <input type="time" className={inputCls} value={form.registrationEndTime} onChange={e => set("registrationEndTime", e.target.value.slice(0, 5))} required />
+              <FormInput label="Registration Time">
+                <input type="time" step="60" className={inputCls} value={form.registrationEndTime ? form.registrationEndTime.slice(0, 5) : ""} onChange={e => set("registrationEndTime", e.target.value.slice(0, 5))} />
               </FormInput>
             </div>
 

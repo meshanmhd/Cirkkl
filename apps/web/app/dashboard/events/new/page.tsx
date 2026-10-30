@@ -6,7 +6,7 @@ import { api, getErrorMessage } from "@/lib/api";
 import {
   ArrowLeft, Image as ImageIcon, Plus, X, Loader2,
   Upload, Globe, MapPin, Wifi, Car, UtensilsCrossed,
-  Calendar, Clock, Users, FileText, Tag, Trash2, ChevronDown, Check,
+  Calendar, Users, FileText, Tag, Trash2, ChevronDown, Check,
   Info, ListPlus, Mic, Search, Eye, RefreshCw, Lock
 } from "lucide-react";
 import Link from "next/link";
@@ -228,6 +228,16 @@ function FormInput({ label, required, hint, children }: { label: string; require
       {children}
     </div>
   );
+}
+
+function cleanDateStr(d?: string | null): string {
+  if (!d) return "";
+  return d.includes("T") ? d.split("T")[0] : d.slice(0, 10);
+}
+
+function cleanTimeStr(t?: string | null): string {
+  if (!t) return "";
+  return t.slice(0, 5);
 }
 
 const safeDate = (val?: string) => {
@@ -456,7 +466,7 @@ export default function NewEventPage() {
         capacity: isUnlimitedCapacity ? null : (parseInt(form.capacity) || null),
         approvalRequired: form.price === "paid" ? true : form.approvalRequired === "true",
         registrationDeadline: form.registrationDeadline || undefined,
-        registrationEndTime: form.registrationEndTime || undefined,
+        registrationEndTime: form.registrationEndTime ? form.registrationEndTime.slice(0, 5) : undefined,
         cancellationPolicy: form.cancellationPolicy || undefined,
         refundPolicy: form.refundPolicy || undefined,
         photographyPolicy: form.photographyPolicy || undefined,
@@ -523,7 +533,7 @@ export default function NewEventPage() {
             </div>
             <FormInput label="Visibility">
               <TabSwitcher
-                options={[{ value: "public", label: "Public" }, { value: "unlisted", label: "Unlisted" }, { value: "private", label: "Private" }]}
+                options={[{ value: "public", label: "Public" }, { value: "private", label: "Private" }]}
                 value={form.visibility}
                 onChange={v => set("visibility", v)}
               />
@@ -732,8 +742,8 @@ export default function NewEventPage() {
                 </Popover>
               </FormInput>
 
-              <FormInput label="Registration Time" required>
-                <input type="time" className={inputCls} value={form.registrationEndTime} onChange={e => set("registrationEndTime", e.target.value.slice(0, 5))} required />
+              <FormInput label="Registration Time">
+                <input type="time" step="60" className={inputCls} value={form.registrationEndTime ? form.registrationEndTime.slice(0, 5) : ""} onChange={e => set("registrationEndTime", e.target.value.slice(0, 5))} />
               </FormInput>
             </div>
 

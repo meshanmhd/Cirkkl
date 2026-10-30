@@ -2,7 +2,14 @@ import { LoginForm } from "@/components/auth/LoginForm";
 import Link from "next/link";
 import { Sparkles } from "lucide-react";
 
-export default function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ redirectTo?: string; redirect?: string }>;
+}) {
+  const params = await searchParams;
+  const redirectTo = params?.redirectTo || params?.redirect;
+
   return (
     <div className="grid min-h-screen lg:grid-cols-2 bg-white">
       <div className="flex flex-col gap-4 p-6 md:p-10 border-r border-[#E5E5EA]">
@@ -13,7 +20,7 @@ export default function LoginPage() {
         </div>
         <div className="flex flex-1 items-center justify-center">
           <div className="w-full max-w-sm">
-            <LoginForm />
+            <LoginForm redirectTo={redirectTo} />
           </div>
         </div>
       </div>
