@@ -29,6 +29,8 @@ export function errorHandler(err: Error, c: Context) {
     );
   }
 
+  console.error("API error:", err);
+
   return c.json(
     {
       error: {

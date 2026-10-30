@@ -504,6 +504,97 @@ describe("API Service Layer Tests", () => {
     });
   });
 
+  describe("registration deadline validation", () => {
+    it("should reject registration deadline when not between start date and end date", async () => {
+      const { services, ports } = container;
+
+      const org = await ports.orgRepo.create({
+        ownerId: "owner-deadline-test",
+        name: "Deadline Org",
+        email: "deadline@org.com",
+        status: "approved",
+        isOtpVerified: true,
+      });
+
+      const orgCaller = {
+        userId: org.ownerId,
+        role: "organiser" as const,
+        orgId: org.id,
+        isOrgApproved: true,
+      };
+
+      await expect(
+        services.eventService.createEvent(
+          {
+            title: "Deadline Test Before Start",
+            description: "Test deadline",
+            date: "2026-11-10",
+            time: "10:00",
+            endDate: "2026-11-15",
+            endTime: "18:00",
+            registrationDeadline: "2026-11-08",
+            registrationEndTime: "12:00",
+            price: "free",
+          },
+          orgCaller
+        )
+      ).rejects.toThrow("Registration deadline must be between the event start date and end date");
+
+      await expect(
+        services.eventService.createEvent(
+          {
+            title: "Deadline Test After End",
+            description: "Test deadline",
+            date: "2026-11-10",
+            time: "10:00",
+            endDate: "2026-11-15",
+            endTime: "18:00",
+            registrationDeadline: "2026-11-16",
+            registrationEndTime: "11:00",
+            price: "free",
+          },
+          orgCaller
+        )
+      ).rejects.toThrow("Registration deadline must be between the event start date and end date");
+
+      const validEvent = await services.eventService.createEvent(
+        {
+          title: "Valid Deadline",
+          description: "Test deadline",
+          date: "2026-11-10",
+          time: "10:00",
+          endDate: "2026-11-15",
+          endTime: "18:00",
+          registrationDeadline: "2026-11-12",
+          registrationEndTime: "18:00",
+          price: "free",
+        },
+        orgCaller
+      );
+      expect(validEvent.id).toBeDefined();
+
+      await expect(
+        services.eventService.updateEvent(
+          validEvent.id,
+          {
+            registrationDeadline: "2026-11-09",
+          },
+          orgCaller
+        )
+      ).rejects.toThrow("Registration deadline must be between the event start date and end date");
+
+      await expect(
+        services.eventService.updateEvent(
+          validEvent.id,
+          {
+            registrationDeadline: "2026-11-16",
+          },
+          orgCaller
+        )
+      ).rejects.toThrow("Registration deadline must be between the event start date and end date");
+    });
+  });
+
   describe("profileService", () => {
     it("should compute isProfileCompleted only when all required fields are present", async () => {
       const { services, ports } = container;
@@ -1214,6 +1305,91 @@ describe("API Service Layer Tests", () => {
       const member = { userId: "org-member-reg", role: "attendee" as const };
       const res = await services.registrationService.registerForEvent({ eventId: privEvent.id, isTeamEvent: false }, member);
       expect(res.registrationId).toBeDefined();
+    });
+    it("should allow creating and updating an event with blank optional date and time fields while visibility rules hold", async () => {
+      const { services, ports } = container;
+
+      const org = await ports.orgRepo.create({
+        name: "Blank Fields Org",
+        slug: "blank-fields-org",
+        description: "Testing blank fields",
+        ownerId: "owner-blank",
+      });
+
+      const orgCaller = {
+        userId: org.ownerId,
+        role: "organiser" as const,
+        orgId: org.id,
+        isOrgApproved: true,
+      };
+
+      const created = await services.eventService.createEvent(
+        {
+          title: "Blank Fields Private Event",
+          description: "Testing blank date time fields",
+          date: "2026-11-01",
+          time: null,
+          endDate: null,
+          endTime: null,
+          registrationDeadline: null,
+          registrationEndTime: null,
+          cancellationPolicy: null,
+          refundPolicy: null,
+          photographyPolicy: null,
+          visibility: "private",
+          tickets: [{ name: "Standard", price: 0, quantity: 50 }],
+        },
+        orgCaller
+      );
+
+      expect(created.id).toBeDefined();
+      expect(created.visibility).toBe("private");
+      expect(created.registrationDeadline).toBeNull();
+      expect(created.endDate).toBeNull();
+
+      const updated = await services.eventService.updateEvent(
+        created.id,
+        {
+          title: "Updated Blank Fields Private Event",
+          registrationDeadline: null,
+          registrationEndTime: null,
+          endDate: null,
+          endTime: null,
+          cancellationPolicy: null,
+          refundPolicy: null,
+          photographyPolicy: null,
+          visibility: "private",
+        },
+        orgCaller
+      );
+
+      expect(updated.id).toBe(created.id);
+      expect(updated.title).toBe("Updated Blank Fields Private Event");
+      expect(updated.registrationDeadline).toBeNull();
+
+      const anonList = await services.eventService.listEvents({});
+      expect(anonList.items.some((e: any) => e.id === created.id)).toBe(false);
+
+      const outsider = { userId: "outsider-user", role: "attendee" as const };
+      await expect(services.eventService.getEvent(created.id, outsider)).rejects.toThrow("You don't have access to view this event");
+
+      await ports.memberRepo.create({
+        organisationId: org.id,
+        userId: "allowed-member",
+        name: "Allowed Member",
+        email: "allowed@org.com",
+        role: "member",
+      });
+
+      const member = { userId: "allowed-member", role: "attendee" as const };
+      const memberEvent = await services.eventService.getEvent(created.id, member);
+      expect(memberEvent.id).toBe(created.id);
+
+      const memberList = await services.eventService.listEvents({}, member);
+      expect(memberList.items.some((e: any) => e.id === created.id)).toBe(true);
+
+      const ownerEvent = await services.eventService.getEvent(created.id, orgCaller);
+      expect(ownerEvent.id).toBe(created.id);
     });
   });
 });

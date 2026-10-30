@@ -252,8 +252,8 @@ async function request<T>(
   const json = await res.json().catch(() => null);
 
   if (!res.ok) {
-    const errorCode = json?.error?.code || "API_ERROR";
-    const errorMessage = json?.error?.message || res.statusText || "Request failed";
+    const errorCode = json?.error?.code || (res.status === 503 ? "API_UNAVAILABLE" : "API_ERROR");
+    const errorMessage = json?.error?.message || (res.status === 503 ? "API is currently unavailable. Please check your connection." : res.statusText || "Request failed");
     const errorDetails = json?.error?.details;
     throw new ApiError(errorCode, errorMessage, res.status, errorDetails);
   }
