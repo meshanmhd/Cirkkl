@@ -57,6 +57,12 @@ export const UserTicketItemSchema = z.object({
   eventId: z.string().uuid(),
   eventTitle: z.string(),
   status: RegistrationStatusSchema,
+  startDate: z.string().nullable().optional(),
+  endDate: z.string().nullable().optional(),
+  startTime: z.string().nullable().optional(),
+  endTime: z.string().nullable().optional(),
+  dateStr: z.string().nullable().optional(),
+  createdAt: z.string().nullable().optional(),
 });
 export type UserTicketItem = z.infer<typeof UserTicketItemSchema>;
 

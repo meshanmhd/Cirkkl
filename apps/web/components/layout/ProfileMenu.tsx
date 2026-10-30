@@ -25,6 +25,54 @@ interface EventRegistration {
   ticket_code: string;
   event_id: string;
   event_title: string;
+  status?: string;
+  start_date?: string | null;
+  end_date?: string | null;
+  start_time?: string | null;
+  end_time?: string | null;
+  date_str?: string | null;
+  created_at?: string | null;
+}
+
+function getEventEndTime(ticket: EventRegistration): number | null {
+  const dateStr = ticket.end_date || ticket.date_str || ticket.start_date;
+  if (!dateStr) return null;
+
+  const datePart = dateStr.includes("T") ? dateStr.split("T")[0] : dateStr;
+  const timePart = ticket.end_time || ticket.start_time;
+
+  if (timePart) {
+    const normalizedTime = timePart.length === 5 ? `${timePart}:00` : timePart;
+    const parsed = new Date(`${datePart}T${normalizedTime}`);
+    if (!isNaN(parsed.getTime())) {
+      return parsed.getTime();
+    }
+  }
+
+  const endOfDay = new Date(`${datePart}T23:59:59.999`);
+  if (!isNaN(endOfDay.getTime())) {
+    return endOfDay.getTime();
+  }
+
+  const fallback = new Date(dateStr);
+  return isNaN(fallback.getTime()) ? null : fallback.getTime();
+}
+
+function isTicketActive(ticket: EventRegistration): boolean {
+  const now = Date.now();
+  if (ticket.created_at) {
+    const regTime = new Date(ticket.created_at).getTime();
+    if (!isNaN(regTime) && now < regTime) {
+      return false;
+    }
+  }
+
+  const endTimestamp = getEventEndTime(ticket);
+  if (endTimestamp !== null && now > endTimestamp) {
+    return false;
+  }
+
+  return true;
 }
 
 interface MenuUser {
@@ -51,6 +99,8 @@ export function ProfileMenu({ initialUser = null, initialRole = "user", initialQ
   
   const [myEvents, setMyEvents] = useState<EventRegistration[]>([]);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
+
+  const activeTickets = myEvents.filter(isTicketActive);
   
   const router = useRouter();
 
@@ -230,7 +280,7 @@ export function ProfileMenu({ initialUser = null, initialRole = "user", initialQ
                         setEventsView(true);
                       }}
                     >
-                      <span>My Events</span>
+                      <span>My tickets</span>
                       <ChevronRight size={14} className="text-[#6E6E73]" />
                     </DropdownMenuItem>
                     
@@ -274,15 +324,15 @@ export function ProfileMenu({ initialUser = null, initialRole = "user", initialQ
                       >
                         <ChevronLeft size={14} />
                       </button>
-                      <p className="text-sm font-semibold text-[#111111]">My Events</p>
+                      <p className="text-sm font-semibold text-[#111111]">My tickets</p>
                     </div>
                   </DropdownMenuLabel>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator className="bg-[#E5E5EA] my-1" />
-                {myEvents.length === 0 ? (
-                  <p className="px-2 py-3 text-xs text-[#6E6E73] text-center">No events registered</p>
+                {activeTickets.length === 0 ? (
+                  <p className="px-2 py-3 text-xs text-[#6E6E73] text-center">No tickets found</p>
                 ) : (
-                  myEvents.map((reg) => (
+                  activeTickets.map((reg) => (
                     <DropdownMenuItem
                       key={reg.event_id}
                       className="cursor-pointer rounded-lg px-2 py-2 text-sm text-[#111111] hover:bg-[#F5F5F7] focus:bg-[#F5F5F7] flex items-center gap-2"
@@ -377,9 +427,15 @@ export function ProfileMenu({ initialUser = null, initialRole = "user", initialQ
             </DialogHeader>
             {selectedTicket && (
               <div className="relative z-10 flex flex-col items-center w-full">
-                <div className="bg-white p-5 rounded-[28px] border border-[#E5E5EA] w-full max-w-[220px] aspect-square flex items-center justify-center relative">
-                  <DotQRCode value={selectedTicket.ticket_code.toUpperCase()} size={180} />
-                </div>
+                {isTicketActive(selectedTicket) ? (
+                  <div className="bg-white p-5 rounded-[28px] border border-[#E5E5EA] w-full max-w-[220px] aspect-square flex items-center justify-center relative">
+                    <DotQRCode value={selectedTicket.ticket_code.toUpperCase()} size={180} />
+                  </div>
+                ) : (
+                  <div className="w-[200px] h-[200px] bg-[#F5F5F7] rounded-2xl flex items-center justify-center border-2 border-dashed border-[#E5E5EA]">
+                    <p className="text-sm text-[#6E6E73] font-medium px-4 text-center">Ticket expired</p>
+                  </div>
+                )}
                 <div className="mt-6 flex flex-col items-center gap-1">
                   <h3 className="text-lg font-bold text-[#111111] tracking-tight text-center leading-snug">
                     {selectedTicket.event_title}

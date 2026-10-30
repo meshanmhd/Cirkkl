@@ -17,6 +17,10 @@ type EventRow = {
   id: string;
   title: string | null;
   date: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  time?: string | null;
+  endTime?: string | null;
   category: string | null;
   status: string | null;
   visibility: string | null;
@@ -30,14 +34,29 @@ function formatDate(dateStr: string | null) {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-function getEventStatus(dateStr: string | null): { label: string; color: string } {
-  if (!dateStr) return { label: "-", color: "#9E9EA7" };
+function parseDay(str: string | null | undefined): Date | null {
+  if (!str) return null;
+  if (str.includes("-")) {
+    const parts = str.split("T")[0].split("-").map(Number);
+    if (parts.length === 3 && !isNaN(parts[0]) && !isNaN(parts[1]) && !isNaN(parts[2])) {
+      return new Date(parts[0], parts[1] - 1, parts[2]);
+    }
+  }
+  const d = new Date(str);
+  if (isNaN(d.getTime())) return null;
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+function getEventStatus(startDateStr: string | null | undefined, endDateStr?: string | null | undefined): { label: string; color: string } {
+  const startDay = parseDay(startDateStr);
+  if (!startDay) return { label: "-", color: "#9E9EA7" };
+  const endDay = parseDay(endDateStr) || startDay;
+
   const now = new Date();
-  const eventDate = new Date(dateStr);
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const eventDay = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
-  if (eventDay.getTime() === today.getTime()) return { label: "Live", color: "#FF3B30" };
-  if (eventDay > today) return { label: "Upcoming", color: "#007AFF" };
+
+  if (today < startDay) return { label: "Upcoming", color: "#007AFF" };
+  if (today <= endDay) return { label: "Live", color: "#FF3B30" };
   return { label: "Past", color: "#9E9EA7" };
 }
 
@@ -59,7 +78,7 @@ export function EventsTable({ events: initialEvents }: EventsTableProps) {
   const filtered = useMemo(() => {
     return events.filter((e) => {
       const matchesSearch = !search || (e.title?.toLowerCase().includes(search.toLowerCase()) ?? false);
-      const eventStatus = getEventStatus(e.date).label;
+      const eventStatus = getEventStatus(e.startDate || e.date, e.endDate).label;
       const matchesStatus = activeStatus === "All" || eventStatus === activeStatus;
       return matchesSearch && matchesStatus;
     });
@@ -133,7 +152,7 @@ export function EventsTable({ events: initialEvents }: EventsTableProps) {
               </tr>
             ) : (
               filtered.map((event, idx) => {
-                const eventStatus = getEventStatus(event.date);
+                const eventStatus = getEventStatus(event.startDate || event.date, event.endDate);
                 return (
                   <tr
                     key={event.id}

@@ -80,6 +80,12 @@ export async function getUserTickets() {
       event_id: t.eventId,
       event_title: t.eventTitle,
       status: t.status,
+      start_date: t.startDate,
+      end_date: t.endDate,
+      start_time: t.startTime,
+      end_time: t.endTime,
+      date_str: t.dateStr,
+      created_at: t.createdAt,
     }));
   } catch {
     return [];

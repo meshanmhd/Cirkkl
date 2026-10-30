@@ -293,8 +293,9 @@ export class MemoryRegistrationRepo implements RegistrationRepo {
   }
 
   async findByTicketCode(ticketCode: string): Promise<Registration | null> {
+    const trimmed = ticketCode.trim().toLowerCase();
     for (const r of this.registrations.values()) {
-      if (r.ticketCode === ticketCode) return r;
+      if (r.ticketCode.trim().toLowerCase() === trimmed) return r;
     }
     return null;
   }
@@ -355,7 +356,14 @@ export class MemoryRegistrationRepo implements RegistrationRepo {
     };
   }
 
-  async findUserTickets(userId: string): Promise<Array<Registration & { eventTitle: string; eventDate?: Date }>> {
+  async findUserTickets(userId: string): Promise<Array<Registration & {
+    eventTitle: string;
+    eventDate?: Date;
+    endDate?: Date | null;
+    endTime?: string | null;
+    dateStr?: string | null;
+    timeStr?: string | null;
+  }>> {
     return Array.from(this.registrations.values())
       .filter((r) => r.userId === userId && r.status === "approved")
       .map((r) => ({ ...r, eventTitle: "Event" }));
@@ -706,8 +714,9 @@ export class MemoryProfileRepo implements ProfileRepo {
   }
 
   async findByCklId(cklId: string): Promise<Profile | null> {
+    const trimmed = cklId.trim().toLowerCase();
     for (const p of this.profiles.values()) {
-      if (p.cklId === cklId) return p;
+      if (p.cklId && p.cklId.trim().toLowerCase() === trimmed) return p;
     }
     return null;
   }

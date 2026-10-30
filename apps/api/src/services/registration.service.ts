@@ -222,6 +222,12 @@ export class RegistrationService {
         eventId: t.eventId,
         eventTitle: t.eventTitle,
         status: t.status,
+        startDate: t.eventDate ? t.eventDate.toISOString() : (t.dateStr ?? null),
+        endDate: t.endDate ? t.endDate.toISOString() : null,
+        startTime: t.timeStr ?? null,
+        endTime: t.endTime ?? null,
+        dateStr: t.dateStr ?? null,
+        createdAt: t.createdAt ? t.createdAt.toISOString() : null,
       })),
     };
   }
